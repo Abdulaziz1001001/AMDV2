@@ -80,6 +80,23 @@ test('GET /api/admin/all-data with admin token returns data', async () => {
   const token = login.body.token;
   const res = await request(app).get('/api/admin/all-data').set('Authorization', 'Bearer ' + token).expect(200);
   assert.ok(Array.isArray(res.body.employees));
+  assert.ok(res.body.workPolicy);
+  assert.equal(res.body.workPolicy.key, 'company');
+  assert.ok(typeof res.body.notificationUnreadCount === 'number');
+});
+
+test('GET /api/admin/work-policy with admin token', async () => {
+  const login = await request(app)
+    .post('/api/auth/admin-login')
+    .send({ username: 'testadmin', password: 'secretpass' });
+  const token = login.body.token;
+  const res = await request(app).get('/api/admin/work-policy').set('Authorization', 'Bearer ' + token).expect(200);
+  assert.equal(res.body.key, 'company');
+  assert.ok(Array.isArray(res.body.excuseReasons));
+});
+
+test('PATCH /api/admin/notifications/:id/read without token returns 401', async () => {
+  await request(app).patch('/api/admin/notifications/507f1f77bcf86cd799439011/read').expect(401);
 });
 
 test('employee token cannot access admin all-data', async () => {
