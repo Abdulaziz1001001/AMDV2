@@ -1,10 +1,41 @@
 const express = require('express');
 const auth = require('../middleware/authMiddleware');
+const Employee = require('../models/Employee');
+const Location = require('../models/Location');
+const Record = require('../models/Record');
 
 const router = express.Router();
 
 router.use(auth);
 router.use(auth.requireRole('employee'));
+
+function formatDocs(arr) {
+  return arr.map((doc) => ({ ...doc._doc, id: doc._id.toString() }));
+}
+
+/** Same shape as /api/admin/all-data, scoped to the logged-in employee (for DB.sync on the portal). */
+router.get('/me-data', async (req, res) => {
+  try {
+    const emp = await Employee.findById(req.user.id);
+    if (!emp) return res.status(404).json({ msg: 'Employee not found' });
+
+    const allLocs = await Location.find();
+    const gid = String(emp.groupId);
+    const locations = allLocs.filter((loc) => String(loc.groupId) === gid);
+
+    const records = await Record.find({ employeeId: String(req.user.id) });
+
+    res.json({
+      employees: [],
+      groups: [],
+      locations: formatDocs(locations),
+      records: formatDocs(records),
+    });
+  } catch (err) {
+    console.error('me-data error:', err);
+    res.status(500).json({ msg: 'Server Error' });
+  }
+});
 
 router.post('/record', async (req, res) => {
   try {
