@@ -12,13 +12,7 @@ const RecordSchema = new mongoose.Schema({
   status: { type: String, default: 'present' },
   notes: { type: String },
   approvalStatus: { type: String, enum: ['pending', 'approved', 'rejected', 'none'], default: 'none' },
-  attachment: { type: String },
-  calendarDayType: {
-    type: String,
-    enum: ['workday', 'weekend', 'holiday', 'group_closure', 'none'],
-    default: 'none',
-  },
-  excuseCode: { type: String },
+  attachment: { type: String }
 }, { timestamps: true });
 
 module.exports = mongoose.models.Record || mongoose.model('Record', RecordSchema);
