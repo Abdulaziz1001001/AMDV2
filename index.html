@@ -535,7 +535,9 @@ const API = {
 const DB = {
   data: { employees: [], groups: [], locations: [], records: [] },
   async sync() {
-    try { this.data = await API.request('/admin/all-data'); } catch(e) { throw e; }
+    const role = typeof localStorage !== 'undefined' ? localStorage.getItem('amd_role') : null;
+    const path = role === 'emp' ? '/employee/me-data' : '/admin/all-data';
+    try { this.data = await API.request(path); } catch(e) { throw e; }
   },
   getEmployees(){return this.data.employees||[]}, getGroups(){return this.data.groups||[]}, 
   getLocations(){return this.data.locations||[]}, getRecords(){return this.data.records||[]},
