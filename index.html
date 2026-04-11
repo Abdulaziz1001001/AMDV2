@@ -91,6 +91,15 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;} .modal-overlay.show{opacity:1;pointer-events:all}
 .modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);width:480px;max-width:95vw;max-height:90vh;overflow-y:auto;}
 .modal-header{padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between} .modal-body{padding:1.5rem} .modal-footer{padding:1rem 1.5rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:0.75rem}
+.notif-wrap{position:relative}
+.notif-dropdown{position:absolute;top:calc(100% + 6px);right:0;width:min(380px,92vw);max-height:min(70vh,420px);overflow-y:auto;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow);z-index:500;display:none;pointer-events:all}
+.notif-dropdown.open{display:block}
+.notif-dropdown.rtl{right:auto;left:0}
+.notif-item{padding:0.75rem 1rem;border-bottom:1px solid var(--border);cursor:pointer;text-align:left}
+.notif-item:hover{background:var(--surface2)}
+.notif-item.unread{border-left:3px solid var(--accent)}
+.notif-badge{min-width:1.1rem;height:1.1rem;padding:0 4px;border-radius:99px;background:var(--danger);color:#fff;font-size:0.65rem;font-weight:700;display:none;align-items:center;justify-content:center;position:absolute;top:-4px;right:-4px}
+
 #toast-wrap{position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;display:flex;flex-direction:column;gap:0.5rem;pointer-events:none}
 .toast{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);padding:0.75rem 1rem;display:flex;align-items:center;gap:0.75rem;font-size:0.85rem;min-width:280px;pointer-events:all;}
 .toast.success i{color:var(--success)} .toast.error i{color:var(--danger)} .toast.warning i{color:var(--warning)}
@@ -172,6 +181,7 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
       <div class="nav-link" onclick="Admin.showPanel('employees',this)"><i class="fas fa-users" style="width:20px"></i><span class="tr" data-en="Employees" data-ar="الموظفين">Employees</span></div>
       <div class="nav-link" onclick="Admin.showPanel('groups',this)"><i class="fas fa-layer-group" style="width:20px"></i><span class="tr" data-en="Groups" data-ar="المجموعات">Groups</span></div>
       <div class="nav-link" onclick="Admin.showPanel('locations',this)"><i class="fas fa-map-marker-alt" style="width:20px"></i><span class="tr" data-en="Locations" data-ar="المواقع">Locations</span></div>
+      <div class="nav-link" onclick="Admin.showPanel('calendar',this)"><i class="fas fa-calendar-alt" style="width:20px"></i><span class="tr" data-en="Work calendar" data-ar="التقويم والدوام">Work calendar</span></div>
       <div class="nav-link" onclick="Admin.showPanel('records',this)"><i class="fas fa-clipboard-list" style="width:20px"></i><span class="tr" data-en="Records" data-ar="التقارير">Records</span></div>
       
       <span style="display:block;padding:1.5rem 1.25rem 0.4rem;font-size:0.65rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--text-dim)" class="tr" data-en="System" data-ar="النظام">System</span>
@@ -198,6 +208,13 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
             <i class="theme-icon fas fa-sun"></i>
         </button>
         <div style="width:1px; height:1.2rem; background:var(--border2); margin:0 0.5rem;"></div>
+        <div class="notif-wrap">
+          <button type="button" class="btn-ghost btn-sm" style="position:relative" onclick="Admin.toggleNotifDropdown(event)" title="Notifications" aria-label="Notifications">
+            <i class="fas fa-bell"></i>
+            <span id="admin-notif-badge" class="notif-badge">0</span>
+          </button>
+          <div id="admin-notif-dropdown" class="notif-dropdown"></div>
+        </div>
         <button class="btn btn-sm btn-outline" onclick="Admin.refresh()">
             <i class="fas fa-sync-alt"></i> <span class="tr" data-en="Sync" data-ar="مزامنة">Sync</span>
         </button>
@@ -283,6 +300,47 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
             <div class="card" style="margin:0"><div class="card-header"><div class="card-title tr" data-en="Saved Zones" data-ar="المواقع المحفوظة">Saved Zones</div></div><div style="padding:0.75rem;display:flex;flex-direction:column;gap:0.5rem" id="zone-list"></div></div>
           </div>
         </div>
+      </div>
+
+      <div id="panel-calendar" class="admin-panel">
+        <p style="color:var(--text-muted);margin-bottom:1rem;max-width:720px" class="tr" data-en="Company-wide rules below. Each group can override weekends, ignore public holidays, or add site closure dates in Groups." data-ar="الإعدادات أدناه للشركة بأكملها. يمكن لكل مجموعة تعديل أيام العطلة الأسبوعية أو تجاهل العطل الرسمية أو إضافة تواريخ إغلاق الموقع من صفحة المجموعات.">Company-wide rules below. Each group can override weekends, ignore public holidays, or add site closure dates in Groups.</p>
+        <div class="card" style="margin-bottom:1rem">
+          <div class="card-header"><div class="card-title tr" data-en="Time zone & late grace" data-ar="المنطقة الزمنية والسماح للتأخير">Time zone & late grace</div></div>
+          <div style="padding:1.25rem;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem">
+            <div class="form-group" style="margin:0">
+              <label class="form-label tr" data-en="Time zone" data-ar="المنطقة الزمنية">Time zone</label>
+              <input type="text" id="wp-tz" class="form-control" value="Asia/Riyadh" dir="ltr">
+            </div>
+            <div class="form-group" style="margin:0">
+              <label class="form-label tr" data-en="Late grace (minutes)" data-ar="دقائق السماح للتأخير">Late grace (minutes)</label>
+              <input type="number" id="wp-grace" class="form-control" min="0" max="240" value="15" dir="ltr">
+            </div>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:1rem">
+          <div class="card-header"><div class="card-title tr" data-en="Default weekend (company)" data-ar="عطلة نهاية الأسبوع الافتراضية">Default weekend (company)</div></div>
+          <div style="padding:1.25rem" id="wp-weekend-default" class="tr" data-en="Fri–Sat typical for KSA" data-ar="الجمعة والسبت شائع في السعودية"></div>
+          <div style="padding:0 1.25rem 1.25rem;display:flex;flex-wrap:wrap;gap:0.75rem" id="wp-weekend-checks"></div>
+        </div>
+        <div class="card" style="margin-bottom:1rem">
+          <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem">
+            <div class="card-title tr" data-en="Company holidays" data-ar="العطل الرسمية للشركة">Company holidays</div>
+            <button type="button" class="btn btn-outline btn-sm" onclick="Admin.addHolidayRow()"><i class="fas fa-plus"></i> <span class="tr" data-en="Add" data-ar="إضافة">Add</span></button>
+          </div>
+          <div style="overflow-x:auto;padding:0 1rem 1rem">
+            <table style="min-width:400px"><thead><tr><th class="tr" data-en="Date" data-ar="التاريخ">Date</th><th class="tr" data-en="Name (EN)" data-ar="الاسم إنجليزي">Name (EN)</th><th class="tr" data-en="Name (AR)" data-ar="الاسم عربي">Name (AR)</th><th></th></tr></thead><tbody id="wp-holidays-body"></tbody></table>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:1rem">
+          <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem">
+            <div class="card-title tr" data-en="Excuse / leave reasons" data-ar="أسباب الاستئذان">Excuse / leave reasons</div>
+            <button type="button" class="btn btn-outline btn-sm" onclick="Admin.addExcuseRow()"><i class="fas fa-plus"></i> <span class="tr" data-en="Add" data-ar="إضافة">Add</span></button>
+          </div>
+          <div style="overflow-x:auto;padding:0 1rem 1rem">
+            <table style="min-width:400px"><thead><tr><th class="tr" data-en="Code" data-ar="الرمز">Code</th><th class="tr" data-en="Label (EN)" data-ar="النص إنجليزي">Label (EN)</th><th class="tr" data-en="Label (AR)" data-ar="النص عربي">Label (AR)</th><th></th></tr></thead><tbody id="wp-excuses-body"></tbody></table>
+          </div>
+        </div>
+        <button type="button" class="btn btn-primary" onclick="Admin.saveWorkPolicy()"><i class="fas fa-save"></i> <span class="tr" data-en="Save work policy" data-ar="حفظ سياسة الدوام">Save work policy</span></button>
       </div>
 
       <div id="panel-settings" class="admin-panel">
@@ -378,12 +436,6 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
         <label class="form-label tr" data-en="Reason" data-ar="السبب">Reason</label>
         <select id="leave-reason" class="form-control form-select">
           <option value="" disabled selected>-- Select / اختر --</option>
-          <option value="Health Emergency / ظرف صحي">Health Emergency / ظرف صحي طارئ</option>
-          <option value="External Work / مهمة خارجية">External Work / مهمة عمل خارجية</option>
-          <option value="Government / جهة حكومية">Government Appointment / مراجعة جهة حكومية</option>
-          <option value="Family / ظرف عائلي">Family Issue / ظرف عائلي</option>
-          <option value="Technical / عطل فني">Technical Issue / توقف العمل أو عطل فني</option>
-          <option value="Pre-approved / إذن مسبق">Pre-approved / إذن مسبق من الإدارة</option>
         </select>
       </div>
       <div class="form-group">
@@ -440,6 +492,20 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
       <div><label class="form-label tr" data-en="Name" data-ar="الاسم">Name</label><input type="text" id="grp-modal-name" class="form-control"></div>
       <div><label class="form-label tr" data-en="Description" data-ar="الوصف">Description</label><input type="text" id="grp-modal-desc" class="form-control"></div>
       <div><label class="form-label tr" data-en="Color" data-ar="اللون">Color</label><input type="color" id="grp-modal-color" class="form-control" value="#C45A28" style="height:45px;padding:0"></div>
+      <div style="border-top:1px solid var(--border);padding-top:1rem;margin-top:0.5rem">
+        <div class="form-label tr" data-en="Group weekend (optional)" data-ar="عطلة نهاية الأسبوع للمجموعة">Group weekend (optional)</div>
+        <small style="color:var(--text-muted);display:block;margin-bottom:0.5rem" class="tr" data-en="Leave all unchecked to use company default." data-ar="اترك الكل بدون تحديد لاستخدام إعداد الشركة.">Leave all unchecked to use company default.</small>
+        <div id="grp-weekend-checks" style="display:flex;flex-wrap:wrap;gap:0.5rem 1rem"></div>
+        <div class="form-group" style="margin-top:1rem">
+          <label class="form-label tr" data-en="Ignore company holidays for this group" data-ar="تجاهل عطل الشركة لهذه المجموعة">Ignore company holidays for this group</label>
+          <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer"><input type="checkbox" id="grp-ignore-holidays"> <span class="tr" data-en="Crew works on national/company holidays" data-ar="الفريق يعمل في العطل الرسمية">Crew works on national/company holidays</span></label>
+        </div>
+        <div class="form-group">
+          <label class="form-label tr" data-en="Extra non-work dates (site closures)" data-ar="تواريخ إضافية بدون عمل (إغلاق موقع)">Extra non-work dates (site closures)</label>
+          <textarea id="grp-extra-dates" class="form-control" rows="3" dir="ltr" placeholder="2026-01-01, 2026-04-10"></textarea>
+          <small style="color:var(--text-muted)" class="tr" data-en="One YYYY-MM-DD per line or comma-separated." data-ar="تاريخ واحد بصيغة YYYY-MM-DD في كل سطر أو مفصولة بفاصلة.">One YYYY-MM-DD per line or comma-separated.</small>
+        </div>
+      </div>
     </div>
     <div class="modal-footer"><button class="btn btn-outline tr" onclick="UI.closeModal('modal-group')" data-en="Cancel" data-ar="إلغاء">Cancel</button><button class="btn btn-primary tr" onclick="Admin.saveGroup()" data-en="Save" data-ar="حفظ">Save</button></div>
   </div>
@@ -480,7 +546,10 @@ const Lang = {
     });
     
     if (App.current === 'admin') { Admin.showPanel(Admin.currentPanel); }
-    if (App.current === 'emp') { Emp.updateButtons(!!document.getElementById('emp-status-dot').classList.contains('inside')); }
+    if (App.current === 'emp') {
+      Emp.fillLeaveReasons();
+      Emp.updateButtons(!!document.getElementById('emp-status-dot').classList.contains('inside'));
+    }
   },
   t(en, ar) { return this.current === 'ar' ? ar : en; }
 };
@@ -533,17 +602,58 @@ const API = {
 };
 
 const DB = {
-  data: { employees: [], groups: [], locations: [], records: [] },
+  data: { employees: [], groups: [], locations: [], records: [], workPolicy: null, notificationUnreadCount: 0 },
   async sync() {
     const role = typeof localStorage !== 'undefined' ? localStorage.getItem('amd_role') : null;
     const path = role === 'emp' ? '/employee/me-data' : '/admin/all-data';
     try { this.data = await API.request(path); } catch(e) { throw e; }
+    if (this.data.notificationUnreadCount == null) this.data.notificationUnreadCount = 0;
   },
   getEmployees(){return this.data.employees||[]}, getGroups(){return this.data.groups||[]}, 
   getLocations(){return this.data.locations||[]}, getRecords(){return this.data.records||[]},
+  getWorkPolicy(){return this.data.workPolicy||null},
   today(){return new Date().toISOString().split('T')[0]}, nowISO(){return new Date().toISOString()},
   fmtTime(iso){if(!iso)return '—'; return new Date(iso).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})},
   fmtDate(iso){if(!iso)return '—'; return new Date(iso).toLocaleDateString('en-US')}
+};
+
+const Calendar = {
+  weekday(dateStr, tz) {
+    const parts = dateStr.split('-').map(Number);
+    const y = parts[0], m = parts[1], d = parts[2];
+    const utcNoon = Date.UTC(y, m - 1, d, 12, 0, 0);
+    const fmt = new Intl.DateTimeFormat('en-US', { timeZone: tz || 'Asia/Riyadh', weekday: 'short' });
+    const map = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+    return map[fmt.format(new Date(utcNoon))];
+  },
+  effectiveWeekendDays(group, policy) {
+    const g = group && Array.isArray(group.weekendDays) && group.weekendDays.length > 0 ? group.weekendDays : null;
+    const def = policy && Array.isArray(policy.defaultWeekendDays) && policy.defaultWeekendDays.length
+      ? policy.defaultWeekendDays
+      : [5, 6];
+    return g || def;
+  },
+  classifyDay(dateStr, group, policy) {
+    const tz = (policy && policy.timeZone) || 'Asia/Riyadh';
+    const ignoreHol = group && group.ignoreCompanyHolidays === true;
+    const wd = this.weekday(dateStr, tz);
+    const weekends = this.effectiveWeekendDays(group, policy);
+    const holidays = policy && policy.companyHolidays ? policy.companyHolidays : [];
+    const onWeekend = weekends.includes(wd);
+    const extra = group && Array.isArray(group.extraNonWorkDates) ? group.extraNonWorkDates : [];
+    if (extra.includes(dateStr)) return { working: false, calendarDayType: 'group_closure' };
+    if (!ignoreHol && holidays.some((h) => h && h.date === dateStr)) {
+      return { working: false, calendarDayType: 'holiday' };
+    }
+    if (onWeekend) return { working: false, calendarDayType: 'weekend' };
+    return { working: true, calendarDayType: 'workday' };
+  },
+  isWorkingDay(dateStr, groupId) {
+    const policy = DB.getWorkPolicy();
+    if (!policy) return true;
+    const group = groupId ? DB.getGroups().find((g) => g.id === groupId) : null;
+    return this.classifyDay(dateStr, group, policy).working;
+  },
 };
 
 const getBase64 = (file) => {
@@ -698,6 +808,7 @@ const Admin = {
     UI.closeSidebar();
     
     if(panel==='locations'){ setTimeout(() => { if(!Maps.adminMap) Maps.initAdmin(); else Maps.adminMap.invalidateSize(true); }, 300); this.populateGroupSelect('zone-group'); this.renderZoneList(); }
+    if(panel==='calendar'){ this.loadWorkPolicyForm(); }
     if(panel==='settings'){ document.getElementById('admin-set-user').value = Auth.adminSession.username || ''; document.getElementById('admin-set-email').value = Auth.adminSession.email || ''; document.getElementById('admin-set-pass').value = ''; }
     if(panel==='analytics'){ this.renderAnalytics(); }
     if(panel==='employees'){ this.populateGroupSelect('emp-group-filter',true); this.renderEmployees(); }
@@ -717,16 +828,208 @@ const Admin = {
     } catch(err) { UI.toast(err.message, 'error'); }
     UI.loader(false);
   },
-  async refresh(){ UI.loader(true); try{ await DB.sync(); this.showPanel(this.currentPanel); UI.toast(Lang.t('Synced','تمت المزامنة'), 'success'); } catch(e){UI.toast(e.message,'error')} UI.loader(false); },
+  async refresh(){ UI.loader(true); try{ await DB.sync(); this.updateNotifBadge(); this.showPanel(this.currentPanel); UI.toast(Lang.t('Synced','تمت المزامنة'), 'success'); } catch(e){UI.toast(e.message,'error')} UI.loader(false); },
+  updateNotifBadge(){
+    const el = document.getElementById('admin-notif-badge');
+    if (!el) return;
+    const raw = Number(DB.data.notificationUnreadCount) || 0;
+    el.textContent = raw > 99 ? '99+' : String(raw);
+    el.style.display = raw > 0 ? 'inline-flex' : 'none';
+  },
+  notifDropdownOpen: false,
+  toggleNotifDropdown(ev){
+    if (ev) ev.stopPropagation();
+    const dd = document.getElementById('admin-notif-dropdown');
+    if (!dd) return;
+    const open = !this.notifDropdownOpen;
+    this.notifDropdownOpen = open;
+    if (Lang.current === 'ar') dd.classList.toggle('rtl', true); else dd.classList.remove('rtl');
+    if (open) {
+      this.loadNotificationsList();
+      dd.classList.add('open');
+      const close = (e) => {
+        if (!dd.contains(e.target) && !e.target.closest('.notif-wrap')) {
+          dd.classList.remove('open');
+          this.notifDropdownOpen = false;
+          document.removeEventListener('click', close);
+        }
+      };
+      setTimeout(() => document.addEventListener('click', close), 0);
+    } else dd.classList.remove('open');
+  },
+  async loadNotificationsList(){
+    const dd = document.getElementById('admin-notif-dropdown');
+    if (!dd) return;
+    dd.innerHTML = '<div style="padding:1rem;color:var(--text-muted)">…</div>';
+    try {
+      const data = await API.request('/admin/notifications', 'GET');
+      DB.data.notificationUnreadCount = data.unreadCount;
+      this.updateNotifBadge();
+      if (!data.items || !data.items.length) {
+        dd.innerHTML = `<div style="padding:1.25rem;color:var(--text-muted);text-align:center">${Lang.t('No notifications','لا إشعارات')}</div>`;
+        return;
+      }
+      dd.innerHTML = data.items.map((n) => {
+        const unread = !n.readAt;
+        const title = Lang.current === 'ar' && n.titleAr ? n.titleAr : n.title;
+        const body = Lang.current === 'ar' && n.bodyAr ? n.bodyAr : n.body;
+        return `<div class="notif-item${unread ? ' unread' : ''}" data-nid="${n.id}" data-rid="${n.ref && n.ref.id ? n.ref.id : ''}">
+          <div style="font-weight:600;font-size:0.85rem">${title}</div>
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.25rem">${body || ''}</div>
+        </div>`;
+      }).join('');
+      dd.querySelectorAll('.notif-item').forEach((row) => {
+        row.onclick = () => this.onNotificationClick(row.getAttribute('data-nid'), row.getAttribute('data-rid'));
+      });
+      const foot = document.createElement('div');
+      foot.style.cssText = 'padding:0.5rem;border-top:1px solid var(--border);text-align:center';
+      foot.innerHTML = `<button type="button" class="btn-ghost btn-sm" onclick="Admin.markAllNotifsRead()">${Lang.t('Mark all read','تعليم الكل كمقروء')}</button>`;
+      dd.appendChild(foot);
+    } catch (e) {
+      dd.innerHTML = `<div style="padding:1rem;color:var(--danger)">${e.message}</div>`;
+    }
+  },
+  async onNotificationClick(nid, rid){
+    if (nid) {
+      try {
+        const r = await API.request('/admin/notifications/' + nid + '/read', 'PATCH');
+        if (r.unreadCount != null) DB.data.notificationUnreadCount = r.unreadCount;
+      } catch (_) { /* ignore */ }
+    }
+    this.updateNotifBadge();
+    const dd = document.getElementById('admin-notif-dropdown');
+    if (dd) { dd.classList.remove('open'); this.notifDropdownOpen = false; }
+    let recEl = null;
+    document.querySelectorAll('#admin-sidebar .nav-link').forEach((n) => {
+      const oc = n.getAttribute('onclick') || '';
+      if (oc.indexOf("'records'") !== -1) recEl = n;
+    });
+    this.showPanel('records', recEl);
+    if (rid) UI.toast(Lang.t('Open the pending row in the table below.','ابحث عن الصف المعلق في الجدول.'), 'info');
+  },
+  async markAllNotifsRead(){
+    try {
+      await API.request('/admin/notifications/read-all', 'POST');
+      DB.data.notificationUnreadCount = 0;
+      this.updateNotifBadge();
+      this.loadNotificationsList();
+    } catch (e) { UI.toast(e.message, 'error'); }
+  },
+  ensureGroupWeekendUi(){
+    const w = document.getElementById('grp-weekend-checks');
+    if (!w || w.dataset.built) return;
+    const days = [
+      ['0', 'Sun', 'الأحد'], ['1', 'Mon', 'الإثنين'], ['2', 'Tue', 'الثلاثاء'], ['3', 'Wed', 'الأربعاء'],
+      ['4', 'Thu', 'الخميس'], ['5', 'Fri', 'الجمعة'], ['6', 'Sat', 'السبت'],
+    ];
+    w.innerHTML = days.map(([v, en, ar]) =>
+      `<label style="display:flex;align-items:center;gap:0.35rem;cursor:pointer"><input type="checkbox" class="grp-wd-cb" value="${v}"> <span class="tr" data-en="${en}" data-ar="${ar}">${en}</span></label>`
+    ).join('');
+    w.dataset.built = '1';
+    Lang.apply();
+  },
+  renderWpWeekendChecks(){
+    const host = document.getElementById('wp-weekend-checks');
+    if (!host || host.dataset.built) return;
+    const days = [
+      ['0', 'Sun', 'الأحد'], ['1', 'Mon', 'الإثنين'], ['2', 'Tue', 'الثلاثاء'], ['3', 'Wed', 'الأربعاء'],
+      ['4', 'Thu', 'الخميس'], ['5', 'Fri', 'الجمعة'], ['6', 'Sat', 'السبت'],
+    ];
+    host.innerHTML = days.map(([v, en, ar]) =>
+      `<label style="display:flex;align-items:center;gap:0.35rem;cursor:pointer"><input type="checkbox" class="wp-wd-cb" value="${v}"> <span class="tr" data-en="${en}" data-ar="${ar}">${en}</span></label>`
+    ).join('');
+    host.dataset.built = '1';
+    Lang.apply();
+  },
+  loadWorkPolicyForm(){
+    this.renderWpWeekendChecks();
+    const p = DB.getWorkPolicy();
+    if (!p) return;
+    document.getElementById('wp-tz').value = p.timeZone || 'Asia/Riyadh';
+    document.getElementById('wp-grace').value = p.lateGraceMinutes != null ? p.lateGraceMinutes : 15;
+    const def = Array.isArray(p.defaultWeekendDays) ? p.defaultWeekendDays : [5, 6];
+    document.querySelectorAll('.wp-wd-cb').forEach((cb) => {
+      cb.checked = def.includes(parseInt(cb.value, 10));
+    });
+    const ht = document.getElementById('wp-holidays-body');
+    ht.innerHTML = '';
+    (p.companyHolidays || []).forEach((h) => this.addHolidayRow(h.date, h.nameEn || '', h.nameAr || ''));
+    if (!(p.companyHolidays || []).length) this.addHolidayRow();
+    const ex = document.getElementById('wp-excuses-body');
+    ex.innerHTML = '';
+    (p.excuseReasons || []).forEach((r) => this.addExcuseRow(r.code, r.labelEn || '', r.labelAr || ''));
+    if (!(p.excuseReasons || []).length) this.addExcuseRow();
+  },
+  addHolidayRow(date, nameEn, nameAr){
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td><input type="date" class="form-control hol-date" value="${date || ''}"></td>
+      <td><input type="text" class="form-control hol-ne" value="${(nameEn || '').replace(/"/g, '&quot;')}"></td>
+      <td><input type="text" class="form-control hol-na" value="${(nameAr || '').replace(/"/g, '&quot;')}"></td>
+      <td><button type="button" class="btn-ghost btn-sm" onclick="this.closest('tr').remove()"><i class="fas fa-times"></i></button></td>`;
+    document.getElementById('wp-holidays-body').appendChild(tr);
+  },
+  addExcuseRow(code, labelEn, labelAr){
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td><input type="text" class="form-control ex-code" value="${(code || '').replace(/"/g, '&quot;')}" dir="ltr"></td>
+      <td><input type="text" class="form-control ex-ne" value="${(labelEn || '').replace(/"/g, '&quot;')}"></td>
+      <td><input type="text" class="form-control ex-na" value="${(labelAr || '').replace(/"/g, '&quot;')}"></td>
+      <td><button type="button" class="btn-ghost btn-sm" onclick="this.closest('tr').remove()"><i class="fas fa-times"></i></button></td>`;
+    document.getElementById('wp-excuses-body').appendChild(tr);
+  },
+  async saveWorkPolicy(){
+    const defaultWeekendDays = [];
+    document.querySelectorAll('.wp-wd-cb:checked').forEach((cb) => defaultWeekendDays.push(parseInt(cb.value, 10)));
+    if (!defaultWeekendDays.length) {
+      return UI.toast(Lang.t('Select at least one weekend day for the company default.', 'اختر يوم عطلة أسبوعية واحد على الأقل.'), 'error');
+    }
+    const holidays = [];
+    document.querySelectorAll('#wp-holidays-body tr').forEach((tr) => {
+      const date = tr.querySelector('.hol-date') && tr.querySelector('.hol-date').value;
+      if (!date) return;
+      holidays.push({
+        date,
+        nameEn: tr.querySelector('.hol-ne').value.trim(),
+        nameAr: tr.querySelector('.hol-na').value.trim(),
+      });
+    });
+    const excuseReasons = [];
+    document.querySelectorAll('#wp-excuses-body tr').forEach((tr) => {
+      const code = tr.querySelector('.ex-code').value.trim();
+      if (!code) return;
+      excuseReasons.push({
+        code,
+        labelEn: tr.querySelector('.ex-ne').value.trim(),
+        labelAr: tr.querySelector('.ex-na').value.trim(),
+      });
+    });
+    const body = {
+      timeZone: document.getElementById('wp-tz').value.trim() || 'Asia/Riyadh',
+      defaultWeekendDays,
+      companyHolidays: holidays,
+      lateGraceMinutes: parseInt(document.getElementById('wp-grace').value, 10) || 0,
+      excuseReasons,
+    };
+    UI.loader(true);
+    try {
+      const updated = await API.request('/admin/work-policy', 'PUT', body);
+      DB.data.workPolicy = updated;
+      UI.toast(Lang.t('Work policy saved', 'تم حفظ سياسة الدوام'), 'success');
+    } catch (e) { UI.toast(e.message, 'error'); }
+    UI.loader(false);
+  },
   renderDashboard(){
-    const emps=DB.getEmployees().filter(e=>e.active); document.getElementById('stat-total').textContent=emps.length;
-    const recs=DB.getRecords().filter(r=>r.date===DB.today());
-    document.getElementById('stat-present').textContent=recs.filter(r=>['present','late','early_leave'].includes(r.status)).length;
-    document.getElementById('stat-late').textContent=recs.filter(r=>r.status==='late').length;
-    document.getElementById('stat-absent').textContent=Math.max(0,emps.length - recs.length);
-    const tbody=document.getElementById('dash-attendance-table');
-    if(!recs.length){tbody.innerHTML=`<tr><td colspan="4" style="text-align:center;padding:2rem;color:var(--text-muted)">${Lang.t('No records','لا يوجد سجلات')}</td></tr>`;return;}
-    tbody.innerHTML=recs.slice(0,10).map(r=>{
+    const today = DB.today();
+    const emps = DB.getEmployees().filter((e) => e.active);
+    const expected = emps.filter((e) => Calendar.isWorkingDay(today, e.groupId));
+    document.getElementById('stat-total').textContent = emps.length;
+    const recs = DB.getRecords().filter((r) => r.date === today);
+    const recsExp = recs.filter((r) => expected.some((e) => e.id === r.employeeId));
+    document.getElementById('stat-present').textContent = recsExp.filter((r) => ['present', 'late', 'early_leave'].includes(r.status)).length;
+    document.getElementById('stat-late').textContent = recsExp.filter((r) => r.status === 'late').length;
+    document.getElementById('stat-absent').textContent = Math.max(0, expected.length - recsExp.length);
+    const tbody = document.getElementById('dash-attendance-table');
+    if (!recs.length) { tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:2rem;color:var(--text-muted)">${Lang.t('No records','لا يوجد سجلات')}</td></tr>`; return; }
+    tbody.innerHTML = recs.slice(0, 10).map((r) => {
       const emp=DB.getEmployees().find(e=>e.id===r.employeeId)||{name:'Unknown'};
       return`<tr><td>${emp.name}</td><td><span dir="ltr">${DB.fmtTime(r.checkIn)}</span></td><td><span dir="ltr">${DB.fmtTime(r.checkOut)}</span></td><td>${UI.badge(r.status)}</td></tr>`;
     }).join('');
@@ -739,11 +1042,19 @@ const Admin = {
     this.charts[canvasId] = new Chart(ctx, { type: type, data: data, options: Object.assign({ responsive: true, maintainAspectRatio: false }, options) });
   },
   renderAnalytics() {
-    const records = DB.getRecords(); const employees = DB.getEmployees().filter(e => e.active); const groups = DB.getGroups(); const today = DB.today();
-    const todaysRecs = records.filter(r => r.date === today);
-    let present = 0, late = 0, leave = 0;
-    todaysRecs.forEach(r => { if(r.status === 'present') present++; else if(r.status === 'late') late++; else if(r.status === 'early_leave') leave++; });
-    const absent = Math.max(0, employees.length - todaysRecs.length);
+    const records = DB.getRecords();
+    const employees = DB.getEmployees().filter((e) => e.active);
+    const groups = DB.getGroups();
+    const today = DB.today();
+    const expectedIds = new Set(employees.filter((e) => Calendar.isWorkingDay(today, e.groupId)).map((e) => e.id));
+    const todaysRecs = records.filter((r) => r.date === today && expectedIds.has(r.employeeId));
+    let present = 0; let late = 0; let leave = 0;
+    todaysRecs.forEach((r) => {
+      if (r.status === 'present') present++;
+      else if (r.status === 'late') late++;
+      else if (r.status === 'early_leave') leave++;
+    });
+    const absent = Math.max(0, expectedIds.size - todaysRecs.length);
 
     this.buildChart('chart-today', 'doughnut', {
         labels: [Lang.t('Present','حاضر'), Lang.t('Late','متأخر'), Lang.t('Early Leave','استئذان'), Lang.t('Absent','غائب')],
@@ -761,9 +1072,17 @@ const Admin = {
     }, { plugins: { legend: { display:false } }, scales: { y: { beginAtZero:true } } });
 
     const trendLabels = []; const trendData = [];
-    for(let i=6; i>=0; i--) {
-        const d = new Date(); d.setDate(d.getDate() - i); const dateStr = d.toISOString().split('T')[0];
-        trendLabels.push(dateStr.slice(5)); trendData.push( records.filter(r => r.date === dateStr).length );
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().split('T')[0];
+      trendLabels.push(dateStr.slice(5));
+      const dayCount = records.filter((r) => {
+        if (r.date !== dateStr) return false;
+        const emp = employees.find((e) => e.id === r.employeeId);
+        return emp && Calendar.isWorkingDay(dateStr, emp.groupId);
+      }).length;
+      trendData.push(dayCount);
     }
     this.buildChart('chart-trend', 'line', {
         labels: trendLabels, datasets: [{ label: Lang.t('Attendance','الحضور'), data: trendData, borderColor: '#C45A28', backgroundColor: 'rgba(196,90,40,0.15)', borderWidth: 3, tension: 0.4, fill: true }]
@@ -811,19 +1130,61 @@ const Admin = {
     if(!groups.length){tbody.innerHTML=`<tr><td colspan="4" style="text-align:center;padding:2rem">${Lang.t('No groups yet','لا يوجد مجموعات')}</td></tr>`;return;}
     tbody.innerHTML=groups.map(g=>`<tr><td><span style="display:inline-block;width:15px;height:15px;border-radius:50%;background:${g.color}"></span></td><td><strong>${g.name}</strong></td><td>${g.desc||'—'}</td><td><button class="btn-ghost btn-sm" onclick="Admin.openGroupModal('${g.id}')"><i class="fas fa-edit"></i></button> <button class="btn-ghost btn-sm" style="color:var(--danger)" onclick="Admin.deleteGroup('${g.id}')"><i class="fas fa-trash"></i></button></td></tr>`).join('');
   },
-  openGroupModal(id){ 
+  openGroupModal(id){
+    this.ensureGroupWeekendUi();
     document.getElementById('grp-modal-title').textContent = id ? Lang.t('Edit Group','تعديل المجموعة') : Lang.t('Add Group','إضافة مجموعة');
-    if(id) {
-      const g = DB.getGroups().find(x => x.id === id); document.getElementById('grp-modal-id').value = g.id; document.getElementById('grp-modal-name').value = g.name; document.getElementById('grp-modal-desc').value = g.desc || ''; document.getElementById('grp-modal-color').value = g.color || '#C45A28';
+    document.querySelectorAll('.grp-wd-cb').forEach((cb) => { cb.checked = false; });
+    if (id) {
+      const g = DB.getGroups().find((x) => x.id === id);
+      document.getElementById('grp-modal-id').value = g.id;
+      document.getElementById('grp-modal-name').value = g.name;
+      document.getElementById('grp-modal-desc').value = g.desc || '';
+      document.getElementById('grp-modal-color').value = g.color || '#C45A28';
+      if (g.weekendDays && g.weekendDays.length) {
+        g.weekendDays.forEach((d) => {
+          const cb = document.querySelector('.grp-wd-cb[value="' + d + '"]');
+          if (cb) cb.checked = true;
+        });
+      }
+      document.getElementById('grp-ignore-holidays').checked = !!g.ignoreCompanyHolidays;
+      document.getElementById('grp-extra-dates').value = (g.extraNonWorkDates || []).join('\n');
     } else {
-      document.getElementById('grp-modal-id').value = ''; document.getElementById('grp-modal-name').value = ''; document.getElementById('grp-modal-desc').value = ''; document.getElementById('grp-modal-color').value = '#C45A28';
+      document.getElementById('grp-modal-id').value = '';
+      document.getElementById('grp-modal-name').value = '';
+      document.getElementById('grp-modal-desc').value = '';
+      document.getElementById('grp-modal-color').value = '#C45A28';
+      document.getElementById('grp-ignore-holidays').checked = false;
+      document.getElementById('grp-extra-dates').value = '';
     }
-    UI.openModal('modal-group'); 
+    UI.openModal('modal-group');
+  },
+  parseGroupExtraDates(txt) {
+    return String(txt || '')
+      .split(/[\s,;]+/)
+      .map((s) => s.trim())
+      .filter((s) => /^\d{4}-\d{2}-\d{2}$/.test(s));
   },
   async saveGroup(){
-    const data={ id:document.getElementById('grp-modal-id').value, name:document.getElementById('grp-modal-name').value.trim(), desc:document.getElementById('grp-modal-desc').value.trim(), color:document.getElementById('grp-modal-color').value };
-    if(!data.name) return UI.toast(Lang.t('Name required','الاسم مطلوب'),'error');
-    UI.loader(true); try { await API.request('/admin/group', 'POST', data); await DB.sync(); UI.closeModal('modal-group'); this.renderGroups(); UI.toast(Lang.t('Saved!','تم الحفظ'),'success'); } catch(e){UI.toast(e.message,'error')} UI.loader(false);
+    const wd = [...document.querySelectorAll('.grp-wd-cb:checked')].map((cb) => parseInt(cb.value, 10));
+    const data = {
+      id: document.getElementById('grp-modal-id').value,
+      name: document.getElementById('grp-modal-name').value.trim(),
+      desc: document.getElementById('grp-modal-desc').value.trim(),
+      color: document.getElementById('grp-modal-color').value,
+      weekendDays: wd,
+      ignoreCompanyHolidays: document.getElementById('grp-ignore-holidays').checked,
+      extraNonWorkDates: this.parseGroupExtraDates(document.getElementById('grp-extra-dates').value),
+    };
+    if (!data.name) return UI.toast(Lang.t('Name required','الاسم مطلوب'), 'error');
+    UI.loader(true);
+    try {
+      await API.request('/admin/group', 'POST', data);
+      await DB.sync();
+      UI.closeModal('modal-group');
+      this.renderGroups();
+      UI.toast(Lang.t('Saved!','تم الحفظ'), 'success');
+    } catch (e) { UI.toast(e.message, 'error'); }
+    UI.loader(false);
   },
   async deleteGroup(id){ if(confirm(Lang.t('Delete this group?','حذف المجموعة؟'))){ UI.loader(true); try{ await API.request(`/admin/group/${id}`, 'DELETE'); await DB.sync(); this.renderGroups(); UI.toast(Lang.t('Deleted','تم الحذف'),'warning'); }catch(e){UI.toast(e.message,'error')} UI.loader(false); } },
   populateGroupSelect(selId, addAll) { 
@@ -860,12 +1221,13 @@ const Admin = {
     let displayList = [];
 
     if(date) {
-        // If a specific date is selected, show ALL active employees (generate absentees for those missing)
-        emps.forEach(emp => {
-            if(search && !emp.name.toLowerCase().includes(search)) return;
-            const rec = DB.getRecords().find(r => r.employeeId === emp.id && r.date === date);
-            if(rec) displayList.push({ ...rec, isAbsent: false, emp });
-            else displayList.push({ employeeId: emp.id, date: date, checkIn: null, checkOut: null, status: 'absent', notes: '', approvalStatus: 'none', isAbsent: true, emp });
+        emps.forEach((emp) => {
+            if (search && !emp.name.toLowerCase().includes(search)) return;
+            const rec = DB.getRecords().find((r) => r.employeeId === emp.id && r.date === date);
+            const work = Calendar.isWorkingDay(date, emp.groupId);
+            if (!work && !rec) return;
+            if (rec) displayList.push({ ...rec, isAbsent: false, emp });
+            else displayList.push({ employeeId: emp.id, date, checkIn: null, checkOut: null, status: 'absent', notes: '', approvalStatus: 'none', isAbsent: true, emp });
         });
     } else {
         // No date selected -> just show historical records
@@ -920,7 +1282,9 @@ const Admin = {
       UI.loader(true);
       try {
           await API.request(`/admin/approve-record/${recordId}`, 'PUT', { status: decision });
-          await DB.sync(); this.filterRecords(); 
+          await DB.sync();
+          this.updateNotifBadge();
+          this.filterRecords();
           UI.toast(isApproved ? Lang.t('Approved','تم القبول') : Lang.t('Rejected','تم الرفض'), isApproved ? 'success' : 'warning');
       } catch(e) { UI.toast(e.message, 'error'); }
       UI.loader(false);
@@ -934,10 +1298,12 @@ const Admin = {
     let exportList = [];
 
     if(dateFilter) {
-        emps.forEach(emp => {
-            if(search && !emp.name.toLowerCase().includes(search)) return;
-            const rec = DB.getRecords().find(r => r.employeeId === emp.id && r.date === dateFilter);
-            if(rec) exportList.push({ ...rec, isAbsent: false, emp });
+        emps.forEach((emp) => {
+            if (search && !emp.name.toLowerCase().includes(search)) return;
+            const rec = DB.getRecords().find((r) => r.employeeId === emp.id && r.date === dateFilter);
+            const work = Calendar.isWorkingDay(dateFilter, emp.groupId);
+            if (!work && !rec) return;
+            if (rec) exportList.push({ ...rec, isAbsent: false, emp });
             else exportList.push({ date: dateFilter, checkIn: null, checkOut: null, status: 'absent', notes: '', approvalStatus: 'none', isAbsent: true, emp });
         });
     } else {
@@ -1018,8 +1384,23 @@ const Admin = {
 ══════════════════════════════════════════ */
 const Emp = {
   watchId:null, currentPos:null, assignedZones:[], currentRecord:null, nearestZone:null,
+  fillLeaveReasons() {
+    const sel = document.getElementById('leave-reason');
+    if (!sel) return;
+    const reasons = (DB.getWorkPolicy() && DB.getWorkPolicy().excuseReasons) || [];
+    const prev = sel.value;
+    sel.innerHTML = '<option value="" disabled selected>-- Select / اختر --</option>';
+    reasons.forEach((r) => {
+      const opt = document.createElement('option');
+      opt.value = r.code;
+      opt.textContent = Lang.current === 'ar' && r.labelAr ? r.labelAr : (r.labelEn || r.code);
+      sel.appendChild(opt);
+    });
+    if (prev && [...sel.options].some((o) => o.value === prev)) sel.value = prev;
+  },
   init(){
     const emp=Auth.empSession; if(!emp) return;
+    this.fillLeaveReasons();
     this.assignedZones=DB.getLocations().filter(z => z.groupId === emp.groupId);
     this.currentRecord=DB.getRecords().find(r=>r.employeeId===emp.id&&r.date===DB.today())||null;
     const defaultLat = this.assignedZones[0] ? this.assignedZones[0].lat : 24.7136;
@@ -1098,21 +1479,19 @@ const Emp = {
 
     let finalStatus = 'present';
     const emp = Auth.empSession;
-    
+    const pol = DB.getWorkPolicy();
+    const tz = (pol && pol.timeZone) || 'Asia/Riyadh';
+    const grace = pol && pol.lateGraceMinutes != null ? pol.lateGraceMinutes : 15;
+
     if (emp && emp.workStart) {
-        const now = new Date();
-        const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-        const riyadhDate = new Date(utc + (3600000 * 3));
-        const currH = riyadhDate.getHours();
-        const currM = riyadhDate.getMinutes();
-        const currTotalMinutes = (currH * 60) + currM;
-
-        const [startH, startM] = emp.workStart.split(':').map(Number);
-        const startTotalMinutes = (startH * 60) + startM;
-
-        if (currTotalMinutes > (startTotalMinutes + 15)) {
-            finalStatus = 'late';
-        }
+      const now = new Date();
+      const fmt = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: 'numeric', minute: 'numeric', hour12: false });
+      let [currH, currM] = fmt.format(now).split(':').map(Number);
+      if (currH === 24) currH = 0;
+      const currTotalMinutes = currH * 60 + currM;
+      const [startH, startM] = emp.workStart.split(':').map(Number);
+      const startTotalMinutes = startH * 60 + startM;
+      if (currTotalMinutes > startTotalMinutes + grace) finalStatus = 'late';
     }
 
     const rec={ employeeId:Auth.empSession.id, date:DB.today(), checkIn:DB.nowISO(), checkInLat:this.currentPos.lat, checkInLng:this.currentPos.lng, status:finalStatus, notes:'' };
@@ -1176,11 +1555,13 @@ const Emp = {
   },
 
   async submitLeaveRequest() {
-    const reason = document.getElementById('leave-reason').value; 
+    const sel = document.getElementById('leave-reason');
+    const code = sel.value;
+    const label = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].textContent : '';
     const notes = document.getElementById('leave-notes').value.trim();
     const fileInput = document.getElementById('leave-attachment');
 
-    if(!reason) return UI.toast(Lang.t('Please select a reason','الرجاء اختيار السبب'), 'error');
+    if (!code) return UI.toast(Lang.t('Please select a reason','الرجاء اختيار السبب'), 'error');
 
     UI.loader(true);
     let attachmentData = null;
@@ -1199,13 +1580,14 @@ const Emp = {
         }
     }
 
-    const rec = { 
-        employeeId: Auth.empSession.id, 
-        date: DB.today(), 
-        status: 'early_leave', 
-        approvalStatus: 'pending', 
-        notes: `[${reason}] ${notes}`,
-        attachment: attachmentData 
+    const rec = {
+      employeeId: Auth.empSession.id,
+      date: DB.today(),
+      status: 'early_leave',
+      approvalStatus: 'pending',
+      notes: `[${label || code}] ${notes}`,
+      excuseCode: code,
+      attachment: attachmentData,
     };
 
     try {
@@ -1217,7 +1599,7 @@ const Emp = {
         this.updateButtons(true); 
         UI.toast(Lang.t('Request sent to admin','تم إرسال الطلب للإدارة'), 'success');
         
-        document.getElementById('leave-reason').value = '';
+        document.getElementById('leave-reason').selectedIndex = 0;
         document.getElementById('leave-notes').value = '';
         document.getElementById('leave-attachment').value = '';
     } catch(e) { UI.toast(e.message, 'error'); }
@@ -1255,7 +1637,6 @@ window.addEventListener('amd-unauthorized', () => {
   localStorage.clear();
   if (typeof App !== 'undefined') App.goto('home');
 });
-
 document.addEventListener('DOMContentLoaded',()=>{ 
   const d=document.getElementById('rec-date'); if(d) d.value=DB.today(); 
   Lang.apply(); UI.applyTheme();
