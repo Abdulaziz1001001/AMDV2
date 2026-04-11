@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AMD United Contracting — Attendance System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Barlow:ital,wght@0,300;0,400;0,500;0,600;1,300&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+/* CSS VARIABLES (DARK MODE - DEFAULT) */
+:root {
+  --bg: #0C0C0C; --surface: #141414; --surface2: #1C1C1C; --surface3: #242424;
+  --border: #2C2C2C; --border2: #383838;
+  --accent: #C45A28; --accent-light: #D96830; --accent-glow: rgba(196,90,40,0.15);
+  --text: #F0ECE6; --text-muted: #888880; --text-dim: #555550;
+  --success: #27AE60; --warning: #F1C40F; --danger: #E74C3C; --info: #3498DB;
+  --radius: 4px; --radius-lg: 8px; --shadow: 0 4px 24px rgba(0,0,0,0.4);
+}
+
+/* CSS VARIABLES (LIGHT MODE) */
+html[data-theme="light"] {
+  --bg: #F0F2F5; --surface: #FFFFFF; --surface2: #F9FAFB; --surface3: #E5E7EB;
+  --border: #E5E7EB; --border2: #D1D5DA;
+  --text: #111827; --text-muted: #6B7280; --text-dim: #9CA3AF;
+  --shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+html[data-theme="light"] .leaflet-tile { filter: none; }
+html[data-theme="light"] .leaflet-container { background: #e5e5e5 !important; }
+html[data-theme="light"] .portal-card:hover { box-shadow: var(--shadow); }
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0; transition: background-color 0.3s, border-color 0.3s;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Barlow', sans-serif;font-size:15px;overflow:hidden;}
+a{color:inherit;text-decoration:none} button{cursor:pointer;font-family:inherit;} input,select,textarea{font-family:inherit;}
+::-webkit-scrollbar{width:6px;height:6px} ::-webkit-scrollbar-track{background:var(--surface)} ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+.page{position:fixed;inset:0;display:none;flex-direction:column;overflow:hidden} .page.active{display:flex}
+.hidden{display:none!important}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:0.5rem;padding:0.75rem 1.5rem;font-family:'Barlow Condensed',sans-serif;font-size:0.9rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;border:none;border-radius:var(--radius);cursor:pointer;transition:all 0.2s;white-space:nowrap}
+.btn-block{width:100%} .btn-primary{background:var(--accent);color:white} .btn-primary:hover{background:var(--accent-light);transform:translateY(-1px)}
+.btn-outline{background:transparent;border:1px solid var(--border2);color:var(--text)} .btn-outline:hover{border-color:var(--accent);color:var(--accent)}
+.btn-ghost{background:transparent;border:none;color:var(--text-muted)} .btn-ghost:hover{color:var(--accent)}
+.btn-success{background:var(--success);color:white} .btn-danger{background:var(--danger);color:white}
+.btn-sm{padding:0.4rem 0.9rem;font-size:0.75rem}
+
+.form-group{margin-bottom:1.25rem} .form-label{display:block;font-size:0.7rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);margin-bottom:0.5rem}
+.form-control{width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:0.75rem 1rem;font-size:0.9rem;outline:none;border-radius:var(--radius)}
+.form-control:focus{border-color:var(--accent)} .form-select{padding:0.55rem 1rem;}
+.input-icon-wrap{position:relative} .input-icon-wrap i{position:absolute;left:1rem;top:50%;transform:translateY(-50%);color:var(--text-dim);font-size:0.85rem}
+.input-icon-wrap .form-control{padding-left:2.5rem} .toggle-pw{position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-dim);padding:0.25rem;transition:color 0.2s} .toggle-pw:hover{color:var(--accent)}
+
+.badge{display:inline-block;padding:0.2rem 0.6rem;border-radius:100px;font-size:0.7rem;font-weight:600;letter-spacing:0.05em;text-transform:uppercase}
+.badge-success{background:rgba(39,174,96,0.15);color:#27ae60} .badge-warning{background:rgba(241,196,15,0.15);color:#f1c40f} .badge-danger{background:rgba(231,76,60,0.15);color:#e74c3c} .badge-muted{background:var(--surface3);color:var(--text-muted)}
+
+#page-home{background:var(--bg) radial-gradient(ellipse 80% 60% at 50% 0%, rgba(196,90,40,0.08) 0%, transparent 70%);align-items:center;justify-content:center;}
+.home-grid{display:grid;gap:3rem;align-items:center;text-align:center;max-width:540px;width:90%;padding:2rem}
+.amd-logo-icon{width:72px;height:72px;fill:var(--accent)} .amd-arabic{font-size:2rem;color:var(--accent);font-weight:300} .amd-latin{font-family:'Cinzel',serif;font-size:1.5rem;letter-spacing:0.1em}
+.portal-cards{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.portal-card{background:var(--surface);border:1px solid var(--border);padding:2rem 1.5rem;cursor:pointer;position:relative}
+.auth-box{width:420px;max-width:92vw;margin:auto} .auth-header{margin-bottom:2.5rem}
+#page-admin-login,#page-emp-login{background:var(--bg) radial-gradient(ellipse 60% 50% at 50% 100%, rgba(196,90,40,0.06) 0%, transparent 70%);align-items:center;justify-content:center}
+
+#page-admin{flex-direction:row}
+.sidebar{width:240px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;transition:transform 0.3s}
+.nav-link{display:flex;align-items:center;gap:0.75rem;padding:0.65rem 1.25rem;color:var(--text-muted);font-size:0.85rem;cursor:pointer;border-left:2px solid transparent} .nav-link:hover{color:var(--text);background:var(--surface2)} .nav-link.active{color:var(--accent);border-left-color:var(--accent);background:var(--accent-glow)}
+.main-area{flex:1;display:flex;flex-direction:column;overflow:hidden} .topbar{height:56px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 1.5rem;gap:1rem}
+.content{flex:1;overflow-y:auto;padding:1.5rem}
+.admin-panel{display:none} .admin-panel.active{display:block}
+
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:1.5rem}
+.stat-card{background:var(--surface);border:1px solid var(--border);padding:1.25rem;border-radius:var(--radius-lg)} .stat-value{font-family:'Barlow Condensed',sans-serif;font-size:2.5rem;font-weight:700}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:1.5rem} .card-header{padding:1rem 1.25rem;border-bottom:1px solid var(--border)} .card-title{font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:0.1em;text-transform:uppercase}
+table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding:0.75rem 1rem;text-align:left;font-size:0.7rem;text-transform:uppercase;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border)} td{padding:0.85rem 1rem;border-bottom:1px solid var(--border);font-size:0.85rem} tr:hover td{background:var(--surface2)}
+
+.map-layout{display:grid;grid-template-columns:1fr 340px;gap:1rem;height:calc(100vh - 160px)}
+#admin-map,#emp-map{width:100%;height:100%;border-radius:var(--radius-lg);border:1px solid var(--border); background-color: #1a1a1a;}
+.leaflet-container{background:#1a1a1a!important; font-family:inherit;} .leaflet-tile{filter:brightness(0.7) saturate(0.8)}
+.leaflet-popup-content-wrapper{background:var(--surface)!important;color:var(--text)!important;border:1px solid var(--border)!important;border-radius:var(--radius)!important} .leaflet-popup-tip{background:var(--surface)!important}
+
+.emp-grid{display:grid;grid-template-columns:1fr 380px;gap:1.5rem;height:calc(100vh - 120px)}
+.checkin-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;margin-bottom:1rem}
+.status-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0} .status-dot.inside{background:var(--success);box-shadow:0 0 8px var(--success)} .status-dot.outside{background:var(--danger);box-shadow:0 0 8px var(--danger)} .status-dot.unknown{background:var(--text-dim)}
+.pulse{animation:pulse 1.5s infinite} @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.6;transform:scale(1.15)}}
+
+.loader-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.3s}
+.loader-overlay.show{opacity:1;pointer-events:all}
+.spinner{width:40px;height:40px;border:3px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;margin-bottom:1rem}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;} .modal-overlay.show{opacity:1;pointer-events:all}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);width:480px;max-width:95vw;max-height:90vh;overflow-y:auto;}
+.modal-header{padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between} .modal-body{padding:1.5rem} .modal-footer{padding:1rem 1.5rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:0.75rem}
+#toast-wrap{position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;display:flex;flex-direction:column;gap:0.5rem;pointer-events:none}
+.toast{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);padding:0.75rem 1rem;display:flex;align-items:center;gap:0.75rem;font-size:0.85rem;min-width:280px;pointer-events:all;}
+.toast.success i{color:var(--success)} .toast.error i{color:var(--danger)} .toast.warning i{color:var(--warning)}
+
+#public-controls { position:absolute; top:1.5rem; right:1.5rem; display:flex; gap:0.5rem; z-index:100; transition: opacity 0.3s; }
+
+@media(max-width:900px){
+  .map-layout, .emp-grid{grid-template-columns:1fr;grid-template-rows:350px auto}
+  .sidebar{position:fixed;z-index:200;left:0;top:0;bottom:0;transform:translateX(-100%)} 
+  .sidebar.open{transform:translateX(0) !important}
+}
+</style>
+</head>
+<body>
+
+<div id="public-controls">
+    <button class="btn-ghost btn-sm" onclick="Lang.toggle()" style="display:flex; align-items:center; gap:0.4rem;">
+        <i class="fas fa-globe"></i> <span class="lang-text" style="font-weight:600; font-size:0.75rem;">عربي</span>
+    </button>
+    <button class="btn-ghost btn-icon" onclick="UI.toggleTheme()">
+        <i class="theme-icon fas fa-sun"></i>
+    </button>
+</div>
+
+<div id="global-loader" class="loader-overlay">
+  <div class="spinner"></div>
+  <h3 style="color:var(--accent)"><span class="tr" data-en="CONNECTING TO SECURE SERVER..." data-ar="جاري الاتصال بالسيرفر...">CONNECTING TO SECURE SERVER...</span></h3>
+</div>
+
+<div id="page-home" class="page active">
+  <div class="home-grid">
+    <div class="amd-logo-wrap" style="display:flex; flex-direction:column; align-items:center; justify-content:center;">
+      <svg class="amd-logo-icon" viewBox="0 0 100 100" style="margin-bottom: 0.5rem;"><polygon points="10,90 45,10 55,10 90,90 75,90 50,28 25,90"/><rect x="22" y="68" width="56" height="8"/></svg>
+      <div style="display:flex;align-items:center;gap:1rem; justify-content:center;">
+        <span class="amd-arabic">عمد</span>
+        <div style="width:1px;height:2rem;background:var(--border2)"></div>
+        <span class="amd-latin">AMD</span>
+      </div>
+      <div style="font-size:0.8rem;color:var(--text-muted);letter-spacing:0.3em;text-transform:uppercase;margin-top:0.5rem; text-align:center;">United Contracting Company</div>
+    </div>
+    
+    <div><p style="font-family:'Cinzel',serif;font-size:1.1rem;color:var(--text-muted);letter-spacing:0.15em;text-transform:uppercase" class="tr" data-en="Attendance Management System" data-ar="نظــام إدارة الحضــور والانصــراف">Attendance Management System</p></div>
+    <div class="portal-cards">
+      <div class="portal-card" onclick="App.goto('admin-login')"><i class="fas fa-shield-alt" style="font-size:2rem;color:var(--accent);margin-bottom:1rem;display:block"></i><h3 style="font-family:'Barlow Condensed';font-size:1.1rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:0.4rem" class="tr" data-en="Admin Portal" data-ar="بوابة الإدارة">Admin Portal</h3><p style="font-size:0.8rem;color:var(--text-muted)" class="tr" data-en="Manage zones, teams & reports" data-ar="إدارة المواقع والتقارير">Manage zones, teams & reports</p></div>
+      <div class="portal-card" onclick="App.goto('emp-login')"><i class="fas fa-user-hard-hat" style="font-size:2rem;color:var(--accent);margin-bottom:1rem;display:block"></i><h3 style="font-family:'Barlow Condensed';font-size:1.1rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:0.4rem" class="tr" data-en="Employee Portal" data-ar="بوابة الموظف">Employee Portal</h3><p style="font-size:0.8rem;color:var(--text-muted)" class="tr" data-en="GPS check-in & attendance log" data-ar="تسجيل الحضور الجغرافي">GPS check-in & attendance log</p></div>
+    </div>
+  </div>
+</div>
+
+<div id="page-admin-login" class="page">
+  <div class="auth-box">
+    <div class="auth-header"><div class="auth-back" style="cursor:pointer; color:var(--text-muted); margin-bottom:1rem;" onclick="App.goto('home')"><i class="fas fa-arrow-left"></i> <span class="tr" data-en="Back" data-ar="رجوع">Back</span></div><h1 style="font-family:'Barlow Condensed';font-size:2rem;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:0.4rem" class="tr" data-en="Admin Login" data-ar="دخول الإدارة">Admin Login</h1></div>
+    <div id="admin-login-err" class="alert alert-danger hidden"><i class="fas fa-exclamation-circle"></i><span id="admin-login-err-msg">Error</span></div>
+    <div class="form-group"><label class="form-label tr" data-en="Username" data-ar="المعرف">Username</label><div class="input-icon-wrap"><i class="fas fa-user"></i><input type="text" id="admin-username" class="form-control ph-tr" data-phen="Enter username" data-phar="أدخل المعرف" placeholder="Enter username"></div></div>
+    <div class="form-group"><label class="form-label tr" data-en="Password" data-ar="كلمة المرور">Password</label><div class="input-icon-wrap"><i class="fas fa-lock"></i><input type="password" id="admin-password" class="form-control ph-tr" data-phen="Enter password" data-phar="أدخل كلمة المرور" placeholder="Enter password"><button class="toggle-pw" onclick="UI.togglePw('admin-password',this)"><i class="fas fa-eye"></i></button></div></div>
+    <button class="btn btn-primary btn-block" onclick="Auth.adminLogin()"><span class="tr" data-en="Sign In" data-ar="دخول">Sign In</span></button>
+  </div>
+</div>
+
+<div id="page-emp-login" class="page">
+  <div class="auth-box">
+    <div class="auth-header"><div class="auth-back" style="cursor:pointer; color:var(--text-muted); margin-bottom:1rem;" onclick="App.goto('home')"><i class="fas fa-arrow-left"></i> <span class="tr" data-en="Back" data-ar="رجوع">Back</span></div><h1 style="font-family:'Barlow Condensed';font-size:2rem;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:0.4rem" class="tr" data-en="Employee Login" data-ar="دخول الموظف">Employee Login</h1></div>
+    <div id="emp-login-err" class="alert alert-danger hidden"><i class="fas fa-exclamation-circle"></i><span id="emp-login-err-msg">Error</span></div>
+    <div class="form-group"><label class="form-label tr" data-en="Username" data-ar="المعرف">Username</label><div class="input-icon-wrap"><i class="fas fa-user"></i><input type="text" id="emp-username" class="form-control ph-tr" data-phen="Enter username" data-phar="أدخل المعرف" placeholder="Enter username"></div></div>
+    <div class="form-group"><label class="form-label tr" data-en="Password" data-ar="كلمة المرور">Password</label><div class="input-icon-wrap"><i class="fas fa-lock"></i><input type="password" id="emp-password" class="form-control ph-tr" data-phen="Enter password" data-phar="أدخل كلمة المرور" placeholder="Enter password"><button class="toggle-pw" onclick="UI.togglePw('emp-password',this)"><i class="fas fa-eye"></i></button></div></div>
+    <button class="btn btn-success btn-block" onclick="Auth.empLogin()"><span class="tr" data-en="Sign In" data-ar="دخول">Sign In</span></button>
+  </div>
+</div>
+
+<div id="page-admin" class="page">
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="UI.closeSidebar()"></div>
+  <aside class="sidebar" id="admin-sidebar">
+    <div style="padding:1.5rem 1.25rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:0.75rem"><svg style="width:32px;height:32px;fill:var(--accent)" viewBox="0 0 100 100"><polygon points="10,90 45,10 55,10 90,90 75,90 50,28 25,90"/><rect x="22" y="68" width="56" height="8"/></svg><div><div style="font-family:'Cinzel',serif;font-size:0.85rem;letter-spacing:0.08em">AMD United</div><small style="font-size:0.65rem;color:var(--text-muted)" class="tr" data-en="Admin Panel" data-ar="لوحة الإدارة">Admin Panel</small></div></div>
+    
+    <nav class="sidebar-nav">
+      <span style="display:block;padding:0.75rem 1.25rem 0.4rem;font-size:0.65rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--text-dim)" class="tr" data-en="Menu" data-ar="القائمة">Menu</span>
+      <div class="nav-link active" onclick="Admin.showPanel('dashboard',this)"><i class="fas fa-th-large" style="width:20px"></i><span class="tr" data-en="Dashboard" data-ar="الرئيسية">Dashboard</span></div>
+      <div class="nav-link" onclick="Admin.showPanel('analytics',this)"><i class="fas fa-chart-pie" style="width:20px"></i><span class="tr" data-en="Analytics" data-ar="التحليلات">Analytics</span></div>
+      <div class="nav-link" onclick="Admin.showPanel('employees',this)"><i class="fas fa-users" style="width:20px"></i><span class="tr" data-en="Employees" data-ar="الموظفين">Employees</span></div>
+      <div class="nav-link" onclick="Admin.showPanel('groups',this)"><i class="fas fa-layer-group" style="width:20px"></i><span class="tr" data-en="Groups" data-ar="المجموعات">Groups</span></div>
+      <div class="nav-link" onclick="Admin.showPanel('locations',this)"><i class="fas fa-map-marker-alt" style="width:20px"></i><span class="tr" data-en="Locations" data-ar="المواقع">Locations</span></div>
+      <div class="nav-link" onclick="Admin.showPanel('records',this)"><i class="fas fa-clipboard-list" style="width:20px"></i><span class="tr" data-en="Records" data-ar="التقارير">Records</span></div>
+      
+      <span style="display:block;padding:1.5rem 1.25rem 0.4rem;font-size:0.65rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--text-dim)" class="tr" data-en="System" data-ar="النظام">System</span>
+      <div class="nav-link" onclick="Admin.showPanel('settings',this)"><i class="fas fa-cog" style="width:20px"></i><span class="tr" data-en="Settings" data-ar="الإعدادات">Settings</span></div>
+    </nav>
+    
+    <div style="padding:1rem 1.25rem;border-top:1px solid var(--border);display:flex;align-items:center;gap:0.75rem;margin-top:auto;">
+      <div style="width:36px;height:36px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff" id="admin-avatar-initial">A</div>
+      <div><h4 style="font-size:0.85rem;font-weight:600" id="admin-display-name">Admin</h4><span style="font-size:0.7rem;color:var(--text-muted)">Admin</span></div>
+      <button class="btn-ghost" style="margin-left:auto;padding:0.25rem" onclick="Auth.adminLogout()"><i class="fas fa-sign-out-alt"></i></button>
+    </div>
+  </aside>
+  
+  <div class="main-area">
+    <header class="topbar">
+      <button class="hamburger btn-ghost" onclick="UI.toggleSidebar()"><i class="fas fa-bars"></i></button>
+      <div style="font-size:1.1rem;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;flex:1" id="admin-panel-title" class="tr" data-en="Dashboard" data-ar="الرئيسية">Dashboard</div>
+      
+      <div style="display:flex; align-items:center; gap:0.25rem;">
+        <button class="btn-ghost btn-sm" onclick="Lang.toggle()" title="Language" style="display:flex; align-items:center; gap:0.4rem;">
+            <i class="fas fa-globe"></i> <span class="lang-text" style="font-weight:600; font-size:0.75rem;">عربي</span>
+        </button>
+        <button class="btn-ghost btn-icon" onclick="UI.toggleTheme()" title="Theme">
+            <i class="theme-icon fas fa-sun"></i>
+        </button>
+        <div style="width:1px; height:1.2rem; background:var(--border2); margin:0 0.5rem;"></div>
+        <button class="btn btn-sm btn-outline" onclick="Admin.refresh()">
+            <i class="fas fa-sync-alt"></i> <span class="tr" data-en="Sync" data-ar="مزامنة">Sync</span>
+        </button>
+      </div>
+    </header>
+    
+    <div class="content">
+      <div id="panel-dashboard" class="admin-panel active">
+        <div class="stats-grid">
+          <div class="stat-card" style="border-left:3px solid var(--accent)"><div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:0.5rem" class="tr" data-en="Total Employees" data-ar="الكل">Total Employees</div><div class="stat-value" id="stat-total">0</div></div>
+          <div class="stat-card" style="border-left:3px solid var(--success)"><div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:0.5rem" class="tr" data-en="Present Today" data-ar="حاضر">Present Today</div><div class="stat-value" id="stat-present">0</div></div>
+          <div class="stat-card" style="border-left:3px solid var(--warning)"><div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:0.5rem" class="tr" data-en="Late Today" data-ar="متأخر">Late Today</div><div class="stat-value" id="stat-late">0</div></div>
+          <div class="stat-card" style="border-left:3px solid var(--danger)"><div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:0.5rem" class="tr" data-en="Absent Today" data-ar="غائب">Absent Today</div><div class="stat-value" id="stat-absent">0</div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title tr" data-en="Live Attendance" data-ar="الحضور المباشر">Live Attendance</div></div>
+          <div style="overflow-x:auto">
+            <table><thead><tr><th class="tr" data-en="Employee" data-ar="الموظف">Employee</th><th class="tr" data-en="Check In" data-ar="الدخول">Check In</th><th class="tr" data-en="Check Out" data-ar="الخروج">Check Out</th><th class="tr" data-en="Status" data-ar="الحالة">Status</th></tr></thead><tbody id="dash-attendance-table"></tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <div id="panel-analytics" class="admin-panel">
+        <div style="display:flex; justify-content:space-between; margin-bottom:1.5rem;">
+           <div>
+             <h2 style="color:var(--accent); margin-bottom:0.2rem; text-transform:uppercase;" class="tr" data-en="Data Analytics" data-ar="التحليلات">Data Analytics</h2>
+           </div>
+           <button class="btn btn-outline btn-sm" style="height:fit-content" onclick="Admin.renderAnalytics()"><i class="fas fa-sync"></i> <span class="tr" data-en="Refresh" data-ar="تحديث">Refresh</span></button>
+        </div>
+        <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+          <div class="card">
+            <div class="card-header"><div class="card-title tr" data-en="Today's Overview" data-ar="نظرة اليوم">Today's Overview</div></div>
+            <div class="card-body" style="padding:1rem; position:relative; height:300px; display:flex; align-items:center; justify-content:center;">
+              <canvas id="chart-today"></canvas>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title tr" data-en="Attendance by Group" data-ar="حسب المجموعات">Attendance by Group</div></div>
+            <div class="card-body" style="padding:1rem; position:relative; height:300px; display:flex; align-items:center; justify-content:center;">
+              <canvas id="chart-groups"></canvas>
+            </div>
+          </div>
+          <div class="card" style="grid-column: 1 / -1;">
+            <div class="card-header"><div class="card-title tr" data-en="7-Day Trend" data-ar="مؤشر الأسبوع">7-Day Trend</div></div>
+            <div class="card-body" style="padding:1rem; position:relative; height:350px; display:flex; align-items:center; justify-content:center;">
+              <canvas id="chart-trend"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="panel-employees" class="admin-panel">
+        <div style="display:flex;gap:0.75rem;margin-bottom:1.25rem">
+          <input type="text" class="form-control ph-tr" data-phen="Search..." data-phar="بحث..." oninput="Admin.filterEmployees()" id="emp-search" style="max-width:200px">
+          <select class="form-control form-select" id="emp-group-filter" onchange="Admin.filterEmployees()" style="max-width:150px"></select>
+          <button class="btn btn-primary btn-sm" onclick="Admin.openEmployeeModal()"><i class="fas fa-plus"></i> <span class="tr" data-en="Add" data-ar="إضافة">Add</span></button>
+        </div>
+        <div class="card"><div style="overflow-x:auto">
+          <table><thead><tr><th>ID</th><th class="tr" data-en="Name" data-ar="الاسم">Name</th><th class="tr" data-en="Username" data-ar="المعرف">Username</th><th class="tr" data-en="Group" data-ar="المجموعة">Group</th><th class="tr" data-en="Shift" data-ar="الدوام">Shift</th><th class="tr" data-en="Status" data-ar="الحالة">Status</th><th><i class="fas fa-cogs"></i></th></tr></thead><tbody id="employees-table"></tbody></table>
+        </div></div>
+      </div>
+
+      <div id="panel-groups" class="admin-panel">
+        <div style="margin-bottom:1.25rem;text-align:right"><button class="btn btn-primary btn-sm" onclick="Admin.openGroupModal()"><i class="fas fa-plus"></i> <span class="tr" data-en="Add Group" data-ar="مجموعة جديدة">Add Group</span></button></div>
+        <div class="card"><div style="overflow-x:auto">
+          <table><thead><tr><th><i class="fas fa-palette"></i></th><th class="tr" data-en="Group Name" data-ar="المجموعة">Group Name</th><th class="tr" data-en="Description" data-ar="الوصف">Description</th><th><i class="fas fa-cogs"></i></th></tr></thead><tbody id="groups-table"></tbody></table>
+        </div></div>
+      </div>
+
+      <div id="panel-locations" class="admin-panel">
+        <div class="map-layout">
+          <div style="border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--border)"><div id="admin-map"></div></div>
+          <div style="display:flex;flex-direction:column;gap:1rem;overflow-y:auto">
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1rem">
+              <h4 style="color:var(--accent);margin-bottom:1rem;text-transform:uppercase" class="tr" data-en="Zone Settings" data-ar="إعدادات الموقع">Zone Settings</h4>
+              <div class="form-group"><label class="form-label tr" data-en="Zone Name" data-ar="الاسم">Zone Name</label><input type="text" id="zone-name" class="form-control"></div>
+              <div class="form-group"><label class="form-label tr" data-en="Group Access" data-ar="المجموعة">Group Access</label><select id="zone-group" class="form-control form-select"></select></div>
+              <div class="form-group"><label class="form-label tr" data-en="Radius (Meters)" data-ar="النطاق (متر)">Radius (Meters)</label>
+                <div style="display:flex;align-items:center;gap:0.5rem"><input type="range" id="zone-radius" min="50" max="2000" value="500" step="50" oninput="Admin.updateRadiusDisplay(this.value)" style="flex:1;"><span id="zone-radius-val" style="color:var(--accent);font-weight:700;min-width:50px" dir="ltr">500 m</span></div>
+              </div>
+              <div style="display:flex;gap:0.5rem"><button class="btn btn-primary btn-sm" style="flex:1" onclick="Admin.saveZone()"><span class="tr" data-en="Save Zone" data-ar="حفظ">Save Zone</span></button><button class="btn btn-outline btn-sm" onclick="Admin.clearZoneForm()"><i class="fas fa-times"></i></button></div>
+            </div>
+            <div class="card" style="margin:0"><div class="card-header"><div class="card-title tr" data-en="Saved Zones" data-ar="المواقع المحفوظة">Saved Zones</div></div><div style="padding:0.75rem;display:flex;flex-direction:column;gap:0.5rem" id="zone-list"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="panel-settings" class="admin-panel">
+        <div class="card" style="max-width: 500px; margin: 0 auto; margin-top: 2rem;">
+          <div class="card-header"><div class="card-title tr" data-en="Profile Settings" data-ar="إعدادات الحساب">Profile Settings</div></div>
+          <div class="card-body" style="display:flex; flex-direction:column; gap:1.25rem; padding:1.5rem">
+            <div class="form-group"><label class="form-label tr" data-en="Username" data-ar="المعرف">Username</label><input type="text" id="admin-set-user" class="form-control"></div>
+            <div class="form-group"><label class="form-label tr" data-en="Email" data-ar="البريد">Email Address</label><input type="email" id="admin-set-email" class="form-control"></div>
+            <div class="form-group"><label class="form-label tr" data-en="New Password" data-ar="كلمة المرور">New Password</label><input type="password" id="admin-set-pass" class="form-control"></div>
+            <button class="btn btn-primary" onclick="Admin.saveSettings()"><i class="fas fa-save"></i> <span class="tr" data-en="Save Changes" data-ar="حفظ">Save Changes</span></button>
+          </div>
+        </div>
+      </div>
+
+      <div id="panel-records" class="admin-panel">
+        <div style="display:flex;gap:0.75rem;margin-bottom:1.25rem; align-items:center; flex-wrap:wrap;">
+          <input type="text" class="form-control ph-tr" data-phen="Search name..." data-phar="البحث..." oninput="Admin.filterRecords()" id="rec-search" style="max-width:200px">
+          <input type="date" id="rec-date" class="form-control" style="width:150px" onchange="Admin.filterRecords()">
+          <div style="flex:1"></div>
+          <button class="btn btn-outline btn-sm" onclick="Admin.exportExcel()"><i class="fas fa-file-excel" style="color:var(--success)"></i> Excel</button>
+          <button class="btn btn-outline btn-sm" onclick="Admin.exportPDF()"><i class="fas fa-file-pdf" style="color:var(--danger)"></i> PDF</button>
+        </div>
+        <div class="card"><div style="overflow-x:auto">
+          <table id="records-table">
+            <thead>
+              <tr>
+                <th style="width: 80px;">ID</th>
+                <th class="tr" data-en="Employee" data-ar="الموظف">Employee</th>
+                <th style="width: 100px;" class="tr" data-en="Date" data-ar="التاريخ">Date</th>
+                <th style="width: 100px;" class="tr" data-en="Check In" data-ar="الدخول">Check In</th>
+                <th style="width: 100px;" class="tr" data-en="Check Out" data-ar="الخروج">Check Out</th>
+                <th style="width: 100px;" class="tr" data-en="Status" data-ar="الحالة">Status</th>
+                <th class="tr" data-en="Notes" data-ar="الملاحظات">Notes</th>
+                <th style="width: 80px; text-align:center;" class="tr" data-en="Action" data-ar="القرار">Action</th>
+              </tr>
+            </thead>
+            <tbody id="records-table-body"></tbody>
+          </table>
+        </div></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div id="page-emp" class="page">
+  <div style="height:56px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 1.5rem;gap:1rem">
+    <svg style="width:28px;height:28px;fill:var(--accent)" viewBox="0 0 100 100"><polygon points="10,90 45,10 55,10 90,90 75,90 50,28 25,90"/><rect x="22" y="68" width="56" height="8"/></svg>
+    <div style="font-size:0.9rem;font-weight:bold;flex:1" id="emp-topbar-name" class="tr" data-en="Employee Portal" data-ar="بوابة الموظف">Employee Portal</div>
+    
+    <div style="display:flex; align-items:center; gap:0.25rem;">
+        <button class="btn-ghost btn-sm" onclick="Lang.toggle()" title="Language" style="display:flex; align-items:center; gap:0.4rem;">
+            <i class="fas fa-globe"></i> <span class="lang-text" style="font-weight:600; font-size:0.75rem;">عربي</span>
+        </button>
+        <button class="btn-ghost btn-icon" onclick="UI.toggleTheme()" title="Theme">
+            <i class="theme-icon fas fa-sun"></i>
+        </button>
+        <div style="width:1px; height:1.2rem; background:var(--border2); margin:0 0.5rem;"></div>
+        <button class="btn btn-sm btn-outline" onclick="Auth.empLogout()">
+            <i class="fas fa-sign-out-alt"></i> <span class="tr" data-en="Exit" data-ar="خروج">Exit</span>
+        </button>
+    </div>
+  </div>
+  <div style="flex:1;overflow-y:auto;padding:1.5rem">
+    <div class="emp-grid">
+      <div style="border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--border);height:100%"><div id="emp-map"></div></div>
+      <div style="overflow-y:auto">
+        <div class="checkin-card">
+          <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem"><div class="status-dot unknown pulse" id="emp-status-dot"></div><span id="emp-status-text" style="font-weight:600" class="tr" data-en="Locating..." data-ar="تحديد الموقع...">Locating...</span></div>
+          <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:1.5rem;line-height:1.6" id="emp-location-info" class="tr" data-en="Please allow GPS access..." data-ar="يرجى تفعيل الموقع...">Please allow GPS access...</div>
+          <button id="emp-checkin-btn" class="btn btn-success btn-block" style="padding:1rem;font-size:1.1rem" onclick="Emp.checkIn()" disabled><i class="fas fa-map-marker-check"></i> <span class="tr" data-en="Check In" data-ar="تسجيل الدخول">Check In</span></button>
+          
+          <div id="checkout-container" class="hidden">
+              <button id="emp-checkout-btn" class="btn btn-danger btn-block" style="padding:1rem;font-size:1.1rem;margin-bottom:0.5rem" onclick="Emp.checkOut()"><i class="fas fa-sign-out-alt"></i> <span class="tr" data-en="Check Out" data-ar="تسجيل الخروج">Check Out</span></button>
+              <button id="emp-leave-btn" class="btn btn-warning btn-block" style="padding:1rem;font-size:1.1rem" onclick="UI.openModal('modal-leave')"><i class="fas fa-file-signature"></i> <span class="tr" data-en="Request Leave" data-ar="طلب استئذان">Request Leave</span></button>
+          </div>
+        </div>
+        <div class="card"><div class="card-header"><div class="card-title tr" data-en="Today's Record" data-ar="سجل اليوم">Today's Record</div></div><div style="padding:1.25rem" id="today-record-body"></div></div>
+        <div class="card"><div class="card-header"><div class="card-title tr" data-en="Recent History" data-ar="السجل السابق">Recent History</div></div><div style="padding:0.5rem 1.25rem" id="emp-history-list"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="modal-leave" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <span style="font-weight:700;font-size:1.1rem;text-transform:uppercase" class="tr" data-en="Leave Request" data-ar="طلب استئذان">Leave Request</span>
+      <button class="btn-ghost" onclick="UI.closeModal('modal-leave')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:1.25rem">
+      <div class="form-group">
+        <label class="form-label tr" data-en="Reason" data-ar="السبب">Reason</label>
+        <select id="leave-reason" class="form-control form-select">
+          <option value="" disabled selected>-- Select / اختر --</option>
+          <option value="Health Emergency / ظرف صحي">Health Emergency / ظرف صحي طارئ</option>
+          <option value="External Work / مهمة خارجية">External Work / مهمة عمل خارجية</option>
+          <option value="Government / جهة حكومية">Government Appointment / مراجعة جهة حكومية</option>
+          <option value="Family / ظرف عائلي">Family Issue / ظرف عائلي</option>
+          <option value="Technical / عطل فني">Technical Issue / توقف العمل أو عطل فني</option>
+          <option value="Pre-approved / إذن مسبق">Pre-approved / إذن مسبق من الإدارة</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label tr" data-en="Attachment (Image/PDF)" data-ar="مرفق (صورة / PDF)">Attachment (Image/PDF)</label>
+        <input type="file" id="leave-attachment" class="form-control" accept="image/*,.pdf" style="padding: 0.5rem 1rem;">
+        <small style="color:var(--text-muted); font-size:0.7rem; margin-top:0.25rem; display:block;" class="tr" data-en="Max size: 2MB" data-ar="الحد الأقصى: 2 ميجابايت">Max size: 2MB</small>
+      </div>
+      <div class="form-group">
+        <label class="form-label tr" data-en="Additional Notes" data-ar="ملاحظات">Additional Notes</label>
+        <textarea id="leave-notes" class="form-control" rows="3"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline tr" onclick="UI.closeModal('modal-leave')" data-en="Cancel" data-ar="إلغاء">Cancel</button>
+      <button class="btn btn-primary tr" onclick="Emp.submitLeaveRequest()" data-en="Submit Request" data-ar="إرسال الطلب">Submit Request</button>
+    </div>
+  </div>
+</div>
+
+<div id="modal-employee" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <span style="font-weight:700;font-size:1.1rem;text-transform:uppercase" id="emp-modal-title" class="tr" data-en="Employee" data-ar="موظف">Employee</span>
+      <button class="btn-ghost" onclick="UI.closeModal('modal-employee')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:1rem">
+      <input type="hidden" id="emp-modal-id">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+        <div><label class="form-label">ID</label><input type="text" id="emp-modal-eid" class="form-control" placeholder="EMP001"></div>
+        <div><label class="form-label tr" data-en="Name" data-ar="الاسم">Name</label><input type="text" id="emp-modal-name" class="form-control"></div>
+        <div><label class="form-label tr" data-en="Username" data-ar="المعرف">Username</label><input type="text" id="emp-modal-user" class="form-control"></div>
+        <div><label class="form-label tr" data-en="Password" data-ar="الرقم السري">Password</label><input type="password" id="emp-modal-pass" class="form-control"></div>
+        <div><label class="form-label">Email</label><input type="email" id="emp-modal-email" class="form-control"></div>
+        <div><label class="form-label tr" data-en="Phone" data-ar="الجوال">Phone</label><input type="text" id="emp-modal-phone" class="form-control"></div>
+        <div><label class="form-label tr" data-en="Group" data-ar="المجموعة">Group</label><select id="emp-modal-group" class="form-control form-select"></select></div>
+        <div><label class="form-label tr" data-en="Status" data-ar="الحالة">Status</label><select id="emp-modal-status" class="form-control form-select"><option value="1">Active</option><option value="0">Inactive</option></select></div>
+        <div><label class="form-label tr" data-en="Start Time" data-ar="بداية الدوام">Start Time</label><input type="time" id="emp-modal-start" class="form-control" value="09:00"></div>
+        <div><label class="form-label tr" data-en="End Time" data-ar="نهاية الدوام">End Time</label><input type="time" id="emp-modal-end" class="form-control" value="17:00"></div>
+      </div>
+      <div><label class="form-label tr" data-en="Salary (SAR)" data-ar="الراتب">Salary (SAR)</label><input type="number" id="emp-modal-salary" class="form-control" placeholder="0"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline tr" onclick="UI.closeModal('modal-employee')" data-en="Cancel" data-ar="إلغاء">Cancel</button>
+      <button class="btn btn-primary tr" onclick="Admin.saveEmployee()" data-en="Save" data-ar="حفظ">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="modal-group" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header"><span style="font-weight:700;font-size:1.1rem;text-transform:uppercase" id="grp-modal-title" class="tr" data-en="Group" data-ar="المجموعة">Group</span><button class="btn-ghost" onclick="UI.closeModal('modal-group')"><i class="fas fa-times"></i></button></div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:1rem">
+      <input type="hidden" id="grp-modal-id">
+      <div><label class="form-label tr" data-en="Name" data-ar="الاسم">Name</label><input type="text" id="grp-modal-name" class="form-control"></div>
+      <div><label class="form-label tr" data-en="Description" data-ar="الوصف">Description</label><input type="text" id="grp-modal-desc" class="form-control"></div>
+      <div><label class="form-label tr" data-en="Color" data-ar="اللون">Color</label><input type="color" id="grp-modal-color" class="form-control" value="#C45A28" style="height:45px;padding:0"></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-outline tr" onclick="UI.closeModal('modal-group')" data-en="Cancel" data-ar="إلغاء">Cancel</button><button class="btn btn-primary tr" onclick="Admin.saveGroup()" data-en="Save" data-ar="حفظ">Save</button></div>
+  </div>
+</div>
+
+<div id="toast-wrap"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>window.__AMD_API_BASE__ = window.__AMD_API_BASE__ || '';</script>
+<script src="/app-config.js"></script>
+<script src="/assets/js/http.js"></script>
+
+<script>
+'use strict';
+
+const Lang = {
+  current: localStorage.getItem('amd_lang') || 'en',
+  toggle() {
+    this.current = this.current === 'en' ? 'ar' : 'en';
+    localStorage.setItem('amd_lang', this.current);
+    this.apply();
+  },
+  apply() {
+    document.documentElement.dir = this.current === 'ar' ? 'rtl' : 'ltr';
+    document.querySelectorAll('.lang-text').forEach(el => {
+        el.textContent = this.current === 'ar' ? 'EN' : 'عربي';
+    });
+    
+    document.querySelectorAll('.tr').forEach(el => {
+      el.innerHTML = el.getAttribute(`data-${this.current}`);
+    });
+    document.querySelectorAll('.ph-tr').forEach(el => {
+      el.placeholder = el.getAttribute(`data-ph${this.current}`);
+    });
+    
+    if (App.current === 'admin') { Admin.showPanel(Admin.currentPanel); }
+    if (App.current === 'emp') { Emp.updateButtons(!!document.getElementById('emp-status-dot').classList.contains('inside')); }
+  },
+  t(en, ar) { return this.current === 'ar' ? ar : en; }
+};
+
+const UI = {
+  loader(show) { const l = document.getElementById('global-loader'); show ? l.classList.add('show') : l.classList.remove('show'); },
+  togglePw(id,btn){ const inp=document.getElementById(id); const isText=inp.type==='text'; inp.type=isText?'password':'text'; btn.querySelector('i').className=isText?'fas fa-eye':'fas fa-eye-slash'; },
+  showErr(divId,spanId,msg){ document.getElementById(divId).classList.remove('hidden'); document.getElementById(spanId).textContent=msg; },
+  hideErr(divId){ document.getElementById(divId).classList.add('hidden'); },
+  openModal(id){document.getElementById(id).classList.add('show')}, closeModal(id){document.getElementById(id).classList.remove('show')},
+  toggleSidebar(){ document.getElementById('admin-sidebar').classList.toggle('open'); document.getElementById('sidebar-overlay').classList.toggle('show'); },
+  closeSidebar(){ document.getElementById('admin-sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').classList.remove('show'); },
+  toggleTheme() {
+      const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+      const newTheme = isLight ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', newTheme);
+      localStorage.setItem('amd_theme', newTheme);
+      document.querySelectorAll('.theme-icon').forEach(icon => {
+          icon.className = newTheme === 'light' ? 'theme-icon fas fa-moon' : 'theme-icon fas fa-sun';
+      });
+      if(Admin.charts['chart-today']) Admin.renderAnalytics(); 
+  },
+  applyTheme() {
+      const saved = localStorage.getItem('amd_theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', saved);
+      document.querySelectorAll('.theme-icon').forEach(icon => {
+          icon.className = saved === 'light' ? 'theme-icon fas fa-moon' : 'theme-icon fas fa-sun';
+      });
+  },
+  toast(msg,type='info'){
+    const icons={success:'fa-check-circle',error:'fa-exclamation-circle',warning:'fa-exclamation-triangle',info:'fa-info-circle'};
+    const t=document.createElement('div'); t.className=`toast ${type}`; t.innerHTML=`<i class="fas ${icons[type]||icons.info}"></i><span>${msg}</span>`;
+    document.getElementById('toast-wrap').appendChild(t); setTimeout(()=>{t.classList.add('out');setTimeout(()=>t.remove(),350)},3500);
+  },
+  badge(status){
+    const map={present:'success',late:'warning',absent:'danger',early_leave:'warning'};
+    const labelEN={present:'Present',late:'Late',absent:'Absent',early_leave:'Early Leave'};
+    const labelAR={present:'حاضر',late:'متأخر',absent:'غائب',early_leave:'استئذان'};
+    return `<span class="badge badge-${map[status]||'muted'}">${Lang.current==='ar' ? labelAR[status] : labelEN[status] || status}</span>`;
+  }
+};
+
+const API = {
+  getHeaders() {
+    return window.AMD_HTTP.getHeaders();
+  },
+  async request(endpoint, method = 'GET', body = null) {
+    return window.AMD_HTTP.request(endpoint, method, body);
+  }
+};
+
+const DB = {
+  data: { employees: [], groups: [], locations: [], records: [] },
+  async sync() {
+    try { this.data = await API.request('/admin/all-data'); } catch(e) { throw e; }
+  },
+  getEmployees(){return this.data.employees||[]}, getGroups(){return this.data.groups||[]}, 
+  getLocations(){return this.data.locations||[]}, getRecords(){return this.data.records||[]},
+  today(){return new Date().toISOString().split('T')[0]}, nowISO(){return new Date().toISOString()},
+  fmtTime(iso){if(!iso)return '—'; return new Date(iso).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})},
+  fmtDate(iso){if(!iso)return '—'; return new Date(iso).toLocaleDateString('en-US')}
+};
+
+const getBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+    });
+};
+
+const Auth = {
+  adminSession: null, empSession: null,
+  async adminLogin() {
+    UI.hideErr('admin-login-err'); UI.loader(true);
+    try {
+      const u = document.getElementById('admin-username').value.trim();
+      const p = document.getElementById('admin-password').value;
+      if(!u || !p) throw new Error(Lang.t("Please enter username and password", "الرجاء إدخال البيانات"));
+
+      const data = await API.request('/auth/admin-login', 'POST', { username: u, password: p });
+      localStorage.setItem('amd_token', data.token); localStorage.setItem('amd_user', JSON.stringify(data.user)); localStorage.setItem('amd_role', 'admin');
+      this.adminSession = data.user;
+      document.getElementById('admin-display-name').textContent = data.user.name;
+      document.getElementById('admin-avatar-initial').textContent = data.user.name.charAt(0).toUpperCase();
+      await DB.sync();
+      App.goto('admin'); Admin.refresh(); 
+    } catch (err) { UI.showErr('admin-login-err', 'admin-login-err-msg', err.message); }
+    UI.loader(false);
+  },
+  async empLogin() {
+    UI.hideErr('emp-login-err'); UI.loader(true);
+    try {
+      const u = document.getElementById('emp-username').value.trim();
+      const p = document.getElementById('emp-password').value;
+      if(!u || !p) throw new Error(Lang.t("Please enter username and password", "الرجاء إدخال البيانات"));
+
+      const data = await API.request('/auth/emp-login', 'POST', { username: u, password: p });
+      localStorage.setItem('amd_token', data.token); localStorage.setItem('amd_user', JSON.stringify(data.user)); localStorage.setItem('amd_role', 'emp');
+      this.empSession = data.user;
+      document.getElementById('emp-topbar-name').textContent = data.user.name;
+      await DB.sync();
+      App.goto('emp'); Emp.init();
+    } catch (err) { UI.showErr('emp-login-err', 'emp-login-err-msg', err.message); }
+    UI.loader(false);
+  },
+  adminLogout() { this.adminSession = null; localStorage.clear(); App.goto('home'); },
+  empLogout() { this.empSession = null; localStorage.clear(); Emp.cleanup(); App.goto('home'); },
+  
+  async restoreSession() {
+    const token = localStorage.getItem('amd_token'); const userStr = localStorage.getItem('amd_user'); const role = localStorage.getItem('amd_role');
+    if (token && userStr && role) {
+      UI.loader(true);
+      try {
+        const user = JSON.parse(userStr);
+        await DB.sync();
+        if (role === 'admin') {
+          this.adminSession = user;
+          document.getElementById('admin-display-name').textContent = user.name;
+          document.getElementById('admin-avatar-initial').textContent = user.name.charAt(0).toUpperCase();
+          App.goto('admin'); Admin.refresh();
+        } else if (role === 'emp') {
+          this.empSession = user;
+          document.getElementById('emp-topbar-name').textContent = user.name;
+          App.goto('emp'); Emp.init();
+        }
+      } catch (e) { localStorage.clear(); App.goto('home'); }
+      UI.loader(false);
+    }
+  }
+};
+
+const App = {
+  current: 'home',
+  goto(page) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    const el = document.getElementById('page-' + page);
+    if (el) el.classList.add('active');
+    
+    const pubControls = document.getElementById('public-controls');
+    if (pubControls) {
+        pubControls.style.display = (page === 'admin' || page === 'emp') ? 'none' : 'flex';
+    }
+    
+    this.current = page;
+    if (page === 'locations' || page === 'admin') setTimeout(() => Maps.initAdmin(), 350);
+  }
+};
+
+const Maps = {
+  adminMap:null, empMap:null, tempMarker:null, tempCircle:null, zoneMarkers:{}, zoneCircles:{},
+  pinIcon: L.icon({ iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png', shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] }),
+
+  initAdmin(){
+    if(this.adminMap) { setTimeout(() => this.adminMap.invalidateSize(true), 350); return; }
+    const el=document.getElementById('admin-map'); if(!el) return;
+    this.adminMap=L.map('admin-map').setView([24.7136,46.6753],13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(this.adminMap);
+    this.adminMap.on('click',e=>{
+      if(App.current!=='admin' || !document.getElementById('panel-locations').classList.contains('active')) return;
+      this._placeTemp(e.latlng.lat,e.latlng.lng);
+    });
+    this.renderZones(); setTimeout(() => this.adminMap.invalidateSize(true), 350); 
+  },
+  _placeTemp(lat,lng){
+    if(this.tempMarker) this.adminMap.removeLayer(this.tempMarker); 
+    if(this.tempCircle) this.adminMap.removeLayer(this.tempCircle);
+    const radius=parseInt(document.getElementById('zone-radius').value)||500;
+    this.tempMarker = L.marker([lat,lng], {icon: this.pinIcon, draggable: true}).addTo(this.adminMap);
+    this.tempCircle = L.circle([lat,lng],{radius,color:'#C45A28',fillColor:'#C45A28',fillOpacity:0.1,weight:2,dashArray:'6 4'}).addTo(this.adminMap);
+    this.tempMarker.on('drag', (e) => { this.tempCircle.setLatLng([e.target.getLatLng().lat, e.target.getLatLng().lng]); });
+  },
+  renderZones(){
+    if(!this.adminMap) return;
+    Object.values(this.zoneMarkers).forEach(m=>this.adminMap.removeLayer(m)); Object.values(this.zoneCircles).forEach(c=>this.adminMap.removeLayer(c));
+    this.zoneMarkers={}; this.zoneCircles={};
+    DB.getLocations().forEach(loc=>{
+      const grp=DB.getGroups().find(g=>g.id===loc.groupId); const color=grp?grp.color:'#C45A28';
+      const m=L.circleMarker([loc.lat,loc.lng],{radius:10,fillColor:color,color:'#fff',weight:2,fillOpacity:1}).bindPopup(`<strong>${loc.name}</strong>`).addTo(this.adminMap);
+      const c=L.circle([loc.lat,loc.lng],{radius:loc.radius,color:color,fillColor:color,fillOpacity:0.08,weight:2}).addTo(this.adminMap);
+      this.zoneMarkers[loc.id]=m; this.zoneCircles[loc.id]=c;
+    });
+    Admin.renderZoneList();
+  },
+  initEmp(lat,lng,zones,userLat,userLng){
+    const center=[lat||24.7136,lng||46.6753];
+    if(!this.empMap){
+      this.empMap=L.map('emp-map',{zoomControl:true}).setView(center,15);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(this.empMap);
+    } else { this.empMap.setView(center,15); }
+    setTimeout(() => this.empMap.invalidateSize(true), 350); 
+    this.empMap.eachLayer(l=>{if(l instanceof L.CircleMarker||l instanceof L.Circle||l instanceof L.Marker) this.empMap.removeLayer(l);});
+    zones.forEach(z=>{
+      const col='#C45A28';
+      L.circle([z.lat,z.lng],{radius:z.radius,color:col,fillColor:col,fillOpacity:0.12,weight:2}).addTo(this.empMap);
+      L.circleMarker([z.lat,z.lng],{radius:8,fillColor:col,color:'#fff',weight:2,fillOpacity:1}).bindPopup(z.name).addTo(this.empMap);
+    });
+    if(userLat&&userLng){ L.marker([userLat,userLng],{icon: this.pinIcon}).bindPopup(Lang.t('You are here','أنت هنا')).addTo(this.empMap); }
+  }
+};
+
+const Admin = {
+  currentPanel:'dashboard',
+  charts: {}, 
+  showPanel(panel,el){
+    document.querySelectorAll('.admin-panel').forEach(p=>p.classList.remove('active')); 
+    document.getElementById('panel-'+panel).classList.add('active');
+    document.querySelectorAll('.nav-link').forEach(n=>n.classList.remove('active')); 
+    if(el) el.classList.add('active');
+    this.currentPanel=panel; 
+    document.getElementById('admin-panel-title').innerHTML= el ? el.querySelector('span').textContent : panel; 
+    UI.closeSidebar();
+    
+    if(panel==='locations'){ setTimeout(() => { if(!Maps.adminMap) Maps.initAdmin(); else Maps.adminMap.invalidateSize(true); }, 300); this.populateGroupSelect('zone-group'); this.renderZoneList(); }
+    if(panel==='settings'){ document.getElementById('admin-set-user').value = Auth.adminSession.username || ''; document.getElementById('admin-set-email').value = Auth.adminSession.email || ''; document.getElementById('admin-set-pass').value = ''; }
+    if(panel==='analytics'){ this.renderAnalytics(); }
+    if(panel==='employees'){ this.populateGroupSelect('emp-group-filter',true); this.renderEmployees(); }
+    if(panel==='groups') this.renderGroups();
+    if(panel==='records'){ document.getElementById('rec-date').value=DB.today(); this.filterRecords(); }
+    if(panel==='dashboard') this.renderDashboard();
+  },
+  async saveSettings() {
+    const u = document.getElementById('admin-set-user').value.trim(); const e = document.getElementById('admin-set-email').value.trim(); const p = document.getElementById('admin-set-pass').value;
+    if(!u) return UI.toast(Lang.t('Username required','اسم المستخدم مطلوب'), 'error');
+    UI.loader(true);
+    try {
+      const data = await API.request('/admin/profile', 'POST', { adminId: Auth.adminSession.id, username: u, email: e, password: p });
+      Auth.adminSession = data.user; localStorage.setItem('amd_user', JSON.stringify(data.user));
+      UI.toast(Lang.t('Saved Successfully', 'تم الحفظ'), 'success');
+      document.getElementById('admin-set-pass').value = '';
+    } catch(err) { UI.toast(err.message, 'error'); }
+    UI.loader(false);
+  },
+  async refresh(){ UI.loader(true); try{ await DB.sync(); this.showPanel(this.currentPanel); UI.toast(Lang.t('Synced','تمت المزامنة'), 'success'); } catch(e){UI.toast(e.message,'error')} UI.loader(false); },
+  renderDashboard(){
+    const emps=DB.getEmployees().filter(e=>e.active); document.getElementById('stat-total').textContent=emps.length;
+    const recs=DB.getRecords().filter(r=>r.date===DB.today());
+    document.getElementById('stat-present').textContent=recs.filter(r=>['present','late','early_leave'].includes(r.status)).length;
+    document.getElementById('stat-late').textContent=recs.filter(r=>r.status==='late').length;
+    document.getElementById('stat-absent').textContent=Math.max(0,emps.length - recs.length);
+    const tbody=document.getElementById('dash-attendance-table');
+    if(!recs.length){tbody.innerHTML=`<tr><td colspan="4" style="text-align:center;padding:2rem;color:var(--text-muted)">${Lang.t('No records','لا يوجد سجلات')}</td></tr>`;return;}
+    tbody.innerHTML=recs.slice(0,10).map(r=>{
+      const emp=DB.getEmployees().find(e=>e.id===r.employeeId)||{name:'Unknown'};
+      return`<tr><td>${emp.name}</td><td><span dir="ltr">${DB.fmtTime(r.checkIn)}</span></td><td><span dir="ltr">${DB.fmtTime(r.checkOut)}</span></td><td>${UI.badge(r.status)}</td></tr>`;
+    }).join('');
+  },
+  buildChart(canvasId, type, data, options) {
+    const ctx = document.getElementById(canvasId); if(!ctx) return;
+    if(this.charts[canvasId]) this.charts[canvasId].destroy(); 
+    Chart.defaults.color = document.documentElement.getAttribute('data-theme') === 'light' ? '#6B7280' : '#888880';
+    Chart.defaults.font.family = "'Barlow', 'Cairo', sans-serif";
+    this.charts[canvasId] = new Chart(ctx, { type: type, data: data, options: Object.assign({ responsive: true, maintainAspectRatio: false }, options) });
+  },
+  renderAnalytics() {
+    const records = DB.getRecords(); const employees = DB.getEmployees().filter(e => e.active); const groups = DB.getGroups(); const today = DB.today();
+    const todaysRecs = records.filter(r => r.date === today);
+    let present = 0, late = 0, leave = 0;
+    todaysRecs.forEach(r => { if(r.status === 'present') present++; else if(r.status === 'late') late++; else if(r.status === 'early_leave') leave++; });
+    const absent = Math.max(0, employees.length - todaysRecs.length);
+
+    this.buildChart('chart-today', 'doughnut', {
+        labels: [Lang.t('Present','حاضر'), Lang.t('Late','متأخر'), Lang.t('Early Leave','استئذان'), Lang.t('Absent','غائب')],
+        datasets: [{ data: [present, late, leave, absent], backgroundColor: ['#27AE60', '#F1C40F', '#E67E22', '#E74C3C'], borderWidth: 0, hoverOffset: 4 }]
+    }, { cutout: '75%', plugins: { legend: { position: 'bottom' } } });
+
+    const groupLabels = []; const groupData = []; const groupColors = [];
+    groups.forEach(g => {
+        groupLabels.push(g.name); groupColors.push(g.color || '#C45A28');
+        const gEmps = employees.filter(e => e.groupId === g.id).map(e => e.id);
+        groupData.push( todaysRecs.filter(r => gEmps.includes(r.employeeId)).length );
+    });
+    this.buildChart('chart-groups', 'bar', {
+        labels: groupLabels, datasets: [{ label: Lang.t('Checked-in','الحضور'), data: groupData, backgroundColor: groupColors, borderRadius: 4 }]
+    }, { plugins: { legend: { display:false } }, scales: { y: { beginAtZero:true } } });
+
+    const trendLabels = []; const trendData = [];
+    for(let i=6; i>=0; i--) {
+        const d = new Date(); d.setDate(d.getDate() - i); const dateStr = d.toISOString().split('T')[0];
+        trendLabels.push(dateStr.slice(5)); trendData.push( records.filter(r => r.date === dateStr).length );
+    }
+    this.buildChart('chart-trend', 'line', {
+        labels: trendLabels, datasets: [{ label: Lang.t('Attendance','الحضور'), data: trendData, borderColor: '#C45A28', backgroundColor: 'rgba(196,90,40,0.15)', borderWidth: 3, tension: 0.4, fill: true }]
+    }, { plugins: { legend: { display:false } }, scales: { y: { beginAtZero:true } } });
+  },
+  renderEmployees(filter='',groupFilter=''){
+    let emps=DB.getEmployees();
+    if(filter) emps=emps.filter(e=>e.name.toLowerCase().includes(filter.toLowerCase()));
+    if(groupFilter) emps=emps.filter(e=>e.groupId===groupFilter);
+    const tbody=document.getElementById('employees-table');
+    if(!emps.length){tbody.innerHTML=`<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-muted)">${Lang.t('No employees found','لا يوجد موظفين')}</td></tr>`;return;}
+    const groups=DB.getGroups();
+    tbody.innerHTML=emps.map(e=>{
+      const grp=groups.find(g=>g.id===e.groupId);
+      return `<tr><td><code>${e.eid||'—'}</code></td><td><strong>${e.name}</strong></td><td>${e.username}</td><td>${grp ? `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${grp.color}"></span> ${grp.name}` : '—'}</td><td dir="ltr">${e.workStart||'—'} - ${e.workEnd||'—'}</td><td>${e.active?'<span class="badge badge-success">Active</span>':'<span class="badge badge-muted">Inactive</span>'}</td><td><button class="btn-ghost btn-sm" onclick="Admin.openEmployeeModal('${e.id}')"><i class="fas fa-edit"></i></button> <button class="btn-ghost btn-sm" style="color:var(--danger)" onclick="Admin.deleteEmployee('${e.id}')"><i class="fas fa-trash"></i></button></td></tr>`;
+    }).join('');
+  },
+  filterEmployees(){ this.renderEmployees(document.getElementById('emp-search').value, document.getElementById('emp-group-filter').value); },
+  openEmployeeModal(id){ 
+    this.populateGroupSelect('emp-modal-group'); 
+    document.getElementById('emp-modal-title').textContent = id ? Lang.t('Edit Employee','تعديل موظف') : Lang.t('Add Employee','إضافة موظف');
+    if (id) {
+      const e = DB.getEmployees().find(x => x.id === id); if(!e) return;
+      document.getElementById('emp-modal-id').value = e.id; document.getElementById('emp-modal-eid').value = e.eid || '';
+      document.getElementById('emp-modal-name').value = e.name || ''; document.getElementById('emp-modal-user').value = e.username || '';
+      document.getElementById('emp-modal-pass').value = ''; document.getElementById('emp-modal-email').value = e.email || '';
+      document.getElementById('emp-modal-phone').value = e.phone || ''; document.getElementById('emp-modal-group').value = e.groupId || '';
+      document.getElementById('emp-modal-salary').value = e.salary || ''; document.getElementById('emp-modal-status').value = e.active ? '1' : '0';
+      document.getElementById('emp-modal-start').value = e.workStart || '09:00'; document.getElementById('emp-modal-end').value = e.workEnd || '17:00';
+    } else {
+      document.getElementById('emp-modal-id').value = '';
+      ['eid','name','user','pass','email','phone','salary'].forEach(f=>document.getElementById('emp-modal-'+f).value=''); 
+      document.getElementById('emp-modal-status').value='1'; document.getElementById('emp-modal-start').value='09:00'; document.getElementById('emp-modal-end').value='17:00';
+    }
+    UI.openModal('modal-employee'); 
+  },
+  async saveEmployee(){
+    const data={ id:document.getElementById('emp-modal-id').value, eid:document.getElementById('emp-modal-eid').value.trim(), name:document.getElementById('emp-modal-name').value.trim(), username:document.getElementById('emp-modal-user').value.trim(), password:document.getElementById('emp-modal-pass').value, email:document.getElementById('emp-modal-email').value.trim(), phone:document.getElementById('emp-modal-phone').value.trim(), groupId:document.getElementById('emp-modal-group').value, workStart:document.getElementById('emp-modal-start').value, workEnd:document.getElementById('emp-modal-end').value, salary:parseFloat(document.getElementById('emp-modal-salary').value)||0, active: parseInt(document.getElementById('emp-modal-status').value) === 1 };
+    if(!data.name||!data.username) return UI.toast(Lang.t('Required fields missing','أكمل الحقول المطلوبة'),'error');
+    UI.loader(true); try { await API.request('/admin/employee', 'POST', data); await DB.sync(); UI.closeModal('modal-employee'); this.renderEmployees(); UI.toast(Lang.t('Saved!','تم الحفظ'),'success'); } catch(e){UI.toast(e.message,'error')} UI.loader(false);
+  },
+  async deleteEmployee(id){ if(confirm(Lang.t('Delete this employee?','حذف الموظف؟'))){ UI.loader(true); try{ await API.request(`/admin/employee/${id}`, 'DELETE'); await DB.sync(); this.renderEmployees(); UI.toast(Lang.t('Deleted','تم الحذف'),'warning'); } catch(e){UI.toast(e.message, 'error');} UI.loader(false); } },
+  renderGroups(){
+    const groups=DB.getGroups(); const tbody=document.getElementById('groups-table');
+    if(!groups.length){tbody.innerHTML=`<tr><td colspan="4" style="text-align:center;padding:2rem">${Lang.t('No groups yet','لا يوجد مجموعات')}</td></tr>`;return;}
+    tbody.innerHTML=groups.map(g=>`<tr><td><span style="display:inline-block;width:15px;height:15px;border-radius:50%;background:${g.color}"></span></td><td><strong>${g.name}</strong></td><td>${g.desc||'—'}</td><td><button class="btn-ghost btn-sm" onclick="Admin.openGroupModal('${g.id}')"><i class="fas fa-edit"></i></button> <button class="btn-ghost btn-sm" style="color:var(--danger)" onclick="Admin.deleteGroup('${g.id}')"><i class="fas fa-trash"></i></button></td></tr>`).join('');
+  },
+  openGroupModal(id){ 
+    document.getElementById('grp-modal-title').textContent = id ? Lang.t('Edit Group','تعديل المجموعة') : Lang.t('Add Group','إضافة مجموعة');
+    if(id) {
+      const g = DB.getGroups().find(x => x.id === id); document.getElementById('grp-modal-id').value = g.id; document.getElementById('grp-modal-name').value = g.name; document.getElementById('grp-modal-desc').value = g.desc || ''; document.getElementById('grp-modal-color').value = g.color || '#C45A28';
+    } else {
+      document.getElementById('grp-modal-id').value = ''; document.getElementById('grp-modal-name').value = ''; document.getElementById('grp-modal-desc').value = ''; document.getElementById('grp-modal-color').value = '#C45A28';
+    }
+    UI.openModal('modal-group'); 
+  },
+  async saveGroup(){
+    const data={ id:document.getElementById('grp-modal-id').value, name:document.getElementById('grp-modal-name').value.trim(), desc:document.getElementById('grp-modal-desc').value.trim(), color:document.getElementById('grp-modal-color').value };
+    if(!data.name) return UI.toast(Lang.t('Name required','الاسم مطلوب'),'error');
+    UI.loader(true); try { await API.request('/admin/group', 'POST', data); await DB.sync(); UI.closeModal('modal-group'); this.renderGroups(); UI.toast(Lang.t('Saved!','تم الحفظ'),'success'); } catch(e){UI.toast(e.message,'error')} UI.loader(false);
+  },
+  async deleteGroup(id){ if(confirm(Lang.t('Delete this group?','حذف المجموعة؟'))){ UI.loader(true); try{ await API.request(`/admin/group/${id}`, 'DELETE'); await DB.sync(); this.renderGroups(); UI.toast(Lang.t('Deleted','تم الحذف'),'warning'); }catch(e){UI.toast(e.message,'error')} UI.loader(false); } },
+  populateGroupSelect(selId, addAll) { 
+    const sel = document.getElementById(selId); if (!sel) return; 
+    let html = addAll ? `<option value="">${Lang.t('All Groups','الكل')}</option>` : `<option value="" disabled selected>-- ${Lang.t('Select Group','اختر المجموعة')} --</option>`; 
+    const groups = DB.getGroups(); 
+    if (groups.length === 0 && !addAll) html += `<option value="" disabled>⚠️ ${Lang.t('No groups found!','لا يوجد مجموعات')}</option>`;
+    else html += groups.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
+    sel.innerHTML = html; 
+  },  
+  renderZoneList(){
+    const zones=DB.getLocations(); const wrap=document.getElementById('zone-list'); if(!wrap) return;
+    if(!zones.length){wrap.innerHTML=`<div style="text-align:center;padding:1rem;color:var(--text-muted)">${Lang.t('No zones yet.','لا يوجد مواقع')}</div>`;return;}
+    wrap.innerHTML=zones.map(z=>`<div style="background:var(--surface2);border:1px solid var(--border);padding:0.75rem;border-radius:4px;display:flex;justify-content:space-between;align-items:center"><div><h5 style="margin-bottom:0.2rem">${z.name}</h5><small style="color:var(--text-muted)">${z.radius}m</small></div><button class="btn-ghost" style="color:var(--danger)" onclick="Admin.deleteZone('${z.id}')"><i class="fas fa-trash"></i></button></div>`).join('');
+  },
+  updateRadiusDisplay(v){ document.getElementById('zone-radius-val').textContent=v+' m'; if(Maps.tempCircle) Maps.tempCircle.setRadius(parseInt(v)); },
+  async saveZone(){
+    const name=document.getElementById('zone-name').value.trim();
+    if(!name || !Maps.tempMarker) return UI.toast(Lang.t('Name and map location required','الاسم والموقع مطلوبان'),'error');
+    const pos = Maps.tempMarker.getLatLng();
+    const data={ name, groupId:document.getElementById('zone-group').value, lat: pos.lat, lng: pos.lng, radius: parseInt(document.getElementById('zone-radius').value) || 500 };
+    UI.loader(true); try { await API.request('/admin/location', 'POST', data); await DB.sync(); Maps.adminMap.removeLayer(Maps.tempMarker); Maps.tempMarker=null; document.getElementById('zone-name').value=''; Maps.renderZones(); UI.toast(Lang.t('Saved','تم الحفظ'),'success'); } catch(e){UI.toast(e.message,'error')} UI.loader(false);
+  },
+  clearZoneForm(){ if(Maps.tempMarker) Maps.adminMap.removeLayer(Maps.tempMarker); Maps.tempMarker=null; document.getElementById('zone-name').value=''; },
+  async deleteZone(id){ if(confirm(Lang.t('Delete?','حذف؟'))){ UI.loader(true); try{ await API.request(`/admin/location/${id}`, 'DELETE'); await DB.sync(); Maps.renderZones(); UI.toast(Lang.t('Deleted','تم الحذف'),'warning'); }catch(e){UI.toast(e.message,'error')} UI.loader(false); } },
+  
+  // ==========================================
+  // REPORTS WITH APPROVAL SYSTEM (AND ABSENTEES)
+  // ==========================================
+  filterRecords(){
+    const search=document.getElementById('rec-search').value.toLowerCase(); 
+    const date=document.getElementById('rec-date').value;
+    const emps=DB.getEmployees().filter(e=>e.active); 
+    let displayList = [];
+
+    if(date) {
+        // If a specific date is selected, show ALL active employees (generate absentees for those missing)
+        emps.forEach(emp => {
+            if(search && !emp.name.toLowerCase().includes(search)) return;
+            const rec = DB.getRecords().find(r => r.employeeId === emp.id && r.date === date);
+            if(rec) displayList.push({ ...rec, isAbsent: false, emp });
+            else displayList.push({ employeeId: emp.id, date: date, checkIn: null, checkOut: null, status: 'absent', notes: '', approvalStatus: 'none', isAbsent: true, emp });
+        });
+    } else {
+        // No date selected -> just show historical records
+        let recs = DB.getRecords();
+        recs.sort((a, b) => new Date(b.date) - new Date(a.date));
+        if(search) recs = recs.filter(r => emps.find(e => e.id === r.employeeId)?.name.toLowerCase().includes(search));
+        displayList = recs.map(r => ({ ...r, isAbsent: false, emp: emps.find(e => e.id === r.employeeId) || {name:'Unknown', eid:'—'} }));
+    }
+    
+    const tbody=document.getElementById('records-table-body');
+    if(!displayList.length){tbody.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--text-muted)">${Lang.t('No records found','لا توجد سجلات')}</td></tr>`;return;}
+    
+    tbody.innerHTML=displayList.map(item => {
+      const emp = item.emp;
+      
+      let actionButtons = `—`; 
+      if(!item.isAbsent && item.approvalStatus === 'pending') {
+          actionButtons = `
+            <button class="btn-ghost btn-sm" onclick="Admin.handleApproval('${item.id}', 'approved')" title="${Lang.t('Approve','موافقة')}"><i class="fas fa-check-circle" style="color:var(--success); font-size:1.2rem;"></i></button>
+            <button class="btn-ghost btn-sm" onclick="Admin.handleApproval('${item.id}', 'rejected')" title="${Lang.t('Reject','رفض')}"><i class="fas fa-times-circle" style="color:var(--danger); font-size:1.2rem;"></i></button>
+          `;
+      }
+
+      let statusBadge = UI.badge(item.status);
+      if(!item.isAbsent) {
+          if(item.approvalStatus === 'pending') statusBadge = `<span class="badge" style="background:var(--warning); color:#000;"><i class="fas fa-hourglass-half"></i> ${Lang.t('Pending','معلق')}</span>`;
+          else if (item.approvalStatus === 'rejected') statusBadge = `<span class="badge" style="background:var(--danger); color:#fff"><i class="fas fa-ban"></i> ${Lang.t('Rejected','مرفوض')}</span>`;
+          else if (item.approvalStatus === 'approved') statusBadge = `<span class="badge" style="background:var(--success); color:#fff"><i class="fas fa-check"></i> ${Lang.t('Approved','مقبول')}</span>`;
+      }
+
+      let attachmentLink = item.attachment ? `<div style="margin-top:0.4rem"><a href="${item.attachment}" target="_blank" style="color:var(--info); font-size:0.75rem; font-weight:bold; text-decoration:underline;"><i class="fas fa-paperclip"></i> ${Lang.t('View Attachment','عرض المرفق')}</a></div>` : '';
+
+      return`<tr>
+        <td><code>${emp.eid || '—'}</code></td>
+        <td><strong>${emp.name}</strong></td>
+        <td>${DB.fmtDate(item.date)}</td>
+        <td><span dir="ltr">${DB.fmtTime(item.checkIn)}</span></td>
+        <td><span dir="ltr">${DB.fmtTime(item.checkOut)}</span></td>
+        <td>${statusBadge}</td>
+        <td style="max-width:250px; white-space:normal; overflow:hidden; text-overflow:ellipsis;">
+            ${item.notes||'—'}
+            ${attachmentLink}
+        </td>
+        <td style="text-align:center; min-width:80px;">${actionButtons}</td>
+      </tr>`;
+    }).join('');
+  },
+
+  async handleApproval(recordId, decision) {
+      const isApproved = decision === 'approved';
+      if(!confirm(isApproved ? Lang.t('Approve this request?','الموافقة على الطلب؟') : Lang.t('Reject this request?','رفض الطلب؟'))) return;
+      UI.loader(true);
+      try {
+          await API.request(`/admin/approve-record/${recordId}`, 'PUT', { status: decision });
+          await DB.sync(); this.filterRecords(); 
+          UI.toast(isApproved ? Lang.t('Approved','تم القبول') : Lang.t('Rejected','تم الرفض'), isApproved ? 'success' : 'warning');
+      } catch(e) { UI.toast(e.message, 'error'); }
+      UI.loader(false);
+  },
+
+  getExportData() {
+    const search=document.getElementById('rec-search').value.toLowerCase(); 
+    const dateFilter=document.getElementById('rec-date').value;
+    const emps=DB.getEmployees().filter(e=>e.active);
+
+    let exportList = [];
+
+    if(dateFilter) {
+        emps.forEach(emp => {
+            if(search && !emp.name.toLowerCase().includes(search)) return;
+            const rec = DB.getRecords().find(r => r.employeeId === emp.id && r.date === dateFilter);
+            if(rec) exportList.push({ ...rec, isAbsent: false, emp });
+            else exportList.push({ date: dateFilter, checkIn: null, checkOut: null, status: 'absent', notes: '', approvalStatus: 'none', isAbsent: true, emp });
+        });
+    } else {
+        let recs = DB.getRecords();
+        recs.sort((a, b) => new Date(b.date) - new Date(a.date));
+        if(search) recs = recs.filter(r => emps.find(e => e.id === r.employeeId)?.name.toLowerCase().includes(search));
+        exportList = recs.map(r => ({ ...r, isAbsent: false, emp: emps.find(e => e.id === r.employeeId) || {name:'Unknown', eid:'—'} }));
+    }
+
+    return exportList.map(item => {
+        const emp = item.emp;
+        let finalStatus = Lang.current==='ar' ? (item.status==='present'?'حاضر':item.status==='late'?'متأخر':item.status==='absent'?'غائب':'استئذان') : item.status.toUpperCase();
+        
+        if(!item.isAbsent) {
+            if(item.approvalStatus === 'pending') finalStatus += Lang.t(' (Pending)',' (معلق)');
+            if(item.approvalStatus === 'approved') finalStatus += Lang.t(' (Approved)',' (مقبول)');
+            if(item.approvalStatus === 'rejected') finalStatus += Lang.t(' (Rejected)',' (مرفوض)');
+        }
+        
+        let notesText = item.notes || '';
+        if(item.attachment) notesText += ' [Has Attachment]';
+
+        if (Lang.current === 'ar') {
+           return { "الرقم": emp.eid || '—', "الاسم": emp.name, "التاريخ": item.date, "الدخول": item.checkIn ? new Date(item.checkIn).toLocaleString('en-US') : '—', "الخروج": item.checkOut ? new Date(item.checkOut).toLocaleString('en-US') : '—', "الحالة": finalStatus, "الملاحظات": notesText || '—' };
+        }
+        return { "ID": emp.eid || '—', "Name": emp.name, "Date": item.date, "Check In": item.checkIn ? new Date(item.checkIn).toLocaleString('en-US') : '—', "Check Out": item.checkOut ? new Date(item.checkOut).toLocaleString('en-US') : '—', "Status": finalStatus, "Notes": notesText || '—' };
+    });
+  },
+
+  exportExcel() {
+    const data = this.getExportData();
+    if(!data.length) return UI.toast(Lang.t('No data','لا يوجد بيانات'), 'warning');
+    const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Attendance");
+    XLSX.writeFile(wb, `AMD_Attendance_${DB.today()}.xlsx`);
+  },
+
+  exportPDF() {
+    const data = this.getExportData();
+    if(!data.length) return UI.toast(Lang.t('No data','لا يوجد بيانات'), 'warning');
+    const dateFilter = document.getElementById('rec-date').value;
+    UI.loader(true); 
+
+    const container = document.createElement('div');
+    container.style.padding = '20px';
+    container.style.fontFamily = "'Cairo', 'Barlow', sans-serif";
+    container.style.direction = Lang.current === 'ar' ? 'rtl' : 'ltr'; 
+    container.style.background = '#fff'; container.style.color = '#000';
+
+    const ths = Lang.current === 'ar' ? `<th>الرقم</th><th>الاسم</th><th>التاريخ</th><th>الدخول</th><th>الخروج</th><th>الحالة</th><th>الملاحظات</th>` : `<th>ID</th><th>Name</th><th>Date</th><th>Check In</th><th>Check Out</th><th>Status</th><th>Notes</th>`;
+
+    container.innerHTML = `
+      <h2 style="text-align:center; color:#C45A28; margin-bottom:5px; font-family:'Cinzel', serif;">AMD United - ${Lang.t('Attendance Report','تقرير الحضور')}</h2>
+      <h4 style="text-align:center; color:#555; margin-bottom:20px; font-weight:normal;">${dateFilter ? dateFilter : DB.today()}</h4>
+      <table style="width:100%; border-collapse:collapse; text-align:${Lang.current==='ar'?'right':'left'}; font-size:12px;">
+        <thead><tr style="background-color:#C45A28; color:#fff;">${ths}</tr></thead>
+        <tbody>
+          ${data.map(row => `
+            <tr>
+              <td style="padding:6px; border:1px solid #ddd;"><code>${Object.values(row)[0]}</code></td>
+              <td style="padding:6px; border:1px solid #ddd; font-weight:bold;">${Object.values(row)[1]}</td>
+              <td style="padding:6px; border:1px solid #ddd;">${Object.values(row)[2]}</td>
+              <td style="padding:6px; border:1px solid #ddd;" dir="ltr">${Object.values(row)[3]}</td>
+              <td style="padding:6px; border:1px solid #ddd;" dir="ltr">${Object.values(row)[4]}</td>
+              <td style="padding:6px; border:1px solid #ddd; font-weight:bold;">${Object.values(row)[5]}</td>
+              <td style="padding:6px; border:1px solid #ddd;">${Object.values(row)[6]}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>`;
+
+    const opt = { margin: 10, filename: `AMD_Report_${DB.today()}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' } };
+    html2pdf().set(opt).from(container).save().then(() => { UI.loader(false); UI.toast('PDF Exported!', 'success'); });
+  }
+};
+
+/* ══════════════════════════════════════════
+   EMPLOYEE PORTAL LOGIC
+══════════════════════════════════════════ */
+const Emp = {
+  watchId:null, currentPos:null, assignedZones:[], currentRecord:null, nearestZone:null,
+  init(){
+    const emp=Auth.empSession; if(!emp) return;
+    this.assignedZones=DB.getLocations().filter(z => z.groupId === emp.groupId);
+    this.currentRecord=DB.getRecords().find(r=>r.employeeId===emp.id&&r.date===DB.today())||null;
+    const defaultLat = this.assignedZones[0] ? this.assignedZones[0].lat : 24.7136;
+    const defaultLng = this.assignedZones[0] ? this.assignedZones[0].lng : 46.6753;
+    Maps.initEmp(defaultLat, defaultLng, this.assignedZones, null, null);
+    this.renderTodayRecord(); this.renderHistory(); this.updateButtons(); this.startTracking();
+  },
+  cleanup(){ if(this.watchId!==null){navigator.geolocation.clearWatch(this.watchId);this.watchId=null;} this.currentPos=null; },
+  startTracking(){
+    document.getElementById('emp-status-text').textContent=Lang.t('Locating GPS...','جاري تحديد الموقع...');
+    if(!navigator.geolocation) { document.getElementById('emp-location-info').textContent='GPS not supported'; return; }
+    this.watchId=navigator.geolocation.watchPosition(
+      pos=>{
+        this.currentPos={lat:pos.coords.latitude,lng:pos.coords.longitude,acc:pos.coords.accuracy}; this.checkZone();
+        Maps.initEmp(this.assignedZones[0]?.lat||pos.coords.latitude, this.assignedZones[0]?.lng||pos.coords.longitude, this.assignedZones, pos.coords.latitude, pos.coords.longitude);
+      },
+      err=>{ document.getElementById('emp-status-text').textContent=Lang.t('Location unavailable','الموقع غير متاح'); document.getElementById('emp-status-dot').className='status-dot outside'; },
+      {enableHighAccuracy:true,timeout:15000,maximumAge:5000}
+    );
+  },
+  checkZone(){
+    if(!this.currentPos) return; 
+    let insideZone=null;
+    this.assignedZones.forEach(z=>{
+      const R=6371000,dLat=(z.lat-this.currentPos.lat)*Math.PI/180,dLon=(z.lng-this.currentPos.lng)*Math.PI/180;
+      const a=Math.sin(dLat/2)**2+Math.cos(this.currentPos.lat*Math.PI/180)*Math.cos(z.lat*Math.PI/180)*Math.sin(dLon/2)**2;
+      const d=R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a)); if(d<=z.radius) insideZone=z;
+    });
+    if(insideZone){ document.getElementById('emp-status-dot').className='status-dot inside pulse'; document.getElementById('emp-status-text').textContent=Lang.t('Within Zone ✓','داخل الموقع ✓'); document.getElementById('emp-location-info').textContent=Lang.t('You are inside an authorized attendance zone.','أنت داخل النطاق المسموح لتسجيل الحضور.'); } 
+    else { document.getElementById('emp-status-dot').className='status-dot outside pulse'; document.getElementById('emp-status-text').textContent=Lang.t('Outside Zone','خارج الموقع'); document.getElementById('emp-location-info').textContent=Lang.t('Please move closer to your designated work zone.','يرجى الاقتراب من موقع العمل المحدد.'); }
+    this.updateButtons(!!insideZone);
+  },
+  updateButtons(insideZone){
+    const rec=this.currentRecord; 
+    const checkinBtn=document.getElementById('emp-checkin-btn'); 
+    const checkoutContainer=document.getElementById('checkout-container');
+    const checkoutBtn=document.getElementById('emp-checkout-btn');
+    const leaveBtn=document.getElementById('emp-leave-btn');
+    
+    if(!rec){ 
+        checkinBtn.classList.remove('hidden'); 
+        checkoutContainer.classList.add('hidden'); 
+        checkinBtn.disabled=!insideZone; 
+    } else if(rec && !rec.checkOut){ 
+        checkinBtn.classList.add('hidden'); 
+        checkoutContainer.classList.remove('hidden'); 
+        checkoutBtn.disabled=!insideZone; 
+        
+        if (rec.approvalStatus === 'pending') {
+            checkoutBtn.innerHTML = `<i class="fas fa-hourglass-half"></i> ${Lang.t('Pending Approval','قيد المراجعة')}`;
+            checkoutBtn.style.background = 'var(--warning)'; checkoutBtn.style.color = '#000';
+            leaveBtn.classList.add('hidden');
+        } else if (rec.approvalStatus === 'approved') {
+            checkoutBtn.innerHTML = `<i class="fas fa-sign-out-alt"></i> ${Lang.t('Clock Out (Approved)','انصراف (تمت الموافقة)')}`;
+            checkoutBtn.style.background = 'var(--success)'; checkoutBtn.style.color = '#fff';
+            leaveBtn.classList.add('hidden');
+        } else if (rec.approvalStatus === 'rejected') {
+            checkoutBtn.innerHTML = `<i class="fas fa-ban"></i> ${Lang.t('Leave Rejected','استئذان مرفوض')}`;
+            checkoutBtn.style.background = 'var(--danger)'; checkoutBtn.style.color = '#fff';
+            leaveBtn.classList.remove('hidden'); 
+        } else {
+            checkoutBtn.innerHTML = `<i class="fas fa-sign-out-alt"></i> ${Lang.t('Check Out','تسجيل الخروج')}`;
+            checkoutBtn.style.background = 'var(--danger)'; checkoutBtn.style.color = '#fff';
+            leaveBtn.classList.remove('hidden'); 
+        }
+    } else { 
+        checkinBtn.classList.add('hidden'); 
+        checkoutContainer.classList.add('hidden'); 
+        document.getElementById('emp-location-info').textContent=Lang.t('Attendance complete for today.','اكتمل الحضور لهذا اليوم.'); 
+    }
+  },
+  
+  async checkIn(){
+    if(!this.currentPos){UI.toast(Lang.t('Location unavailable','الموقع غير متاح'),'error');return;}
+    UI.loader(true);
+
+    let finalStatus = 'present';
+    const emp = Auth.empSession;
+    
+    if (emp && emp.workStart) {
+        const now = new Date();
+        const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+        const riyadhDate = new Date(utc + (3600000 * 3));
+        const currH = riyadhDate.getHours();
+        const currM = riyadhDate.getMinutes();
+        const currTotalMinutes = (currH * 60) + currM;
+
+        const [startH, startM] = emp.workStart.split(':').map(Number);
+        const startTotalMinutes = (startH * 60) + startM;
+
+        if (currTotalMinutes > (startTotalMinutes + 15)) {
+            finalStatus = 'late';
+        }
+    }
+
+    const rec={ employeeId:Auth.empSession.id, date:DB.today(), checkIn:DB.nowISO(), checkInLat:this.currentPos.lat, checkInLng:this.currentPos.lng, status:finalStatus, notes:'' };
+    try {
+        await API.request('/employee/record', 'POST', rec); await DB.sync();
+        this.currentRecord=DB.getRecords().find(r=>r.employeeId===Auth.empSession.id&&r.date===DB.today());
+        this.renderTodayRecord(); this.updateButtons(true); this.renderHistory(); 
+        
+        if (finalStatus === 'late') {
+            UI.toast(Lang.t('Checked in (Late)!','تم تسجيل الدخول (متأخر)!'),'warning');
+        } else {
+            UI.toast(Lang.t('Checked in!','تم الدخول بنجاح!'),'success');
+        }
+    } catch(e) { UI.toast(e.message,'error'); }
+    UI.loader(false);
+  },
+
+  checkOut() {
+    const emp = Auth.empSession; const rec = this.currentRecord;
+    
+    if (!emp || !emp.workEnd) { 
+        if(confirm(Lang.t('Officially clock out now?','تسجيل الانصراف الرسمي الآن؟'))) this.confirmStandardCheckOut();
+        return; 
+    }
+
+    const now = new Date(); 
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const riyadhDate = new Date(utc + (3600000 * 3));
+    const currH = riyadhDate.getHours();
+    const currM = riyadhDate.getMinutes();
+    const currTotalMinutes = (currH * 60) + currM;
+    
+    const [endH, endM] = emp.workEnd.split(':').map(Number); 
+    const endTotalMinutes = (endH * 60) + endM;
+
+    if (currTotalMinutes < endTotalMinutes) {
+        if (rec && rec.approvalStatus === 'pending') { 
+            UI.toast(Lang.t('Request is pending admin approval.','طلبك قيد المراجعة من الإدارة.'), 'warning'); 
+            return; 
+        }
+        if (rec && rec.approvalStatus === 'approved') {
+            this.confirmStandardCheckOut(); 
+            return;
+        }
+        UI.openModal('modal-leave');
+    } else {
+        this.confirmStandardCheckOut();
+    }
+  },
+
+  async confirmStandardCheckOut() {
+    if(!this.currentRecord || !this.currentPos) return;
+    UI.loader(true);
+    const rec = { employeeId: Auth.empSession.id, date: DB.today(), checkOut: DB.nowISO(), checkOutLat: this.currentPos.lat, checkOutLng: this.currentPos.lng, status: this.currentRecord.status, notes: this.currentRecord.notes };
+    try {
+        await API.request('/employee/record', 'POST', rec); await DB.sync();
+        this.currentRecord = DB.getRecords().find(r => r.employeeId === Auth.empSession.id && r.date === DB.today());
+        this.renderTodayRecord(); this.updateButtons(false); UI.toast(Lang.t('Checked out successfully','تم تسجيل الخروج بنجاح'), 'success');
+    } catch(e) { UI.toast(e.message, 'error'); }
+    UI.loader(false);
+  },
+
+  async submitLeaveRequest() {
+    const reason = document.getElementById('leave-reason').value; 
+    const notes = document.getElementById('leave-notes').value.trim();
+    const fileInput = document.getElementById('leave-attachment');
+
+    if(!reason) return UI.toast(Lang.t('Please select a reason','الرجاء اختيار السبب'), 'error');
+
+    UI.loader(true);
+    let attachmentData = null;
+
+    if (fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        if (file.size > 2 * 1024 * 1024) { 
+            UI.loader(false);
+            return UI.toast(Lang.t('File too large. Max size is 2MB.','حجم الملف كبير جداً. الحد الأقصى 2MB'), 'error');
+        }
+        try {
+            attachmentData = await getBase64(file);
+        } catch (error) {
+            UI.loader(false);
+            return UI.toast(Lang.t('Error reading file.','خطأ في قراءة الملف'), 'error');
+        }
+    }
+
+    const rec = { 
+        employeeId: Auth.empSession.id, 
+        date: DB.today(), 
+        status: 'early_leave', 
+        approvalStatus: 'pending', 
+        notes: `[${reason}] ${notes}`,
+        attachment: attachmentData 
+    };
+
+    try {
+        await API.request('/employee/record', 'POST', rec); 
+        await DB.sync(); 
+        UI.closeModal('modal-leave');
+        this.currentRecord = DB.getRecords().find(r => r.employeeId === Auth.empSession.id && r.date === DB.today());
+        this.renderTodayRecord(); 
+        this.updateButtons(true); 
+        UI.toast(Lang.t('Request sent to admin','تم إرسال الطلب للإدارة'), 'success');
+        
+        document.getElementById('leave-reason').value = '';
+        document.getElementById('leave-notes').value = '';
+        document.getElementById('leave-attachment').value = '';
+    } catch(e) { UI.toast(e.message, 'error'); }
+    UI.loader(false);
+  },
+
+  renderTodayRecord(){
+    const rec=this.currentRecord; const body=document.getElementById('today-record-body');
+    if(!rec){body.innerHTML=`<div style="text-align:center;color:var(--text-muted)">${Lang.t('No record yet','لا يوجد سجل بعد')}</div>`;return;}
+    body.innerHTML=`<div style="display:flex;justify-content:space-between;padding:1rem;background:var(--surface2);border-radius:4px"><div><small style="color:var(--text-muted);display:block">${Lang.t('Check In','الدخول')}</small><strong><span dir="ltr">${DB.fmtTime(rec.checkIn)}</span></strong></div><div><small style="color:var(--text-muted);display:block">${Lang.t('Check Out','الخروج')}</small><strong><span dir="ltr">${DB.fmtTime(rec.checkOut)}</span></strong></div></div>`;
+  },
+  
+  renderHistory(){
+    const wrap=document.getElementById('emp-history-list'); const recs=DB.getRecords().filter(r=>r.employeeId===Auth.empSession.id);
+    if(!recs.length){wrap.innerHTML=`<div style="text-align:center;padding:1rem;color:var(--text-muted)">${Lang.t('No history','لا يوجد سجل سابق')}</div>`;return;}
+    recs.sort((a, b) => new Date(b.date) - new Date(a.date));
+    wrap.innerHTML=recs.map(r=>{
+        let badge = UI.badge(r.status);
+        if(r.approvalStatus === 'pending') badge = `<span class="badge" style="background:var(--warning); color:#000;">${Lang.t('Pending','معلق')}</span>`;
+        if(r.approvalStatus === 'rejected') badge = `<span class="badge" style="background:var(--danger); color:#fff;">${Lang.t('Rejected','مرفوض')}</span>`;
+        if(r.approvalStatus === 'approved') badge = `<span class="badge" style="background:var(--success); color:#fff;">${Lang.t('Approved','مقبول')}</span>`;
+        return `<div style="padding:0.75rem 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;"><div><strong style="display:block;font-size:0.9rem">${DB.fmtDate(r.date)}</strong><small style="color:var(--text-muted)"><span dir="ltr">In: ${DB.fmtTime(r.checkIn)} | Out: ${DB.fmtTime(r.checkOut)}</span></small></div>${badge}</div>`;
+    }).join('');
+  }
+};
+
+/* ══════════════════════════════════════════
+   INIT
+══════════════════════════════════════════ */
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){ if(App.current==='admin-login') Auth.adminLogin(); if(App.current==='emp-login') Auth.empLogin(); }
+  if(e.key==='Escape') document.querySelectorAll('.modal-overlay.show').forEach(m=>m.classList.remove('show'));
+});
+window.addEventListener('amd-unauthorized', () => {
+  localStorage.clear();
+  if (typeof App !== 'undefined') App.goto('home');
+});
+
+document.addEventListener('DOMContentLoaded',()=>{ 
+  const d=document.getElementById('rec-date'); if(d) d.value=DB.today(); 
+  Lang.apply(); UI.applyTheme();
+  Auth.restoreSession(); 
+});
+</script>
+</body>
+</html>
