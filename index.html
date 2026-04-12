@@ -425,8 +425,9 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
           <div class="card"><div class="card-header"><div class="card-title tr" data-en="Recent History" data-ar="السجل السابق">Recent History</div></div><div style="padding:0.5rem 1.25rem" id="emp-history-list"></div></div>
         </div>
       </div>
+    </div>
       
-      <div id="emp-tab-hr-content" style="display:none;">
+    <div id="emp-tab-hr-content" style="display:none;">
         <div style="display:grid; grid-template-columns: minmax(300px, 1fr) 2fr; gap: 1.5rem;">
           
           <div>
@@ -1830,7 +1831,23 @@ const Emp = {
       }
   }
 };
-// ...existing code...
+
+/* ══════════════════════════════════════════
+   INIT
+══════════════════════════════════════════ */
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){ if(App.current==='admin-login') Auth.adminLogin(); if(App.current==='emp-login') Auth.empLogin(); }
+  if(e.key==='Escape') document.querySelectorAll('.modal-overlay.show').forEach(m=>m.classList.remove('show'));
+});
+window.addEventListener('amd-unauthorized', () => {
+  localStorage.clear();
+  if (typeof App !== 'undefined') App.goto('home');
+});
+document.addEventListener('DOMContentLoaded',()=>{ 
+  const d=document.getElementById('rec-date'); if(d) d.value=DB.today(); 
+  Lang.apply(); UI.applyTheme();
+  Auth.restoreSession(); 
+});
 </script>
 </body>
 </html>
