@@ -55,6 +55,7 @@ function createApp() {
   app.use('/api/auth', authLimiter, require('./routes/auth'));
   app.use('/api/admin', require('./routes/admin'));
   app.use('/api/employee', require('./routes/employee'));
+  app.use('/api/hr', require('./routes/hr'));
 
   app.get('/health', (req, res) => res.type('text').send('ok'));
 

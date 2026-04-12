@@ -141,7 +141,7 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
       <div style="font-size:0.8rem;color:var(--text-muted);letter-spacing:0.3em;text-transform:uppercase;margin-top:0.5rem; text-align:center;">United Contracting Company</div>
     </div>
     
-    <div><p style="font-family:'Cinzel',serif;font-size:1.1rem;color:var(--text-muted);letter-spacing:0.15em;text-transform:uppercase" class="tr" data-en="Attendance Management System" data-ar="نظــام إدارة الحضــور والانصــراف">Attendance Management System</p></div>
+    <div><p style="font-family:'Cinzel',serif;font-size:1.1rem;color:var(--text-muted);letter-spacing:0.15em;text-transform:uppercase" class="tr" data-en="Attendance Management System" data-ar="نظــام إدارة الحضور والانصــراف">Attendance Management System</p></div>
     <div class="portal-cards">
       <div class="portal-card" onclick="App.goto('admin-login')"><i class="fas fa-shield-alt" style="font-size:2rem;color:var(--accent);margin-bottom:1rem;display:block"></i><h3 style="font-family:'Barlow Condensed';font-size:1.1rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:0.4rem" class="tr" data-en="Admin Portal" data-ar="بوابة الإدارة">Admin Portal</h3><p style="font-size:0.8rem;color:var(--text-muted)" class="tr" data-en="Manage zones, teams & reports" data-ar="إدارة المواقع والتقارير">Manage zones, teams & reports</p></div>
       <div class="portal-card" onclick="App.goto('emp-login')"><i class="fas fa-user-hard-hat" style="font-size:2rem;color:var(--accent);margin-bottom:1rem;display:block"></i><h3 style="font-family:'Barlow Condensed';font-size:1.1rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:0.4rem" class="tr" data-en="Employee Portal" data-ar="بوابة الموظف">Employee Portal</h3><p style="font-size:0.8rem;color:var(--text-muted)" class="tr" data-en="GPS check-in & attendance log" data-ar="تسجيل الحضور الجغرافي">GPS check-in & attendance log</p></div>
@@ -208,13 +208,6 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
             <i class="theme-icon fas fa-sun"></i>
         </button>
         <div style="width:1px; height:1.2rem; background:var(--border2); margin:0 0.5rem;"></div>
-        <div class="notif-wrap">
-          <button type="button" class="btn-ghost btn-sm" style="position:relative" onclick="Admin.toggleNotifDropdown(event)" title="Notifications" aria-label="Notifications">
-            <i class="fas fa-bell"></i>
-            <span id="admin-notif-badge" class="notif-badge">0</span>
-          </button>
-          <div id="admin-notif-dropdown" class="notif-dropdown"></div>
-        </div>
         <button class="btn btn-sm btn-outline" onclick="Admin.refresh()">
             <i class="fas fa-sync-alt"></i> <span class="tr" data-en="Sync" data-ar="مزامنة">Sync</span>
         </button>
@@ -391,6 +384,15 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
     <svg style="width:28px;height:28px;fill:var(--accent)" viewBox="0 0 100 100"><polygon points="10,90 45,10 55,10 90,90 75,90 50,28 25,90"/><rect x="22" y="68" width="56" height="8"/></svg>
     <div style="font-size:0.9rem;font-weight:bold;flex:1" id="emp-topbar-name" class="tr" data-en="Employee Portal" data-ar="بوابة الموظف">Employee Portal</div>
     
+    <div style="display:flex; align-items:center; gap:0.5rem; margin-right: auto;">
+        <button class="btn btn-sm btn-ghost active" id="emp-tab-attendance" onclick="Emp.showTab('attendance')">
+            <i class="fas fa-clock"></i> <span class="tr" data-en="Attendance" data-ar="الحضور">Attendance</span>
+        </button>
+        <button class="btn btn-sm btn-ghost" id="emp-tab-hr" onclick="Emp.showTab('hr')">
+            <i class="fas fa-user-circle"></i> <span class="tr" data-en="HR & Leave" data-ar="الموارد البشرية">HR & Leave</span>
+        </button>
+    </div>
+
     <div style="display:flex; align-items:center; gap:0.25rem;">
         <button class="btn-ghost btn-sm" onclick="Lang.toggle()" title="Language" style="display:flex; align-items:center; gap:0.4rem;">
             <i class="fas fa-globe"></i> <span class="lang-text" style="font-weight:600; font-size:0.75rem;">عربي</span>
@@ -405,22 +407,94 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
     </div>
   </div>
   <div style="flex:1;overflow-y:auto;padding:1.5rem">
-    <div class="emp-grid">
-      <div style="border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--border);height:100%"><div id="emp-map"></div></div>
-      <div style="overflow-y:auto">
-        <div class="checkin-card">
-          <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem"><div class="status-dot unknown pulse" id="emp-status-dot"></div><span id="emp-status-text" style="font-weight:600" class="tr" data-en="Locating..." data-ar="تحديد الموقع...">Locating...</span></div>
-          <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:1.5rem;line-height:1.6" id="emp-location-info" class="tr" data-en="Please allow GPS access..." data-ar="يرجى تفعيل الموقع...">Please allow GPS access...</div>
-          <button id="emp-checkin-btn" class="btn btn-success btn-block" style="padding:1rem;font-size:1.1rem" onclick="Emp.checkIn()" disabled><i class="fas fa-map-marker-check"></i> <span class="tr" data-en="Check In" data-ar="تسجيل الدخول">Check In</span></button>
-          
-          <div id="checkout-container" class="hidden">
-              <button id="emp-checkout-btn" class="btn btn-danger btn-block" style="padding:1rem;font-size:1.1rem;margin-bottom:0.5rem" onclick="Emp.checkOut()"><i class="fas fa-sign-out-alt"></i> <span class="tr" data-en="Check Out" data-ar="تسجيل الخروج">Check Out</span></button>
-              <button id="emp-leave-btn" class="btn btn-warning btn-block" style="padding:1rem;font-size:1.1rem" onclick="UI.openModal('modal-leave')"><i class="fas fa-file-signature"></i> <span class="tr" data-en="Request Leave" data-ar="طلب استئذان">Request Leave</span></button>
+    <div id="emp-tab-attendance-content">
+      <div class="emp-grid">
+        <div style="border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--border);height:100%"><div id="emp-map"></div></div>
+        <div style="overflow-y:auto">
+          <div class="checkin-card">
+            <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem"><div class="status-dot unknown pulse" id="emp-status-dot"></div><span id="emp-status-text" style="font-weight:600" class="tr" data-en="Locating..." data-ar="تحديد الموقع...">Locating...</span></div>
+            <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:1.5rem;line-height:1.6" id="emp-location-info" class="tr" data-en="Please allow GPS access..." data-ar="يرجى تفعيل الموقع...">Please allow GPS access...</div>
+            <button id="emp-checkin-btn" class="btn btn-success btn-block" style="padding:1rem;font-size:1.1rem" onclick="Emp.checkIn()" disabled><i class="fas fa-map-marker-check"></i> <span class="tr" data-en="Check In" data-ar="تسجيل الدخول">Check In</span></button>
+            
+            <div id="checkout-container" class="hidden">
+                <button id="emp-checkout-btn" class="btn btn-danger btn-block" style="padding:1rem;font-size:1.1rem;margin-bottom:0.5rem" onclick="Emp.checkOut()"><i class="fas fa-sign-out-alt"></i> <span class="tr" data-en="Check Out" data-ar="تسجيل الخروج">Check Out</span></button>
+                <button id="emp-leave-btn" class="btn btn-warning btn-block" style="padding:1rem;font-size:1.1rem" onclick="UI.openModal('modal-leave')"><i class="fas fa-file-signature"></i> <span class="tr" data-en="Request Leave" data-ar="طلب استئذان">Request Leave</span></button>
+            </div>
           </div>
+          <div class="card"><div class="card-header"><div class="card-title tr" data-en="Today's Record" data-ar="سجل اليوم">Today's Record</div></div><div style="padding:1.25rem" id="today-record-body"></div></div>
+          <div class="card"><div class="card-header"><div class="card-title tr" data-en="Recent History" data-ar="السجل السابق">Recent History</div></div><div style="padding:0.5rem 1.25rem" id="emp-history-list"></div></div>
         </div>
-        <div class="card"><div class="card-header"><div class="card-title tr" data-en="Today's Record" data-ar="سجل اليوم">Today's Record</div></div><div style="padding:1.25rem" id="today-record-body"></div></div>
-        <div class="card"><div class="card-header"><div class="card-title tr" data-en="Recent History" data-ar="السجل السابق">Recent History</div></div><div style="padding:0.5rem 1.25rem" id="emp-history-list"></div></div>
       </div>
+      
+      <div id="emp-tab-hr-content" style="display:none;">
+        <div style="display:grid; grid-template-columns: minmax(300px, 1fr) 2fr; gap: 1.5rem;">
+          
+          <div>
+            <div class="card">
+              <div class="card-header"><div class="card-title tr" data-en="My Profile" data-ar="ملفي الشخصي">My Profile</div></div>
+              <div style="padding:1.5rem;" id="emp-hr-profile">
+                <!-- Loading -->
+              </div>
+            </div>
+            
+            <div class="card">
+              <div class="card-header"><div class="card-title tr" data-en="Leave Balance" data-ar="رصيد الإجازات">Leave Balance</div></div>
+              <div style="padding:1.5rem; text-align:center;" id="emp-hr-balance">
+                <h1 style="font-size:3rem; margin-bottom:0.5rem;" id="emp-hr-balance-val">-</h1>
+                <p style="color:var(--text-muted); font-size:0.9rem;" class="tr" data-en="Days remaining" data-ar="أيام متبقية">Days remaining</p>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="card">
+              <div class="card-header"><div class="card-title tr" data-en="Request Long Leave" data-ar="طلب إجازة">Request Long Leave</div></div>
+              <div style="padding:1.5rem;">
+                <div class="form-group">
+                  <label class="form-label tr" data-en="Type" data-ar="النوع">Type</label>
+                  <select id="hr-leave-type" class="form-control form-select">
+                    <option value="annual" class="tr" data-en="Annual" data-ar="سنوية">Annual</option>
+                    <option value="sick" class="tr" data-en="Sick" data-ar="مرضية">Sick</option>
+                    <option value="unpaid" class="tr" data-en="Unpaid" data-ar="بدون راتب">Unpaid</option>
+                  </select>
+                </div>
+                <div style="display:flex; gap:1rem;">
+                  <div class="form-group" style="flex:1;">
+                    <label class="form-label tr" data-en="Start Date" data-ar="تاريخ البدء">Start Date</label>
+                    <input type="date" id="hr-leave-start" class="form-control">
+                  </div>
+                  <div class="form-group" style="flex:1;">
+                    <label class="form-label tr" data-en="End Date" data-ar="تاريخ الانتهاء">End Date</label>
+                    <input type="date" id="hr-leave-end" class="form-control">
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label tr" data-en="Reason/Notes" data-ar="السبب/ملاحظات">Reason/Notes</label>
+                  <textarea id="hr-leave-notes" class="form-control" rows="2"></textarea>
+                </div>
+                <button class="btn btn-primary" onclick="Emp.submitHrLeave()"><i class="fas fa-paper-plane"></i> <span class="tr" data-en="Submit" data-ar="إرسال">Submit</span></button>
+              </div>
+            </div>
+            
+            <div class="card">
+              <div class="card-header"><div class="card-title tr" data-en="Payroll Estimate" data-ar="تقدير الراتب">Payroll Estimate</div></div>
+              <div style="padding:1.5rem;">
+                <div style="display:flex; gap:1rem; margin-bottom:1rem;">
+                   <input type="number" id="hr-pay-month" class="form-control" placeholder="Month (1-12)" min="1" max="12" style="max-width:100px;">
+                   <input type="number" id="hr-pay-year" class="form-control" placeholder="Year" style="max-width:100px;">
+                   <button class="btn btn-outline" onclick="Emp.fetchPayroll()"><span class="tr" data-en="Calculate" data-ar="حساب">Calculate</span></button>
+                </div>
+                <div id="hr-pay-result" style="background:var(--surface2); padding:1rem; border-radius:var(--radius); border:1px solid var(--border);">
+                  <!-- Payroll Result -->
+                  <p style="color:var(--text-muted);" class="tr" data-en="Select month & year" data-ar="اختر الشهر والسنة">Select month & year</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -441,7 +515,7 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
       <div class="form-group">
         <label class="form-label tr" data-en="Attachment (Image/PDF)" data-ar="مرفق (صورة / PDF)">Attachment (Image/PDF)</label>
         <input type="file" id="leave-attachment" class="form-control" accept="image/*,.pdf" style="padding: 0.5rem 1rem;">
-        <small style="color:var(--text-muted); font-size:0.7rem; margin-top:0.25rem; display:block;" class="tr" data-en="Max size: 2MB" data-ar="الحد الأقصى: 2 ميجابايت">Max size: 2MB</small>
+        <small style="color:var(--text-muted); font-size:0.7rem; margin-top:0.25rem; display:block;" class="tr" data-en="Max size: 2MB" data-ar="الحد الأقصى: 2 ميجابايت">Max size: 2MB
       </div>
       <div class="form-group">
         <label class="form-label tr" data-en="Additional Notes" data-ar="ملاحظات">Additional Notes</label>
@@ -1103,7 +1177,7 @@ const Admin = {
   filterEmployees(){ this.renderEmployees(document.getElementById('emp-search').value, document.getElementById('emp-group-filter').value); },
   openEmployeeModal(id){ 
     this.populateGroupSelect('emp-modal-group'); 
-    document.getElementById('emp-modal-title').textContent = id ? Lang.t('Edit Employee','تعديل موظف') : Lang.t('Add Employee','إضافة موظف');
+    document.getElementById('emp-modal-title').textContent = id ? Lang.t('Edit Employee',' تعديل موظف') : Lang.t('Add Employee','إضافة موظف');
     if (id) {
       const e = DB.getEmployees().find(x => x.id === id); if(!e) return;
       document.getElementById('emp-modal-id').value = e.id; document.getElementById('emp-modal-eid').value = e.eid || '';
@@ -1132,7 +1206,7 @@ const Admin = {
   },
   openGroupModal(id){
     this.ensureGroupWeekendUi();
-    document.getElementById('grp-modal-title').textContent = id ? Lang.t('Edit Group','تعديل المجموعة') : Lang.t('Add Group','إضافة مجموعة');
+    document.getElementById('grp-modal-title').textContent = id ? Lang.t('Edit Group',' تعديل المجموعة') : Lang.t('Add Group','إضافة مجموعة');
     document.querySelectorAll('.grp-wd-cb').forEach((cb) => { cb.checked = false; });
     if (id) {
       const g = DB.getGroups().find((x) => x.id === id);
@@ -1617,31 +1691,146 @@ const Emp = {
     if(!recs.length){wrap.innerHTML=`<div style="text-align:center;padding:1rem;color:var(--text-muted)">${Lang.t('No history','لا يوجد سجل سابق')}</div>`;return;}
     recs.sort((a, b) => new Date(b.date) - new Date(a.date));
     wrap.innerHTML=recs.map(r=>{
-        let badge = UI.badge(r.status);
-        if(r.approvalStatus === 'pending') badge = `<span class="badge" style="background:var(--warning); color:#000;">${Lang.t('Pending','معلق')}</span>`;
-        if(r.approvalStatus === 'rejected') badge = `<span class="badge" style="background:var(--danger); color:#fff;">${Lang.t('Rejected','مرفوض')}</span>`;
-        if(r.approvalStatus === 'approved') badge = `<span class="badge" style="background:var(--success); color:#fff;">${Lang.t('Approved','مقبول')}</span>`;
+        const badge=UI.badge(r.status);
         return `<div style="padding:0.75rem 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;"><div><strong style="display:block;font-size:0.9rem">${DB.fmtDate(r.date)}</strong><small style="color:var(--text-muted)"><span dir="ltr">In: ${DB.fmtTime(r.checkIn)} | Out: ${DB.fmtTime(r.checkOut)}</span></small></div>${badge}</div>`;
     }).join('');
+  },
+  showTab(tab) {
+    document.getElementById('emp-tab-attendance-content').style.display = tab === 'attendance' ? 'block' : 'none';
+    document.getElementById('emp-tab-hr-content').style.display = tab === 'hr' ? 'block' : 'none';
+    
+    document.getElementById('emp-tab-attendance').classList.toggle('active', tab === 'attendance');
+    document.getElementById('emp-tab-hr').classList.toggle('active', tab === 'hr');
+
+    if (tab === 'attendance') {
+        if (Maps.empMap) setTimeout(() => Maps.empMap.invalidateSize(true), 350);
+    } else if (tab === 'hr') {
+        this.loadHrData();
+        const d = new Date();
+        document.getElementById('hr-pay-month').value = d.getMonth() + 1;
+        document.getElementById('hr-pay-year').value = d.getFullYear();
+    }
+  },
+
+  async loadHrData() {
+    try {
+        const res = await API.request('/hr/me/profile', 'GET');
+        
+        const p = res.profile;
+        document.getElementById('emp-hr-profile').innerHTML = `
+          <div style="margin-bottom:0.5rem"><small style="color:var(--text-muted)" class="tr" data-en="Name" data-ar="الاسم">Name</small><div><strong>${p.name}</strong></div></div>
+          <div style="margin-bottom:0.5rem"><small style="color:var(--text-muted)" class="tr" data-en="ID" data-ar="الرقم">ID</small><div>${p.eid || '—'}</div></div>
+          <div style="margin-bottom:0.5rem"><small style="color:var(--text-muted)" class="tr" data-en="Job Title" data-ar="المسمى الوظيفي">Job Title</small><div>${p.jobTitle || '—'}</div></div>
+          <div style="margin-bottom:0.5rem"><small style="color:var(--text-muted)" class="tr" data-en="Department" data-ar="القسم">Department</small><div>${p.departmentId ? p.departmentId.name : '—'}</div></div>
+        `;
+        
+        document.getElementById('emp-hr-balance-val').textContent = res.leaveBalance.balance;
+        Lang.apply();
+
+        if (Auth.empSession && Auth.empSession.role === 'manager') {
+            this.loadManagerLeaves();
+        }
+    } catch(e) {
+        document.getElementById('emp-hr-profile').innerHTML = `<div style="color:var(--danger)">Error loading profile</div>`;
+    }
+  },
+
+  async loadManagerLeaves() {
+      let div = document.getElementById('emp-manager-leaves');
+      if (!div) {
+          const col = document.querySelector('#emp-tab-hr-content > div > div:first-child');
+          div = document.createElement('div');
+          div.id = 'emp-manager-leaves';
+          div.className = 'card';
+          div.style.marginTop = '1.5rem';
+          div.innerHTML = `<div class="card-header"><div class="card-title">Department Leaves (Manager)</div></div><div style="padding:1rem" id="manager-leaves-body"></div>`;
+          col.appendChild(div);
+      }
+      
+      const body = document.getElementById('manager-leaves-body');
+      body.innerHTML = 'Loading...';
+      try {
+          const leaves = await API.request('/hr/department/leaves', 'GET');
+          if (!leaves.length) {
+              body.innerHTML = '<span style="color:var(--text-muted)">No leaves found</span>';
+              return;
+          }
+          body.innerHTML = leaves.map(l => `
+            <div style="border-bottom:1px solid var(--border); padding-bottom:0.5rem; margin-bottom:0.5rem;">
+               <div style="display:flex; justify-content:space-between;">
+                 <strong>${l.employeeId.name}</strong>
+                 <span class="badge ${l.status === 'pending' ? 'badge-warning' : l.status === 'approved' ? 'badge-success' : 'badge-danger'}">${l.status}</span>
+               </div>
+               <div style="font-size:0.8rem; color:var(--text-muted);">
+                 ${new Date(l.startDate).toLocaleDateString()} - ${new Date(l.endDate).toLocaleDateString()} (${l.requestedDays} days) [${l.type}]
+               </div>
+               ${l.status === 'pending' ? `
+                 <div style="margin-top:0.5rem;">
+                   <button class="btn btn-sm btn-success" onclick="Emp.actionLeave('${l._id}', 'approved')">Approve</button>
+                   <button class="btn btn-sm btn-danger" onclick="Emp.actionLeave('${l._id}', 'rejected')">Reject</button>
+                 </div>
+               ` : ''}
+            </div>
+          `).join('');
+      } catch (e) {
+          body.innerHTML = '<span style="color:var(--danger)">Failed to load</span>';
+      }
+  },
+
+  async actionLeave(id, status) {
+      if(!confirm(`Are you sure you want to ${status} this leave?`)) return;
+      UI.loader(true);
+      try {
+          await API.request(`/hr/department/leaves/${id}`, 'PATCH', { status });
+          UI.toast(`Leave ${status}`, 'success');
+          this.loadManagerLeaves();
+      } catch(e) { UI.toast(e.message, 'error'); }
+      UI.loader(false);
+  },
+
+  async submitHrLeave() {
+    const startDate = document.getElementById('hr-leave-start').value;
+    const endDate = document.getElementById('hr-leave-end').value;
+    const type = document.getElementById('hr-leave-type').value;
+    const reason = document.getElementById('hr-leave-notes').value;
+
+    if(!startDate || !endDate) return UI.toast(Lang.t('Select dates','اختر التواريخ'), 'error');
+    if(new Date(endDate) < new Date(startDate)) return UI.toast(Lang.t('Invalid dates','تواريخ غير صالحة'), 'error');
+
+    UI.loader(true);
+    try {
+        await API.request('/hr/me/leave-request', 'POST', { startDate, endDate, type, reason });
+        UI.toast(Lang.t('Leave requested','تم طلب الإجازة'), 'success');
+        document.getElementById('hr-leave-start').value = '';
+        document.getElementById('hr-leave-end').value = '';
+        document.getElementById('hr-leave-notes').value = '';
+        this.loadHrData();
+    } catch(e) { UI.toast(e.message, 'error'); }
+    UI.loader(false);
+  },
+
+  async fetchPayroll() {
+      const month = document.getElementById('hr-pay-month').value;
+      const year = document.getElementById('hr-pay-year').value;
+      if(!month || !year) return;
+      
+      const wrap = document.getElementById('hr-pay-result');
+      wrap.innerHTML = '...';
+      
+      try {
+          const res = await API.request(`/hr/me/payroll?month=${month}&year=${year}`, 'GET');
+          wrap.innerHTML = `
+            <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem;"><span>Base Salary</span> <strong>${res.baseSalary.toFixed(2)}</strong></div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem; color:var(--danger);"><span>Deductions (${res.unpaidAbsences} days)</span> <strong>-${res.deduction.toFixed(2)}</strong></div>
+            <hr style="border:0; border-top:1px solid var(--border); margin:0.5rem 0;" />
+            <div style="display:flex; justify-content:space-between; font-size:1.1rem; color:var(--success);"><span>Net Salary</span> <strong>${res.netSalary.toFixed(2)}</strong></div>
+          `;
+      } catch(e) {
+          wrap.innerHTML = `<span style="color:var(--danger)">Error: ${e.message}</span>`;
+      }
   }
 };
-
-/* ══════════════════════════════════════════
-   INIT
-══════════════════════════════════════════ */
-document.addEventListener('keydown',e=>{
-  if(e.key==='Enter'){ if(App.current==='admin-login') Auth.adminLogin(); if(App.current==='emp-login') Auth.empLogin(); }
-  if(e.key==='Escape') document.querySelectorAll('.modal-overlay.show').forEach(m=>m.classList.remove('show'));
-});
-window.addEventListener('amd-unauthorized', () => {
-  localStorage.clear();
-  if (typeof App !== 'undefined') App.goto('home');
-});
-document.addEventListener('DOMContentLoaded',()=>{ 
-  const d=document.getElementById('rec-date'); if(d) d.value=DB.today(); 
-  Lang.apply(); UI.applyTheme();
-  Auth.restoreSession(); 
-});
+// ...existing code...
 </script>
 </body>
 </html>

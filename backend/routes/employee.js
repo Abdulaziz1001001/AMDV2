@@ -3,11 +3,12 @@ const auth = require('../middleware/authMiddleware');
 const Employee = require('../models/Employee');
 const Location = require('../models/Location');
 const Record = require('../models/Record');
+const { upsertPendingLeaveNotification, upsertActivityNotification } = require('../lib/recordNotifications');
 
 const router = express.Router();
 
 router.use(auth);
-router.use(auth.requireRole('employee'));
+router.use(auth.requireRole(['employee', 'manager']));
 
 function formatDocs(arr) {
   return arr.map((doc) => ({ ...doc._doc, id: doc._id.toString() }));
@@ -90,6 +91,14 @@ router.post('/record', async (req, res) => {
       }
 
       await record.save();
+      
+      let action = 'checkout';
+      if (status === 'early_leave') action = 'leave';
+      await upsertActivityNotification(record, action);
+      if (record.approvalStatus === 'pending') {
+        await upsertPendingLeaveNotification(record);
+      }
+      
       return res.json({ msg: 'Check-out updated successfully', record });
     }
 
@@ -131,7 +140,10 @@ router.post('/record', async (req, res) => {
       attachment,
     });
     await newRecord.save();
-    return res.json({ msg: 'Check-in saved successfully', record: newRecord });
+    
+    await upsertActivityNotification(newRecord, 'checkin');
+
+    res.json({ msg: 'Check-in recorded successfully', record: newRecord });
   } catch (err) {
     console.error('Record Save Error:', err);
     res.status(500).json({ msg: err.message });

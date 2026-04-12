@@ -18,6 +18,7 @@ const WorkPolicySchema = new mongoose.Schema(
     companyHolidays: { type: [HolidaySchema], default: [] },
     lateGraceMinutes: { type: Number, default: 15 },
     excuseReasons: { type: [ExcuseReasonSchema], default: [] },
+    annualLeaveDays: { type: Number, default: 30 }, // Default 30 days of annual leave
   },
   { timestamps: true },
 );

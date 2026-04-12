@@ -28,6 +28,38 @@ async function upsertPendingLeaveNotification(record) {
   );
 }
 
+async function upsertActivityNotification(record, action) {
+  const rid = String(record._id);
+  let empName = 'Employee';
+  try {
+    const emp = await Employee.findById(record.employeeId);
+    if (emp && emp.name) empName = emp.name;
+  } catch (_) {}
+
+  let title = 'Activity Recorded';
+  let titleAr = 'تسجيل نشاط';
+  if (action === 'checkin') {
+    title = 'Check In Recorded';
+    titleAr = 'تسجيل حضور';
+  } else if (action === 'checkout') {
+    title = 'Check Out Recorded';
+    titleAr = 'تسجيل انصراف';
+  } else if (action === 'leave') {
+    title = 'Leave Request Submitted';
+    titleAr = 'تم تقديم طلب استئذان';
+  }
+
+  await AdminNotification.create({
+    type: 'activity_' + action,
+    title,
+    titleAr,
+    body: `${empName} — ${record.date}`,
+    bodyAr: `${empName} — ${record.date}`,
+    ref: { kind: 'record', id: rid },
+    readAt: null,
+  });
+}
+
 async function markNotificationsReadForRecord(recordId) {
   await AdminNotification.updateMany(
     { 'ref.kind': 'record', 'ref.id': String(recordId) },
@@ -35,4 +67,4 @@ async function markNotificationsReadForRecord(recordId) {
   );
 }
 
-module.exports = { upsertPendingLeaveNotification, markNotificationsReadForRecord };
+module.exports = { upsertPendingLeaveNotification, upsertActivityNotification, markNotificationsReadForRecord };

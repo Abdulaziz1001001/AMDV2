@@ -5,6 +5,8 @@ const Group = require('../models/Group');
 const Location = require('../models/Location');
 const Record = require('../models/Record');
 const AdminUser = require('../models/Admin');
+const AdminNotification = require('../models/AdminNotification');
+const WorkPolicy = require('../models/WorkPolicy');
 const auth = require('../middleware/authMiddleware');
 const { employeeWriteSchema, validateBody } = require('../middleware/validation');
 
@@ -19,6 +21,8 @@ router.get('/all-data', async (req, res) => {
     const groups = await Group.find();
     const locations = await Location.find();
     const records = await Record.find();
+    const workPolicy = await WorkPolicy.findOne({ key: 'company' });
+    const notificationUnreadCount = await AdminNotification.countDocuments({ readAt: null });
 
     const format = (arr) => arr.map((doc) => ({ ...doc._doc, id: doc._id.toString() }));
 
@@ -27,9 +31,55 @@ router.get('/all-data', async (req, res) => {
       groups: format(groups),
       locations: format(locations),
       records: format(records),
+      workPolicy: workPolicy ? { ...workPolicy._doc, id: workPolicy._id.toString() } : null,
+      notificationUnreadCount,
     });
   } catch (err) {
     res.status(500).json({ msg: 'Server Error' });
+  }
+});
+
+router.put('/work-policy', async (req, res) => {
+  try {
+    let policy = await WorkPolicy.findOne({ key: 'company' });
+    if (!policy) {
+      policy = new WorkPolicy({ key: 'company', ...req.body });
+    } else {
+      Object.assign(policy, req.body);
+    }
+    await policy.save();
+    res.json({ ...policy._doc, id: policy._id.toString() });
+  } catch (err) {
+    res.status(500).json({ msg: err.message });
+  }
+});
+
+router.get('/notifications', async (req, res) => {
+  try {
+    const items = await AdminNotification.find().sort({ createdAt: -1 }).limit(50);
+    const unreadCount = await AdminNotification.countDocuments({ readAt: null });
+    res.json({ items: items.map(n => ({ ...n._doc, id: n._id.toString() })), unreadCount });
+  } catch (err) {
+    res.status(500).json({ msg: err.message });
+  }
+});
+
+router.patch('/notifications/:id/read', async (req, res) => {
+  try {
+    await AdminNotification.findByIdAndUpdate(req.params.id, { readAt: new Date() });
+    const unreadCount = await AdminNotification.countDocuments({ readAt: null });
+    res.json({ msg: 'Success', unreadCount });
+  } catch (err) {
+    res.status(500).json({ msg: err.message });
+  }
+});
+
+router.post('/notifications/read-all', async (req, res) => {
+  try {
+    await AdminNotification.updateMany({ readAt: null }, { readAt: new Date() });
+    res.json({ msg: 'Success' });
+  } catch (err) {
+    res.status(500).json({ msg: err.message });
   }
 });
 

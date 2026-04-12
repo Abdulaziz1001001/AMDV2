@@ -11,6 +11,9 @@ const EmployeeSchema = new mongoose.Schema({
   workStart: String,
   workEnd: String,
   salary: Number,
+  departmentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Department' },
+  jobTitle: String,
+  hireDate: Date,
   active: { type: Boolean, default: true }
 }, { timestamps: true });
 

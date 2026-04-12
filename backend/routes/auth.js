@@ -4,6 +4,8 @@ const jwt = require('jsonwebtoken');
 const Admin = require('../models/Admin');
 const Employee = require('../models/Employee');
 const { loginSchema, validateBody } = require('../middleware/validation');
+const mongoose = require('mongoose');
+const Department = mongoose.models.Department;
 
 const router = express.Router();
 
@@ -40,10 +42,13 @@ router.post('/emp-login', validateBody(loginSchema), async (req, res) => {
     const isMatch = await bcrypt.compare(password, emp.password);
     if (!isMatch) return res.status(400).json({ msg: 'Invalid credentials' });
 
-    const token = jwt.sign({ id: emp._id, role: 'employee' }, process.env.JWT_SECRET, { expiresIn: '12h' });
+    const isManager = await Department.exists({ managerId: emp._id });
+    const userRole = isManager ? 'manager' : 'employee';
+
+    const token = jwt.sign({ id: emp._id, role: userRole }, process.env.JWT_SECRET, { expiresIn: '12h' });
     res.json({
       token,
-      user: { id: emp._id, name: emp.name, groupId: emp.groupId },
+      user: { id: emp._id, name: emp.name, groupId: emp.groupId, role: userRole },
     });
   } catch (err) {
     res.status(500).send('Server Error');
