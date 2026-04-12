@@ -138,9 +138,9 @@ router.get('/me/payroll', auth.requireRole(['employee', 'manager']), async (req,
 
     // Get all records for this month
     // Find unpaid absences
-    const startDateStr = \`\${y}-\${m.toString().padStart(2, '0')}-01\`;
+    const startDateStr = `${y}-${m.toString().padStart(2, '0')}-01`;
     const lastDay = new Date(y, m, 0).getDate();
-    const endDateStr = \`\${y}-\${m.toString().padStart(2, '0')}-\${lastDay}\`;
+    const endDateStr = `${y}-${m.toString().padStart(2, '0')}-${lastDay}`;
 
     const records = await Record.find({
       employeeId: req.user.id,
@@ -207,8 +207,8 @@ router.patch('/department/leaves/:id', auth.requireRole('manager'), async (req, 
     // Notify employee (email mock)
     sendEmailNotification(
       leave.employeeId.email || 'employee@amd.com',
-      \`Leave Request \${status.toUpperCase()}\`,
-      \`Your leave request for \${leave.requestedDays} day(s) has been \${status}.\`
+      `Leave Request ${status.toUpperCase()}`,
+      `Your leave request for ${leave.requestedDays} day(s) has been ${status}.`
     );
 
     res.json({ msg: 'Success', leave });
