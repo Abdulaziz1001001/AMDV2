@@ -166,11 +166,6 @@ router.get('/me/payroll', auth.requireRole(['employee', 'manager']), async (req,
     res.status(500).json({ msg: 'Server error' });
   }
 });
-
-// -----------------------------------------------------
-// 2. Manager Endpoints
-// -----------------------------------------------------
-
 router.get('/department/leaves', auth.requireRole('manager'), async (req, res) => {
   try {
     const dept = await Department.findOne({ managerId: req.user.id });
@@ -216,5 +211,4 @@ router.patch('/department/leaves/:id', auth.requireRole('manager'), async (req, 
     res.status(500).json({ msg: 'Server error' });
   }
 });
-
 module.exports = router;
