@@ -17,6 +17,7 @@ function createApp() {
   assertJwtSecret();
 
   const app = express();
+  app.set('trust proxy', 1); // fix express-rate-limit ERR_ERL_UNEXPECTED_X_FORWARDED_FOR on render
 
   const origins = process.env.FRONTEND_ORIGIN
     ? process.env.FRONTEND_ORIGIN.split(',').map((s) => s.trim()).filter(Boolean)

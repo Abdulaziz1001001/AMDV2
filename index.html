@@ -795,7 +795,26 @@ const Auth = {
           document.getElementById('emp-topbar-name').textContent = user.name;
           App.goto('emp'); Emp.init();
         }
-      } catch (e) { localStorage.clear(); App.goto('home'); }
+      } catch (e) {
+         try {
+            const user = JSON.parse(userStr);
+            if (e.message !== 'Unauthorized') {
+               UI.toast(Lang.t('Offline or Server Error','خطأ في الاتصال بالخادم'), 'error');
+               if (role === 'admin') {
+                  this.adminSession = user;
+                  document.getElementById('admin-display-name').textContent = user.name;
+                  document.getElementById('admin-avatar-initial').textContent = user.name.charAt(0).toUpperCase();
+                  App.goto('admin');
+               } else if (role === 'emp') {
+                  this.empSession = user;
+                  document.getElementById('emp-topbar-name').textContent = user.name;
+                  App.goto('emp');
+               }
+            } else {
+               localStorage.clear(); App.goto('home');
+            }
+         } catch(err2) { localStorage.clear(); App.goto('home'); }
+      }
       UI.loader(false);
     }
   }
@@ -1831,10 +1850,6 @@ const Emp = {
       }
   }
 };
-
-/* ══════════════════════════════════════════
-   INIT
-══════════════════════════════════════════ */
 document.addEventListener('keydown',e=>{
   if(e.key==='Enter'){ if(App.current==='admin-login') Auth.adminLogin(); if(App.current==='emp-login') Auth.empLogin(); }
   if(e.key==='Escape') document.querySelectorAll('.modal-overlay.show').forEach(m=>m.classList.remove('show'));

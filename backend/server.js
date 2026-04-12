@@ -40,7 +40,11 @@ async function ensureBootstrapAdmin() {
 }
 
 mongoose
-  .connect(process.env.MONGO_URI)
+  .connect(process.env.MONGO_URI, {
+    socketTimeoutMS: 45000,
+    serverSelectionTimeoutMS: 5000,
+    family: 4
+  })
   .then(async () => {
     console.log('MongoDB connected');
     try {
