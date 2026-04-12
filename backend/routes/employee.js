@@ -34,7 +34,7 @@ router.get('/me-data', async (req, res) => {
     });
   } catch (err) {
     console.error('me-data error:', err);
-    res.status(500).json({ msg: 'Server Error' });
+    res.status(500).json({ msg: err.message, stack: err.stack });
   }
 });
 

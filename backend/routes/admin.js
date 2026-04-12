@@ -35,7 +35,7 @@ router.get('/all-data', async (req, res) => {
       notificationUnreadCount,
     });
   } catch (err) {
-    res.status(500).json({ msg: 'Server Error' });
+    res.status(500).json({ msg: err.message, stack: err.stack });
   }
 });
 
