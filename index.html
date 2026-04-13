@@ -927,6 +927,7 @@ const Admin = {
     if(panel==='groups') this.renderGroups();
     if(panel==='records'){ document.getElementById('rec-date').value=DB.today(); this.filterRecords(); }
     if(panel==='dashboard') this.renderDashboard();
+    if(panel==='hr' && typeof Admin.loadHrData === 'function') Admin.loadHrData();
   },
   async saveSettings() {
     const u = document.getElementById('admin-set-user').value.trim(); const e = document.getElementById('admin-set-email').value.trim(); const p = document.getElementById('admin-set-pass').value;
