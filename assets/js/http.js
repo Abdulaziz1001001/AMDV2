@@ -43,6 +43,55 @@
     if (!res.ok) throw new Error(data.msg || 'Error ' + res.status);
     return data;
   }
+  // --- PASTE THIS IN http.js ---
+
+// 1. Function to get Notifications
+async function loadNotifications() {
+  try {
+      const response = await fetch('/api/admin/notifications', {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      const notifications = await response.json();
+      
+      const container = document.getElementById('notification-center');
+      if (container && Array.isArray(notifications)) {
+          container.innerHTML = notifications.map(notif => 
+              `<div class="notification-item">
+                  <p>${notif.message}</p>
+               </div>`
+          ).join('');
+      }
+  } catch (err) {
+      console.error('Failed to load notifications', err);
+  }
+}
+
+// 2. Function to get HR Data
+async function loadHRModule() {
+  try {
+      const response = await fetch('/api/hr/dashboard', { // Adjust endpoint if your hr.js uses a different route
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      const data = await response.json();
+      
+      const container = document.getElementById('hr-module');
+      if (container) {
+          container.innerHTML = `
+              <div class="hr-stats">
+                  <p><strong>Total Employees:</strong> ${data.totalEmployees || 0}</p>
+                  <p><strong>Pending Leaves:</strong> ${data.pendingLeaves || 0}</p>
+              </div>
+          `;
+      }
+  } catch (err) {
+      console.error('Failed to load HR data', err);
+  }
+}
+
+// 3. Make sure to call these functions right after a successful login!
+// Find your login function in http.js and add:
+// loadNotifications();
+// loadHRModule();
 
   window.AMD_HTTP = { base: base, request: request, getHeaders: getHeaders };
 })();

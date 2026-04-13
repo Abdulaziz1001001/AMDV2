@@ -5,6 +5,14 @@ const path = require('path');
 const pino = require('pino');
 const pinoHttp = require('pino-http');
 const rateLimit = require('express-rate-limit');
+// --- PASTE THIS IN app.js ---
+const hrRoutes = require('./routes/hr');
+const adminRoutes = require('./routes/admin');
+const employeeRoutes = require('./routes/employee');
+
+app.use('/api/hr', hrRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/employee', employeeRoutes);
 
 function assertJwtSecret() {
   const secret = process.env.JWT_SECRET;

@@ -201,6 +201,14 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
       <div style="font-size:1.1rem;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;flex:1" id="admin-panel-title" class="tr" data-en="Dashboard" data-ar="الرئيسية">Dashboard</div>
       
       <div style="display:flex; align-items:center; gap:0.25rem;">
+        <div class="notif-wrap" style="position:relative; margin-right:1rem;">
+            <button class="btn-icon" onclick="Admin.toggleNotifDropdown(event)" title="Notifications">
+                <i class="fas fa-bell"></i>
+                <span id="admin-notif-badge" class="notif-badge">0</span>
+            </button>
+            <div id="admin-notif-dropdown" class="notif-dropdown"></div>
+        </div>
+
         <button class="btn-ghost btn-sm" onclick="Lang.toggle()" title="Language" style="display:flex; align-items:center; gap:0.4rem;">
             <i class="fas fa-globe"></i> <span class="lang-text" style="font-weight:600; font-size:0.75rem;">عربي</span>
         </button>
@@ -294,7 +302,17 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
           </div>
         </div>
       </div>
-
+      <div id="panel-hr" class="admin-panel">
+        <div style="display:flex; justify-content:space-between; margin-bottom:1.5rem;">
+           <h2 style="color:var(--accent); text-transform:uppercase;" class="tr" data-en="HR Management" data-ar="إدارة الموارد البشرية">HR Management</h2>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title tr" data-en="Pending Leave Requests" data-ar="طلبات الإجازة المعلقة">Pending Leave Requests</div></div>
+          <div style="padding:1.5rem" id="admin-hr-leaves-container">
+             <p style="color:var(--text-muted)">The backend HR route will inject leave requests here.</p>
+          </div>
+        </div>
+      </div>
       <div id="panel-calendar" class="admin-panel">
         <p style="color:var(--text-muted);margin-bottom:1rem;max-width:720px" class="tr" data-en="Company-wide rules below. Each group can override weekends, ignore public holidays, or add site closure dates in Groups." data-ar="الإعدادات أدناه للشركة بأكملها. يمكن لكل مجموعة تعديل أيام العطلة الأسبوعية أو تجاهل العطل الرسمية أو إضافة تواريخ إغلاق الموقع من صفحة المجموعات.">Company-wide rules below. Each group can override weekends, ignore public holidays, or add site closure dates in Groups.</p>
         <div class="card" style="margin-bottom:1rem">
