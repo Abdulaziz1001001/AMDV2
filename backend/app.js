@@ -5,14 +5,12 @@ const path = require('path');
 const pino = require('pino');
 const pinoHttp = require('pino-http');
 const rateLimit = require('express-rate-limit');
-// --- PASTE THIS IN app.js ---
+
+// 1. Import all your routes at the top
+const authRoutes = require('./routes/auth');
 const hrRoutes = require('./routes/hr');
 const adminRoutes = require('./routes/admin');
 const employeeRoutes = require('./routes/employee');
-
-app.use('/api/hr', hrRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/employee', employeeRoutes);
 
 function assertJwtSecret() {
   const secret = process.env.JWT_SECRET;
@@ -24,6 +22,7 @@ function assertJwtSecret() {
 function createApp() {
   assertJwtSecret();
 
+  // 2. Initialize the app
   const app = express();
   app.set('trust proxy', 1); // fix express-rate-limit ERR_ERL_UNEXPECTED_X_FORWARDED_FOR on render
 
@@ -31,6 +30,7 @@ function createApp() {
     ? process.env.FRONTEND_ORIGIN.split(',').map((s) => s.trim()).filter(Boolean)
     : false;
 
+  // 3. Apply standard middleware
   app.use(cors({ origin: origins }));
   app.use(express.json({ limit: '12mb' }));
 
@@ -38,6 +38,7 @@ function createApp() {
     level: process.env.LOG_LEVEL || 'info',
     redact: ['req.headers.authorization'],
   });
+  
   app.use(
     pinoHttp({
       logger,
@@ -61,11 +62,13 @@ function createApp() {
     legacyHeaders: false,
   });
 
-  app.use('/api/auth', authLimiter, require('./routes/auth'));
-  app.use('/api/admin', require('./routes/admin'));
-  app.use('/api/employee', require('./routes/employee'));
-  app.use('/api/hr', require('./routes/hr'));
+  // 4. Mount your routes INSIDE the createApp function
+  app.use('/api/auth', authLimiter, authRoutes);
+  app.use('/api/admin', adminRoutes);
+  app.use('/api/employee', employeeRoutes);
+  app.use('/api/hr', hrRoutes);
 
+  // 5. Health check and Static File serving
   app.get('/health', (req, res) => res.type('text').send('ok'));
 
   const staticRoot = path.join(__dirname, '..');
