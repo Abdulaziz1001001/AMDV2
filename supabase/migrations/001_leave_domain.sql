@@ -50,7 +50,7 @@ create table if not exists public.leave_requests (
   requested_days int not null check (requested_days > 0),
   type text not null,
   reason text,
-  status text not null default 'pending' check (status in ('pending', 'approved', 'declined')),
+  status text not null default 'pending' check (status in ('pending', 'approved', 'declined', 'rejected')),
   attachment_url text,
   approved_by uuid references auth.users(id),
   approved_by_role text check (approved_by_role in ('admin', 'manager')),
@@ -67,6 +67,24 @@ alter table public.leave_requests
 
 do $$
 begin
+  if exists (
+    select 1
+    from pg_constraint
+    where conname = 'leave_requests_status_check'
+  ) then
+    alter table public.leave_requests drop constraint leave_requests_status_check;
+  end if;
+
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'leave_requests_status_check'
+  ) then
+    alter table public.leave_requests
+      add constraint leave_requests_status_check
+      check (status in ('pending', 'approved', 'declined', 'rejected'));
+  end if;
+
   if not exists (
     select 1
     from pg_constraint

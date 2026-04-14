@@ -1725,11 +1725,16 @@ const Admin = {
     try {
       const sb = SupabaseService.ensureClient();
       const leavesRes = await sb.from('leave_requests').select('id, employee_id, start_date, end_date, requested_days, type, status, attachment_url, created_at, profiles!leave_requests_employee_id_fkey(full_name)').order('created_at', { ascending: false });
-      if (!leavesRes.error) this.hrLeaves = leavesRes.data || [];
+      if (leavesRes.error) this.hrLeaves = [];
+      else this.hrLeaves = leavesRes.data || [];
       const users = DB.getEmployees().map((e) => ({ id: e.id, name: e.name, eid: e.eid, role: e.role || 'employee' }));
       const balRes = await sb.from('leave_balances').select('id, user_id, annual_balance_days');
-      const map = new Map((balRes.data || []).map((b) => [String(b.user_id), b]));
-      this.hrBalances = users.map((u) => ({ userId: u.id, name: u.name, eid: u.eid, role: u.role, days: map.get(String(u.id)) ? map.get(String(u.id)).annual_balance_days : 0 }));
+      if (balRes.error) {
+        this.hrBalances = [];
+      } else {
+        const map = new Map((balRes.data || []).map((b) => [String(b.user_id), b]));
+        this.hrBalances = users.map((u) => ({ userId: u.id, name: u.name, eid: u.eid, role: u.role, days: map.get(String(u.id)) ? map.get(String(u.id)).annual_balance_days : 0 }));
+      }
     } catch (_) {
       this.hrLeaves = [];
       this.hrBalances = [];
@@ -1794,7 +1799,9 @@ const Admin = {
   },
 
   async adminActionLeave(id, status) {
-    if (!confirm(Lang.t(`Are you sure you want to ${status} this leave?`, `هل تريد ${status === 'approved' ? 'الموافقة على' : 'رفض'} هذا الطلب؟`))) return;
+    const actionWordEn = status === 'approved' ? 'approve' : (status === 'declined' || status === 'rejected' ? 'decline' : status);
+    const actionWordAr = status === 'approved' ? 'الموافقة على' : (status === 'declined' || status === 'rejected' ? 'رفض' : 'تحديث');
+    if (!confirm(Lang.t(`Are you sure you want to ${actionWordEn} this leave?`, `هل تريد ${actionWordAr} هذا الطلب؟`))) return;
     UI.loader(true);
     try {
       const sb = SupabaseService.ensureClient();
@@ -1803,14 +1810,16 @@ const Admin = {
       const upd = await sb.from('leave_requests').update({ status, approved_by: uid, approved_by_role: 'admin', approved_at: new Date().toISOString() }).eq('id', id);
       if (upd.error) throw new Error(upd.error.message);
       const leave = await sb.from('leave_requests').select('employee_id, type, start_date, end_date').eq('id', id).maybeSingle();
+      if (leave.error) throw new Error(leave.error.message);
       if (leave.data) {
-        await sb.from('notifications').insert([{
+        const notif = await sb.from('notifications').insert([{
           recipient_user_id: leave.data.employee_id,
           leave_request_id: id,
           type: 'leave_status_changed',
           title: 'Leave request updated',
           body: `${leave.data.type}: ${status} (${leave.data.start_date} to ${leave.data.end_date})`,
         }]);
+        if (notif.error) throw new Error(notif.error.message);
       }
       await this.refreshSupabaseHrData();
       this.renderHrLeaves();
@@ -1961,12 +1970,13 @@ const Emp = {
   fillLeaveReasons() {
     const sel = document.getElementById('leave-reason');
     if (!sel) return;
+    const policyReasons = (DB.getWorkPolicy() && DB.getWorkPolicy().excuseReasons) || [];
     const prev = sel.value;
     sel.innerHTML = '<option value="" disabled selected>-- Select / اختر --</option>';
-    this.leaveTypes.forEach((t) => {
+    policyReasons.forEach((r) => {
       const opt = document.createElement('option');
-      opt.value = t;
-      opt.textContent = t;
+      opt.value = r.code;
+      opt.textContent = Lang.current === 'ar' && r.labelAr ? r.labelAr : (r.labelEn || r.code);
       sel.appendChild(opt);
     });
     if (prev && [...sel.options].some((o) => o.value === prev)) sel.value = prev;
@@ -1990,8 +2000,8 @@ const Emp = {
   },
   cleanup(){
     if(this.watchId!==null){navigator.geolocation.clearWatch(this.watchId);this.watchId=null;}
-    if (this.notifChannel && SupabaseService && SupabaseService.ensureClient) {
-      try { SupabaseService.ensureClient().removeChannel(this.notifChannel); } catch (_) {}
+    if (this.notifChannel) {
+      try { this.notifChannel.unsubscribe(); } catch (_) {}
       this.notifChannel = null;
     }
     this.currentPos=null;
@@ -2299,7 +2309,7 @@ const Emp = {
       wrap.innerHTML = `<div style="color:var(--danger)">${e.message}</div>`;
     }
   },
-  showTab(tab) {
+  async showTab(tab) {
     document.getElementById('emp-tab-attendance-content').style.display = tab === 'attendance' ? 'block' : 'none';
     document.getElementById('emp-tab-hr-content').style.display = tab === 'hr' ? 'block' : 'none';
     
@@ -2309,9 +2319,11 @@ const Emp = {
     if (tab === 'attendance') {
         if (Maps.empMap) setTimeout(() => Maps.empMap.invalidateSize(true), 350);
     } else if (tab === 'hr') {
-        this.loadHrData();
-        this.loadRequestHistory();
-        this.loadNotificationsList();
+        await Promise.all([
+          this.loadHrData(),
+          this.loadRequestHistory(),
+          this.loadNotificationsList(),
+        ]);
         const d = new Date();
         document.getElementById('hr-pay-month').value = d.getMonth() + 1;
         document.getElementById('hr-pay-year').value = d.getFullYear();
