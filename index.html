@@ -16,6 +16,8 @@
   --accent: #C45A28; --accent-light: #D96830; --accent-glow: rgba(196,90,40,0.15);
   --text: #F0ECE6; --text-muted: #888880; --text-dim: #555550;
   --success: #27AE60; --warning: #F1C40F; --danger: #E74C3C; --info: #3498DB;
+  --map-bg: #1a1a1a; --map-tile-filter: brightness(0.7) saturate(0.8);
+  --report-bg: #ffffff; --report-text: #111111; --report-subtext: #555555; --report-border: #dddddd;
   --radius: 4px; --radius-lg: 8px; --shadow: 0 4px 24px rgba(0,0,0,0.4);
 }
 
@@ -24,10 +26,10 @@ html[data-theme="light"] {
   --bg: #F0F2F5; --surface: #FFFFFF; --surface2: #F9FAFB; --surface3: #E5E7EB;
   --border: #E5E7EB; --border2: #D1D5DA;
   --text: #111827; --text-muted: #6B7280; --text-dim: #9CA3AF;
+  --map-bg: #e5e7eb; --map-tile-filter: none;
+  --report-bg: #ffffff; --report-text: #111111; --report-subtext: #4b5563; --report-border: #d1d5db;
   --shadow: 0 4px 20px rgba(0,0,0,0.08);
 }
-html[data-theme="light"] .leaflet-tile { filter: none; }
-html[data-theme="light"] .leaflet-container { background: #e5e5e5 !important; }
 html[data-theme="light"] .portal-card:hover { box-shadow: var(--shadow); }
 
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0; transition: background-color 0.3s, border-color 0.3s;}
@@ -74,8 +76,8 @@ a{color:inherit;text-decoration:none} button{cursor:pointer;font-family:inherit;
 table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding:0.75rem 1rem;text-align:left;font-size:0.7rem;text-transform:uppercase;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border)} td{padding:0.85rem 1rem;border-bottom:1px solid var(--border);font-size:0.85rem} tr:hover td{background:var(--surface2)}
 
 .map-layout{display:grid;grid-template-columns:1fr 340px;gap:1rem;height:calc(100vh - 160px)}
-#admin-map,#emp-map{width:100%;height:100%;border-radius:var(--radius-lg);border:1px solid var(--border); background-color: #1a1a1a;}
-.leaflet-container{background:#1a1a1a!important; font-family:inherit;} .leaflet-tile{filter:brightness(0.7) saturate(0.8)}
+#admin-map,#emp-map{width:100%;height:100%;border-radius:var(--radius-lg);border:1px solid var(--border); background-color: var(--map-bg);}
+.leaflet-container{background:var(--map-bg)!important; font-family:inherit;} .leaflet-tile{filter:var(--map-tile-filter)}
 .leaflet-popup-content-wrapper{background:var(--surface)!important;color:var(--text)!important;border:1px solid var(--border)!important;border-radius:var(--radius)!important} .leaflet-popup-tip{background:var(--surface)!important}
 
 .emp-grid{display:grid;grid-template-columns:1fr 380px;gap:1.5rem;height:calc(100vh - 120px)}
@@ -103,6 +105,8 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
 #toast-wrap{position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;display:flex;flex-direction:column;gap:0.5rem;pointer-events:none}
 .toast{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);padding:0.75rem 1rem;display:flex;align-items:center;gap:0.75rem;font-size:0.85rem;min-width:280px;pointer-events:all;}
 .toast.success i{color:var(--success)} .toast.error i{color:var(--danger)} .toast.warning i{color:var(--warning)}
+.amd-logo-img{width:36px;height:36px;object-fit:contain;border-radius:6px;display:block}
+.amd-logo-placeholder{width:36px;height:36px;border-radius:6px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700}
 
 #public-controls { position:absolute; top:1.5rem; right:1.5rem; display:flex; gap:0.5rem; z-index:100; transition: opacity 0.3s; }
 
@@ -132,7 +136,7 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
 <div id="page-home" class="page active">
   <div class="home-grid">
     <div class="amd-logo-wrap" style="display:flex; flex-direction:column; align-items:center; justify-content:center;">
-      <svg class="amd-logo-icon" viewBox="0 0 100 100" style="margin-bottom: 0.5rem;"><polygon points="10,90 45,10 55,10 90,90 75,90 50,28 25,90"/><rect x="22" y="68" width="56" height="8"/></svg>
+      <img class="amd-logo-img" src="/assets/logo-amd.svg" alt="AMD United logo" style="width:72px;height:72px;margin-bottom:0.5rem" onerror="this.outerHTML='<div class=&quot;amd-logo-placeholder&quot; style=&quot;width:72px;height:72px;margin-bottom:0.5rem&quot;>AMD</div>'">
       <div style="display:flex;align-items:center;gap:1rem; justify-content:center;">
         <span class="amd-arabic">عمد</span>
         <div style="width:1px;height:2rem;background:var(--border2)"></div>
@@ -151,7 +155,7 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
 
 <div id="page-admin-login" class="page">
   <div class="auth-box">
-    <div class="auth-header"><div class="auth-back" style="cursor:pointer; color:var(--text-muted); margin-bottom:1rem;" onclick="App.goto('home')"><i class="fas fa-arrow-left"></i> <span class="tr" data-en="Back" data-ar="رجوع">Back</span></div><h1 style="font-family:'Barlow Condensed';font-size:2rem;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:0.4rem" class="tr" data-en="Admin Login" data-ar="دخول الإدارة">Admin Login</h1></div>
+    <div class="auth-header"><div class="auth-back" style="cursor:pointer; color:var(--text-muted); margin-bottom:1rem;" onclick="App.goto('home')"><i class="fas fa-arrow-left"></i> <span class="tr" data-en="Back" data-ar="رجوع">Back</span></div><div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.6rem"><img class="amd-logo-img" src="/assets/logo-amd.svg" alt="AMD United logo" onerror="this.outerHTML='<div class=&quot;amd-logo-placeholder&quot;>AMD</div>'"><span style="font-size:0.85rem;color:var(--text-muted);letter-spacing:0.12em;text-transform:uppercase">AMD United</span></div><h1 style="font-family:'Barlow Condensed';font-size:2rem;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:0.4rem" class="tr" data-en="Admin Login" data-ar="دخول الإدارة">Admin Login</h1></div>
     <div id="admin-login-err" class="alert alert-danger hidden"><i class="fas fa-exclamation-circle"></i><span id="admin-login-err-msg">Error</span></div>
     <div class="form-group"><label class="form-label tr" data-en="Username" data-ar="المعرف">Username</label><div class="input-icon-wrap"><i class="fas fa-user"></i><input type="text" id="admin-username" class="form-control ph-tr" data-phen="Enter username" data-phar="أدخل المعرف" placeholder="Enter username"></div></div>
     <div class="form-group"><label class="form-label tr" data-en="Password" data-ar="كلمة المرور">Password</label><div class="input-icon-wrap"><i class="fas fa-lock"></i><input type="password" id="admin-password" class="form-control ph-tr" data-phen="Enter password" data-phar="أدخل كلمة المرور" placeholder="Enter password"><button class="toggle-pw" onclick="UI.togglePw('admin-password',this)"><i class="fas fa-eye"></i></button></div></div>
@@ -161,7 +165,7 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
 
 <div id="page-emp-login" class="page">
   <div class="auth-box">
-    <div class="auth-header"><div class="auth-back" style="cursor:pointer; color:var(--text-muted); margin-bottom:1rem;" onclick="App.goto('home')"><i class="fas fa-arrow-left"></i> <span class="tr" data-en="Back" data-ar="رجوع">Back</span></div><h1 style="font-family:'Barlow Condensed';font-size:2rem;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:0.4rem" class="tr" data-en="Employee Login" data-ar="دخول الموظف">Employee Login</h1></div>
+    <div class="auth-header"><div class="auth-back" style="cursor:pointer; color:var(--text-muted); margin-bottom:1rem;" onclick="App.goto('home')"><i class="fas fa-arrow-left"></i> <span class="tr" data-en="Back" data-ar="رجوع">Back</span></div><div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.6rem"><img class="amd-logo-img" src="/assets/logo-amd.svg" alt="AMD United logo" onerror="this.outerHTML='<div class=&quot;amd-logo-placeholder&quot;>AMD</div>'"><span style="font-size:0.85rem;color:var(--text-muted);letter-spacing:0.12em;text-transform:uppercase">AMD United</span></div><h1 style="font-family:'Barlow Condensed';font-size:2rem;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:0.4rem" class="tr" data-en="Employee Login" data-ar="دخول الموظف">Employee Login</h1></div>
     <div id="emp-login-err" class="alert alert-danger hidden"><i class="fas fa-exclamation-circle"></i><span id="emp-login-err-msg">Error</span></div>
     <div class="form-group"><label class="form-label tr" data-en="Username" data-ar="المعرف">Username</label><div class="input-icon-wrap"><i class="fas fa-user"></i><input type="text" id="emp-username" class="form-control ph-tr" data-phen="Enter username" data-phar="أدخل المعرف" placeholder="Enter username"></div></div>
     <div class="form-group"><label class="form-label tr" data-en="Password" data-ar="كلمة المرور">Password</label><div class="input-icon-wrap"><i class="fas fa-lock"></i><input type="password" id="emp-password" class="form-control ph-tr" data-phen="Enter password" data-phar="أدخل كلمة المرور" placeholder="Enter password"><button class="toggle-pw" onclick="UI.togglePw('emp-password',this)"><i class="fas fa-eye"></i></button></div></div>
@@ -172,7 +176,7 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
 <div id="page-admin" class="page">
   <div class="sidebar-overlay" id="sidebar-overlay" onclick="UI.closeSidebar()"></div>
   <aside class="sidebar" id="admin-sidebar">
-    <div style="padding:1.5rem 1.25rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:0.75rem"><svg style="width:32px;height:32px;fill:var(--accent)" viewBox="0 0 100 100"><polygon points="10,90 45,10 55,10 90,90 75,90 50,28 25,90"/><rect x="22" y="68" width="56" height="8"/></svg><div><div style="font-family:'Cinzel',serif;font-size:0.85rem;letter-spacing:0.08em">AMD United</div><small style="font-size:0.65rem;color:var(--text-muted)" class="tr" data-en="Admin Panel" data-ar="لوحة الإدارة">Admin Panel</small></div></div>
+    <div style="padding:1.5rem 1.25rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:0.75rem"><img class="amd-logo-img" src="/assets/logo-amd.svg" alt="AMD United logo" onerror="this.outerHTML='<div class=&quot;amd-logo-placeholder&quot;>A</div>'"><div><div style="font-family:'Cinzel',serif;font-size:0.85rem;letter-spacing:0.08em">AMD United</div><small style="font-size:0.65rem;color:var(--text-muted)" class="tr" data-en="Admin Panel" data-ar="لوحة الإدارة">Admin Panel</small></div></div>
     
     <nav class="sidebar-nav">
       <span style="display:block;padding:0.75rem 1.25rem 0.4rem;font-size:0.65rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--text-dim)" class="tr" data-en="Menu" data-ar="القائمة">Menu</span>
@@ -199,6 +203,7 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
   <div class="main-area">
     <header class="topbar">
       <button class="hamburger btn-ghost" onclick="UI.toggleSidebar()"><i class="fas fa-bars"></i></button>
+      <img class="amd-logo-img" src="/assets/logo-amd.svg" alt="AMD United logo" onerror="this.outerHTML='<div class=&quot;amd-logo-placeholder&quot; style=&quot;width:28px;height:28px&quot;>A</div>'">
       <div style="font-size:1.1rem;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;flex:1" id="admin-panel-title" class="tr" data-en="Dashboard" data-ar="الرئيسية">Dashboard</div>
       
       <div style="display:flex; align-items:center; gap:0.25rem;">
@@ -240,9 +245,17 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
       </div>
 
       <div id="panel-analytics" class="admin-panel">
-        <div style="display:flex; justify-content:space-between; margin-bottom:1.5rem;">
+  <div style="display:flex; justify-content:space-between; margin-bottom:1.5rem;gap:1rem;flex-wrap:wrap">
            <div>
              <h2 style="color:var(--accent); margin-bottom:0.2rem; text-transform:uppercase;" class="tr" data-en="Data Analytics" data-ar="التحليلات">Data Analytics</h2>
+             <div style="display:flex;align-items:center;gap:0.5rem;margin-top:0.5rem">
+               <label class="form-label" style="margin:0" for="analytics-work-mode-filter">Work Mode</label>
+               <select id="analytics-work-mode-filter" class="form-control form-select" style="min-width:180px" onchange="Admin.renderAnalytics()">
+                 <option value="all">All Work Modes</option>
+                 <option value="site">Site Teams</option>
+                 <option value="office">Office Teams</option>
+               </select>
+             </div>
            </div>
            <button class="btn btn-outline btn-sm" style="height:fit-content" onclick="Admin.renderAnalytics()"><i class="fas fa-sync"></i> <span class="tr" data-en="Refresh" data-ar="تحديث">Refresh</span></button>
         </div>
@@ -368,6 +381,15 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
       <div id="panel-calendar" class="admin-panel">
         <p style="color:var(--text-muted);margin-bottom:1rem;max-width:720px" class="tr" data-en="Company-wide rules below. Each group can override weekends, ignore public holidays, or add site closure dates in Groups." data-ar="الإعدادات أدناه للشركة بأكملها. يمكن لكل مجموعة تعديل أيام العطلة الأسبوعية أو تجاهل العطل الرسمية أو إضافة تواريخ إغلاق الموقع من صفحة المجموعات.">Company-wide rules below. Each group can override weekends, ignore public holidays, or add site closure dates in Groups.</p>
         <div class="card" style="margin-bottom:1rem">
+          <div class="card-header"><div class="card-title tr" data-en="Construction Calendar Legend" data-ar="دليل التقويم للمشاريع">Construction Calendar Legend</div></div>
+          <div style="padding:1rem;display:flex;gap:0.75rem;flex-wrap:wrap">
+            <span class="badge badge-success">Workday / Site Open</span>
+            <span class="badge badge-warning">Weekend / Planned Off</span>
+            <span class="badge badge-danger">Site Closure / Holiday</span>
+            <span class="badge badge-muted">Office-only Operations</span>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:1rem">
           <div class="card-header"><div class="card-title tr" data-en="Time zone & late grace" data-ar="المنطقة الزمنية والسماح للتأخير">Time zone & late grace</div></div>
           <div style="padding:1.25rem;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem">
             <div class="form-group" style="margin:0">
@@ -421,8 +443,13 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
       <div id="panel-records" class="admin-panel">
         <div style="display:flex;gap:0.75rem;margin-bottom:1.25rem; align-items:center; flex-wrap:wrap;">
           <input type="text" class="form-control ph-tr" data-phen="Search name..." data-phar="البحث..." oninput="Admin.filterRecords()" id="rec-search" style="max-width:200px">
-          <input type="date" id="rec-date" class="form-control" style="width:150px" onchange="Admin.filterRecords()">
+          <select id="rec-employee-filter" class="form-control form-select" style="max-width:220px" onchange="Admin.filterRecords()"></select>
+          <input type="date" id="rec-from-date" class="form-control" style="width:160px" onchange="Admin.filterRecords()">
+          <input type="date" id="rec-to-date" class="form-control" style="width:160px" onchange="Admin.filterRecords()">
+          <input type="date" id="rec-date" class="form-control" style="width:150px" onchange="Admin.filterRecords()" title="Legacy single-day filter">
           <div style="flex:1"></div>
+          <button class="btn btn-outline btn-sm" onclick="Admin.resetRecordFilters()"><i class="fas fa-undo"></i> Reset</button>
+          <button class="btn btn-outline btn-sm" onclick="Admin.exportCSV()"><i class="fas fa-file-csv" style="color:var(--info)"></i> CSV</button>
           <button class="btn btn-outline btn-sm" onclick="Admin.exportExcel()"><i class="fas fa-file-excel" style="color:var(--success)"></i> Excel</button>
           <button class="btn btn-outline btn-sm" onclick="Admin.exportPDF()"><i class="fas fa-file-pdf" style="color:var(--danger)"></i> PDF</button>
         </div>
@@ -451,7 +478,7 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
 
 <div id="page-emp" class="page">
   <div style="height:56px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 1.5rem;gap:1rem">
-    <svg style="width:28px;height:28px;fill:var(--accent)" viewBox="0 0 100 100"><polygon points="10,90 45,10 55,10 90,90 75,90 50,28 25,90"/><rect x="22" y="68" width="56" height="8"/></svg>
+    <img class="amd-logo-img" src="/assets/logo-amd.svg" alt="AMD United logo" onerror="this.outerHTML='<div class=&quot;amd-logo-placeholder&quot;>A</div>'">
     <div style="font-size:0.9rem;font-weight:bold;flex:1" id="emp-topbar-name" class="tr" data-en="Employee Portal" data-ar="بوابة الموظف">Employee Portal</div>
     
     <div style="display:flex; align-items:center; gap:0.5rem; margin-right: auto;">
@@ -524,9 +551,16 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
                 <div class="form-group">
                   <label class="form-label tr" data-en="Type" data-ar="النوع">Type</label>
                   <select id="hr-leave-type" class="form-control form-select">
-                    <option value="annual" class="tr" data-en="Annual" data-ar="سنوية">Annual</option>
-                    <option value="sick" class="tr" data-en="Sick" data-ar="مرضية">Sick</option>
-                    <option value="unpaid" class="tr" data-en="Unpaid" data-ar="بدون راتب">Unpaid</option>
+                    <option value="Sick Leave">Sick Leave</option>
+                    <option value="Annual Leave">Annual Leave</option>
+                    <option value="Unpaid Leave">Unpaid Leave</option>
+                    <option value="Emergency Leave">Emergency Leave</option>
+                    <option value="Maternity/Paternity Leave">Maternity/Paternity Leave</option>
+                    <option value="Bereavement Leave">Bereavement Leave</option>
+                    <option value="Study Leave">Study Leave</option>
+                    <option value="Hajj/Umrah Leave">Hajj/Umrah Leave</option>
+                    <option value="Marriage Leave">Marriage Leave</option>
+                    <option value="Work Injury">Work Injury</option>
                   </select>
                 </div>
                 <div style="display:flex; gap:1rem;">
@@ -542,6 +576,11 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
                 <div class="form-group">
                   <label class="form-label tr" data-en="Reason/Notes" data-ar="السبب/ملاحظات">Reason/Notes</label>
                   <textarea id="hr-leave-notes" class="form-control" rows="2"></textarea>
+                </div>
+                <div class="form-group">
+                  <label class="form-label tr" data-en="Attachment (PDF/Image, max 5MB)" data-ar="مرفق (صورة/ملف PDF بحد أقصى 5MB)">Attachment (PDF/Image, max 5MB)</label>
+                  <input type="file" id="hr-leave-attachment" class="form-control" accept="image/*,.pdf">
+                  <small style="color:var(--text-muted);display:block;margin-top:0.3rem" class="tr" data-en="Required when leave duration exceeds 3 days." data-ar="مطلوب إذا تجاوزت مدة الإجازة 3 أيام.">Required when leave duration exceeds 3 days.</small>
                 </div>
                 <button class="btn btn-primary" onclick="Emp.submitHrLeave()"><i class="fas fa-paper-plane"></i> <span class="tr" data-en="Submit" data-ar="إرسال">Submit</span></button>
               </div>
@@ -1001,7 +1040,11 @@ const Admin = {
     if(panel==='analytics'){ this.renderAnalytics(); }
     if(panel==='employees'){ this.populateGroupSelect('emp-group-filter',true); this.renderEmployees(); }
     if(panel==='groups') this.renderGroups();
-    if(panel==='records'){ document.getElementById('rec-date').value=DB.today(); this.filterRecords(); }
+    if(panel==='records'){
+      document.getElementById('rec-date').value=DB.today();
+      this.populateRecordEmployeeFilter();
+      this.filterRecords();
+    }
     if(panel==='dashboard') this.renderDashboard();
     if(panel==='hr' && typeof Admin.loadHrData === 'function') Admin.loadHrData();
   },
@@ -1230,9 +1273,16 @@ const Admin = {
     Chart.defaults.font.family = "'Barlow', 'Cairo', sans-serif";
     this.charts[canvasId] = new Chart(ctx, { type: type, data: data, options: Object.assign({ responsive: true, maintainAspectRatio: false }, options) });
   },
+  inferWorkMode(emp) {
+    const g = DB.getGroups().find((x) => x.id === emp.groupId);
+    const label = String(g && g.name ? g.name : '').toLowerCase();
+    if (label.includes('office') || label.includes('admin') || label.includes('hq')) return 'office';
+    return 'site';
+  },
   renderAnalytics() {
     const records = DB.getRecords();
-    const employees = DB.getEmployees().filter((e) => e.active);
+    const mode = (document.getElementById('analytics-work-mode-filter') || {}).value || 'all';
+    const employees = DB.getEmployees().filter((e) => e.active).filter((e) => mode === 'all' || this.inferWorkMode(e) === mode);
     const groups = DB.getGroups();
     const today = DB.today();
     const expectedIds = new Set(employees.filter((e) => Calendar.isWorkingDay(today, e.groupId)).map((e) => e.id));
@@ -1247,7 +1297,7 @@ const Admin = {
 
     this.buildChart('chart-today', 'doughnut', {
         labels: [Lang.t('Present','حاضر'), Lang.t('Late','متأخر'), Lang.t('Early Leave','استئذان'), Lang.t('Absent','غائب')],
-        datasets: [{ data: [present, late, leave, absent], backgroundColor: ['#27AE60', '#F1C40F', '#E67E22', '#E74C3C'], borderWidth: 0, hoverOffset: 4 }]
+        datasets: [{ data: [present, late, leave, absent], backgroundColor: [getComputedStyle(document.documentElement).getPropertyValue('--success').trim(), getComputedStyle(document.documentElement).getPropertyValue('--warning').trim(), '#E67E22', getComputedStyle(document.documentElement).getPropertyValue('--danger').trim()], borderWidth: 0, hoverOffset: 4 }]
     }, { cutout: '75%', plugins: { legend: { position: 'bottom' } } });
 
     const groupLabels = []; const groupData = []; const groupColors = [];
@@ -1276,6 +1326,11 @@ const Admin = {
     this.buildChart('chart-trend', 'line', {
         labels: trendLabels, datasets: [{ label: Lang.t('Attendance','الحضور'), data: trendData, borderColor: '#C45A28', backgroundColor: 'rgba(196,90,40,0.15)', borderWidth: 3, tension: 0.4, fill: true }]
     }, { plugins: { legend: { display:false } }, scales: { y: { beginAtZero:true } } });
+    const analyticsTitle = document.querySelector('#panel-analytics h2');
+    if (analyticsTitle) {
+      const suffix = mode === 'all' ? Lang.t('All Teams','كل الفرق') : mode === 'site' ? Lang.t('Site Teams','فرق المواقع') : Lang.t('Office Teams','فرق المكتب');
+      analyticsTitle.textContent = `${Lang.t('Data Analytics','التحليلات')} — ${suffix}`;
+    }
   },
   renderEmployees(filter='',groupFilter=''){
     let emps=DB.getEmployees();
@@ -1432,32 +1487,56 @@ const Admin = {
   // ==========================================
   // REPORTS WITH APPROVAL SYSTEM (AND ABSENTEES)
   // ==========================================
-  filterRecords(){
-    const search=document.getElementById('rec-search').value.toLowerCase(); 
-    const date=document.getElementById('rec-date').value;
-    const emps=DB.getEmployees().filter(e=>e.active); 
+  populateRecordEmployeeFilter() {
+    const sel = document.getElementById('rec-employee-filter');
+    if (!sel) return;
+    const emps = DB.getEmployees().filter(e => e.active);
+    sel.innerHTML = `<option value="">${Lang.t('All Employees','كل الموظفين')}</option>` + emps.map(e => `<option value="${e.id}">${e.name}</option>`).join('');
+  },
+  getFilteredRecordItems() {
+    const search = document.getElementById('rec-search').value.toLowerCase();
+    const day = document.getElementById('rec-date').value;
+    const fromDate = document.getElementById('rec-from-date').value;
+    const toDate = document.getElementById('rec-to-date').value;
+    const employeeId = document.getElementById('rec-employee-filter').value;
+    const emps = DB.getEmployees().filter(e => e.active);
     let displayList = [];
 
-    if(date) {
-        emps.forEach((emp) => {
-            if (search && !emp.name.toLowerCase().includes(search)) return;
-            const rec = DB.getRecords().find((r) => r.employeeId === emp.id && r.date === date);
-            const work = Calendar.isWorkingDay(date, emp.groupId);
-            if (!work && !rec) return;
-            if (rec) displayList.push({ ...rec, isAbsent: false, emp });
-            else displayList.push({ employeeId: emp.id, date, checkIn: null, checkOut: null, status: 'absent', notes: '', approvalStatus: 'none', isAbsent: true, emp });
-        });
+    const inDateRange = (d) => {
+      if (day && d !== day) return false;
+      if (fromDate && d < fromDate) return false;
+      if (toDate && d > toDate) return false;
+      return true;
+    };
+
+    if (day) {
+      emps.forEach((emp) => {
+        if (employeeId && emp.id !== employeeId) return;
+        if (search && !emp.name.toLowerCase().includes(search)) return;
+        const rec = DB.getRecords().find((r) => r.employeeId === emp.id && r.date === day);
+        const work = Calendar.isWorkingDay(day, emp.groupId);
+        if (!work && !rec) return;
+        if (rec) displayList.push({ ...rec, isAbsent: false, emp });
+        else displayList.push({ employeeId: emp.id, date: day, checkIn: null, checkOut: null, status: 'absent', notes: '', approvalStatus: 'none', isAbsent: true, emp });
+      });
     } else {
-        // No date selected -> just show historical records
-        let recs = DB.getRecords();
-        recs.sort((a, b) => new Date(b.date) - new Date(a.date));
-        if(search) recs = recs.filter(r => emps.find(e => e.id === r.employeeId)?.name.toLowerCase().includes(search));
-        displayList = recs.map(r => ({ ...r, isAbsent: false, emp: emps.find(e => e.id === r.employeeId) || {name:'Unknown', eid:'—'} }));
+      let recs = DB.getRecords().filter((r) => inDateRange(r.date));
+      recs.sort((a, b) => new Date(b.date) - new Date(a.date));
+      recs = recs.filter((r) => {
+        const emp = emps.find(e => e.id === r.employeeId);
+        if (!emp) return false;
+        if (employeeId && r.employeeId !== employeeId) return false;
+        if (search && !emp.name.toLowerCase().includes(search)) return false;
+        return true;
+      });
+      displayList = recs.map(r => ({ ...r, isAbsent: false, emp: emps.find(e => e.id === r.employeeId) || {name:'Unknown', eid:'—'} }));
     }
-    
+    return displayList;
+  },
+  filterRecords(){
+    const displayList = this.getFilteredRecordItems();
     const tbody=document.getElementById('records-table-body');
     if(!displayList.length){tbody.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--text-muted)">${Lang.t('No records found','لا توجد سجلات')}</td></tr>`;return;}
-    
     tbody.innerHTML=displayList.map(item => {
       const emp = item.emp;
       
@@ -1471,7 +1550,7 @@ const Admin = {
 
       let statusBadge = UI.badge(item.status);
       if(!item.isAbsent) {
-          if(item.approvalStatus === 'pending') statusBadge = `<span class="badge" style="background:var(--warning); color:#000;"><i class="fas fa-hourglass-half"></i> ${Lang.t('Pending','معلق')}</span>`;
+          if(item.approvalStatus === 'pending') statusBadge = `<span class="badge" style="background:var(--warning); color:var(--report-text);"><i class="fas fa-hourglass-half"></i> ${Lang.t('Pending','معلق')}</span>`;
           else if (item.approvalStatus === 'rejected') statusBadge = `<span class="badge" style="background:var(--danger); color:#fff"><i class="fas fa-ban"></i> ${Lang.t('Rejected','مرفوض')}</span>`;
           else if (item.approvalStatus === 'approved') statusBadge = `<span class="badge" style="background:var(--success); color:#fff"><i class="fas fa-check"></i> ${Lang.t('Approved','مقبول')}</span>`;
       }
@@ -1509,29 +1588,7 @@ const Admin = {
   },
 
   getExportData() {
-    const search=document.getElementById('rec-search').value.toLowerCase(); 
-    const dateFilter=document.getElementById('rec-date').value;
-    const emps=DB.getEmployees().filter(e=>e.active);
-
-    let exportList = [];
-
-    if(dateFilter) {
-        emps.forEach((emp) => {
-            if (search && !emp.name.toLowerCase().includes(search)) return;
-            const rec = DB.getRecords().find((r) => r.employeeId === emp.id && r.date === dateFilter);
-            const work = Calendar.isWorkingDay(dateFilter, emp.groupId);
-            if (!work && !rec) return;
-            if (rec) exportList.push({ ...rec, isAbsent: false, emp });
-            else exportList.push({ date: dateFilter, checkIn: null, checkOut: null, status: 'absent', notes: '', approvalStatus: 'none', isAbsent: true, emp });
-        });
-    } else {
-        let recs = DB.getRecords();
-        recs.sort((a, b) => new Date(b.date) - new Date(a.date));
-        if(search) recs = recs.filter(r => emps.find(e => e.id === r.employeeId)?.name.toLowerCase().includes(search));
-        exportList = recs.map(r => ({ ...r, isAbsent: false, emp: emps.find(e => e.id === r.employeeId) || {name:'Unknown', eid:'—'} }));
-    }
-
-    return exportList.map(item => {
+    return this.getFilteredRecordItems().map(item => {
         const emp = item.emp;
         let finalStatus = Lang.current==='ar' ? (item.status==='present'?'حاضر':item.status==='late'?'متأخر':item.status==='absent'?'غائب':'استئذان') : item.status.toUpperCase();
         
@@ -1551,6 +1608,20 @@ const Admin = {
     });
   },
 
+  exportCSV() {
+    const data = this.getExportData();
+    if (!data.length) return UI.toast(Lang.t('No data','لا يوجد بيانات'), 'warning');
+    const headers = Object.keys(data[0]);
+    const escapeCsv = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const lines = [headers.map(escapeCsv).join(',')].concat(data.map((row) => headers.map((h) => escapeCsv(row[h])).join(',')));
+    const blob = new Blob(['\uFEFF' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `AMD_Attendance_${DB.today()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  },
   exportExcel() {
     const data = this.getExportData();
     if(!data.length) return UI.toast(Lang.t('No data','لا يوجد بيانات'), 'warning');
@@ -1569,31 +1640,39 @@ const Admin = {
     container.style.padding = '20px';
     container.style.fontFamily = "'Cairo', 'Barlow', sans-serif";
     container.style.direction = Lang.current === 'ar' ? 'rtl' : 'ltr'; 
-    container.style.background = '#fff'; container.style.color = '#000';
+    container.style.background = 'var(--report-bg)'; container.style.color = 'var(--report-text)';
 
     const ths = Lang.current === 'ar' ? `<th>الرقم</th><th>الاسم</th><th>التاريخ</th><th>الدخول</th><th>الخروج</th><th>الحالة</th><th>الملاحظات</th>` : `<th>ID</th><th>Name</th><th>Date</th><th>Check In</th><th>Check Out</th><th>Status</th><th>Notes</th>`;
 
     container.innerHTML = `
-      <h2 style="text-align:center; color:#C45A28; margin-bottom:5px; font-family:'Cinzel', serif;">AMD United - ${Lang.t('Attendance Report','تقرير الحضور')}</h2>
-      <h4 style="text-align:center; color:#555; margin-bottom:20px; font-weight:normal;">${dateFilter ? dateFilter : DB.today()}</h4>
+      <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px"><img src="/assets/logo-amd.svg" alt="AMD United logo" style="width:28px;height:28px;object-fit:contain" onerror="this.style.display='none'"><h2 style="text-align:center; color:var(--accent); margin-bottom:0; font-family:'Cinzel', serif;">AMD United - ${Lang.t('Attendance Report','تقرير الحضور')}</h2></div>
+      <h4 style="text-align:center; color:var(--report-subtext); margin-bottom:20px; font-weight:normal;">${dateFilter ? dateFilter : DB.today()}</h4>
       <table style="width:100%; border-collapse:collapse; text-align:${Lang.current==='ar'?'right':'left'}; font-size:12px;">
         <thead><tr style="background-color:#C45A28; color:#fff;">${ths}</tr></thead>
         <tbody>
           ${data.map(row => `
             <tr>
-              <td style="padding:6px; border:1px solid #ddd;"><code>${Object.values(row)[0]}</code></td>
-              <td style="padding:6px; border:1px solid #ddd; font-weight:bold;">${Object.values(row)[1]}</td>
-              <td style="padding:6px; border:1px solid #ddd;">${Object.values(row)[2]}</td>
-              <td style="padding:6px; border:1px solid #ddd;" dir="ltr">${Object.values(row)[3]}</td>
-              <td style="padding:6px; border:1px solid #ddd;" dir="ltr">${Object.values(row)[4]}</td>
-              <td style="padding:6px; border:1px solid #ddd; font-weight:bold;">${Object.values(row)[5]}</td>
-              <td style="padding:6px; border:1px solid #ddd;">${Object.values(row)[6]}</td>
+              <td style="padding:6px; border:1px solid var(--report-border);"><code>${Object.values(row)[0]}</code></td>
+              <td style="padding:6px; border:1px solid var(--report-border); font-weight:bold;">${Object.values(row)[1]}</td>
+              <td style="padding:6px; border:1px solid var(--report-border);">${Object.values(row)[2]}</td>
+              <td style="padding:6px; border:1px solid var(--report-border);" dir="ltr">${Object.values(row)[3]}</td>
+              <td style="padding:6px; border:1px solid var(--report-border);" dir="ltr">${Object.values(row)[4]}</td>
+              <td style="padding:6px; border:1px solid var(--report-border); font-weight:bold;">${Object.values(row)[5]}</td>
+              <td style="padding:6px; border:1px solid var(--report-border);">${Object.values(row)[6]}</td>
             </tr>`).join('')}
         </tbody>
       </table>`;
 
     const opt = { margin: 10, filename: `AMD_Report_${DB.today()}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' } };
     html2pdf().set(opt).from(container).save().then(() => { UI.loader(false); UI.toast('PDF Exported!', 'success'); });
+  },
+  resetRecordFilters() {
+    document.getElementById('rec-search').value = '';
+    if (document.getElementById('rec-employee-filter')) document.getElementById('rec-employee-filter').value = '';
+    if (document.getElementById('rec-from-date')) document.getElementById('rec-from-date').value = '';
+    if (document.getElementById('rec-to-date')) document.getElementById('rec-to-date').value = '';
+    document.getElementById('rec-date').value = '';
+    this.filterRecords();
   },
 
   // ── HR Management Panel ──────────────────────────────────
@@ -1655,7 +1734,7 @@ const Admin = {
       return `<tr>
         <td><strong>${empName}</strong></td>
         <td>${l.type}</td>
-        <td dir="ltr">${startD} → ${endD}</td>
+        <td dir="ltr">${startD} → ${endD}${l.attachmentUrl ? `<div><a href="/api/hr/leave-request/${l.id || l._id}/attachment" target="_blank" style="color:var(--info);font-size:0.75rem"><i class="fas fa-paperclip"></i> Attachment</a></div>` : ''}</td>
         <td>${l.requestedDays}</td>
         <td>${statusBadge(l.status)}</td>
         <td>${actions}</td>
@@ -2065,6 +2144,7 @@ const Emp = {
                </div>
                <div style="font-size:0.8rem; color:var(--text-muted);">
                  ${new Date(l.startDate).toLocaleDateString()} - ${new Date(l.endDate).toLocaleDateString()} (${l.requestedDays} days) [${l.type}]
+                 ${l.attachmentUrl ? `<div><a href="/api/hr/leave-request/${l._id || l.id}/attachment" target="_blank" style="color:var(--info);font-size:0.75rem"><i class="fas fa-paperclip"></i> Attachment</a></div>` : ''}
                </div>
                ${l.status === 'pending' ? `
                  <div style="margin-top:0.5rem;">
@@ -2095,17 +2175,39 @@ const Emp = {
     const endDate = document.getElementById('hr-leave-end').value;
     const type = document.getElementById('hr-leave-type').value;
     const reason = document.getElementById('hr-leave-notes').value;
+    const file = (document.getElementById('hr-leave-attachment') || {}).files ? document.getElementById('hr-leave-attachment').files[0] : null;
 
     if(!startDate || !endDate) return UI.toast(Lang.t('Select dates','اختر التواريخ'), 'error');
     if(new Date(endDate) < new Date(startDate)) return UI.toast(Lang.t('Invalid dates','تواريخ غير صالحة'), 'error');
+    const requestedDays = Math.max(1, Math.ceil((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24)) + 1);
+    if (requestedDays > 3 && !file) return UI.toast(Lang.t('Attachment is required for leave longer than 3 days','المرفق مطلوب للإجازات الأطول من 3 أيام'), 'error');
+    if (file && file.size > 5 * 1024 * 1024) return UI.toast(Lang.t('Attachment must be 5MB or less','يجب أن يكون حجم المرفق 5MB أو أقل'), 'error');
 
     UI.loader(true);
     try {
-        await API.request('/hr/me/leave-request', 'POST', { startDate, endDate, type, reason });
+        if (file) {
+          const fd = new FormData();
+          fd.append('startDate', startDate);
+          fd.append('endDate', endDate);
+          fd.append('type', type);
+          fd.append('reason', reason);
+          fd.append('attachment', file);
+          const token = localStorage.getItem('amd_token');
+          const res = await fetch(window.AMD_HTTP.base + '/hr/me/leave-request', {
+            method: 'POST',
+            headers: token ? { Authorization: 'Bearer ' + token } : {},
+            body: fd,
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.msg || 'Request failed');
+        } else {
+          await API.request('/hr/me/leave-request', 'POST', { startDate, endDate, type, reason });
+        }
         UI.toast(Lang.t('Leave requested','تم طلب الإجازة'), 'success');
         document.getElementById('hr-leave-start').value = '';
         document.getElementById('hr-leave-end').value = '';
         document.getElementById('hr-leave-notes').value = '';
+        if (document.getElementById('hr-leave-attachment')) document.getElementById('hr-leave-attachment').value = '';
         this.loadHrData();
     } catch(e) { UI.toast(e.message, 'error'); }
     UI.loader(false);

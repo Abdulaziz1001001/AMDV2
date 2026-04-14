@@ -108,6 +108,23 @@ router.post('/notifications/read-all', async (req, res) => {
   }
 });
 
+router.get('/records/filter', async (req, res) => {
+  try {
+    const { employeeId, from, to } = req.query;
+    const query = {};
+    if (employeeId) query.employeeId = String(employeeId);
+    if (from || to) {
+      query.date = {};
+      if (from) query.date.$gte = String(from);
+      if (to) query.date.$lte = String(to);
+    }
+    const records = await Record.find(query).sort({ date: -1, createdAt: -1 });
+    res.json(records.map((doc) => ({ ...doc._doc, id: doc._id.toString() })));
+  } catch (err) {
+    res.status(500).json({ msg: err.message });
+  }
+});
+
 router.post('/employee', validateBody(employeeWriteSchema), async (req, res) => {
   try {
     const {
@@ -353,6 +370,9 @@ router.patch('/leave-requests/:id', async (req, res) => {
     if (!leave) return res.status(404).json({ msg: 'Leave request not found' });
 
     leave.status = status;
+    leave.approvedAt = new Date();
+    leave.approvedByRole = 'admin';
+    leave.approvedBy = req.user.id;
     await leave.save();
 
     await AdminNotification.create({

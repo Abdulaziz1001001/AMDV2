@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="AMD United logo placeholder">
+  <defs>
+    <linearGradient id="amdGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#d97a49"/>
+      <stop offset="100%" stop-color="#c45a28"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="20" fill="#141414"/>
+  <path d="M20 108L46 24h36l26 84h-18L64 42 38 108z" fill="url(#amdGrad)"/>
+  <rect x="30" y="92" width="68" height="8" fill="#c45a28"/>
+</svg>
