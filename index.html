@@ -183,6 +183,7 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
       <div class="nav-link" onclick="Admin.showPanel('locations',this)"><i class="fas fa-map-marker-alt" style="width:20px"></i><span class="tr" data-en="Locations" data-ar="المواقع">Locations</span></div>
       <div class="nav-link" onclick="Admin.showPanel('calendar',this)"><i class="fas fa-calendar-alt" style="width:20px"></i><span class="tr" data-en="Work calendar" data-ar="التقويم والدوام">Work calendar</span></div>
       <div class="nav-link" onclick="Admin.showPanel('records',this)"><i class="fas fa-clipboard-list" style="width:20px"></i><span class="tr" data-en="Records" data-ar="التقارير">Records</span></div>
+      <div class="nav-link" onclick="Admin.showPanel('hr',this)"><i class="fas fa-briefcase" style="width:20px"></i><span class="tr" data-en="HR Management" data-ar="الموارد البشرية">HR Management</span></div>
       
       <span style="display:block;padding:1.5rem 1.25rem 0.4rem;font-size:0.65rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--text-dim)" class="tr" data-en="System" data-ar="النظام">System</span>
       <div class="nav-link" onclick="Admin.showPanel('settings',this)"><i class="fas fa-cog" style="width:20px"></i><span class="tr" data-en="Settings" data-ar="الإعدادات">Settings</span></div>
@@ -303,13 +304,64 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
         </div>
       </div>
       <div id="panel-hr" class="admin-panel">
-        <div style="display:flex; justify-content:space-between; margin-bottom:1.5rem;">
-           <h2 style="color:var(--accent); text-transform:uppercase;" class="tr" data-en="HR Management" data-ar="إدارة الموارد البشرية">HR Management</h2>
+        <!-- Departments Section -->
+        <div class="card" style="margin-bottom:1.5rem">
+          <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+            <div class="card-title tr" data-en="Departments" data-ar="الأقسام">Departments</div>
+            <button class="btn btn-primary btn-sm" onclick="Admin.openDeptModal()"><i class="fas fa-plus"></i> <span class="tr" data-en="Add Department" data-ar="إضافة قسم">Add Department</span></button>
+          </div>
+          <div style="overflow-x:auto">
+            <table><thead><tr>
+              <th class="tr" data-en="Name" data-ar="الاسم">Name</th>
+              <th class="tr" data-en="Manager" data-ar="المدير">Manager</th>
+              <th class="tr" data-en="Employees" data-ar="الموظفين">Employees</th>
+              <th><i class="fas fa-cogs"></i></th>
+            </tr></thead><tbody id="hr-dept-table"></tbody></table>
+          </div>
         </div>
+
+        <!-- Leave Requests Section -->
+        <div class="card" style="margin-bottom:1.5rem">
+          <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+            <div class="card-title tr" data-en="Leave Requests" data-ar="طلبات الإجازة">Leave Requests</div>
+            <select id="hr-leave-filter" class="form-control form-select" style="max-width:150px" onchange="Admin.renderHrLeaves()">
+              <option value="all" class="tr" data-en="All" data-ar="الكل">All</option>
+              <option value="pending" class="tr" data-en="Pending" data-ar="معلقة">Pending</option>
+              <option value="approved" class="tr" data-en="Approved" data-ar="مقبولة">Approved</option>
+              <option value="rejected" class="tr" data-en="Rejected" data-ar="مرفوضة">Rejected</option>
+            </select>
+          </div>
+          <div style="overflow-x:auto">
+            <table><thead><tr>
+              <th class="tr" data-en="Employee" data-ar="الموظف">Employee</th>
+              <th class="tr" data-en="Type" data-ar="النوع">Type</th>
+              <th class="tr" data-en="Dates" data-ar="التواريخ">Dates</th>
+              <th class="tr" data-en="Days" data-ar="أيام">Days</th>
+              <th class="tr" data-en="Status" data-ar="الحالة">Status</th>
+              <th><i class="fas fa-cogs"></i></th>
+            </tr></thead><tbody id="hr-leaves-table"></tbody></table>
+          </div>
+        </div>
+
+        <!-- Payroll Overview Section -->
         <div class="card">
-          <div class="card-header"><div class="card-title tr" data-en="Pending Leave Requests" data-ar="طلبات الإجازة المعلقة">Pending Leave Requests</div></div>
-          <div style="padding:1.5rem" id="admin-hr-leaves-container">
-             <p style="color:var(--text-muted)">The backend HR route will inject leave requests here.</p>
+          <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+            <div class="card-title tr" data-en="Payroll Overview" data-ar="ملخص الرواتب">Payroll Overview</div>
+            <div style="display:flex; gap:0.5rem; align-items:center;">
+              <input type="number" id="hr-payroll-month" class="form-control" style="max-width:80px" placeholder="Month" min="1" max="12">
+              <input type="number" id="hr-payroll-year" class="form-control" style="max-width:90px" placeholder="Year">
+              <button class="btn btn-outline btn-sm" onclick="Admin.loadPayrollOverview()"><i class="fas fa-calculator"></i> <span class="tr" data-en="Calculate" data-ar="حساب">Calculate</span></button>
+            </div>
+          </div>
+          <div style="overflow-x:auto">
+            <table><thead><tr>
+              <th>ID</th>
+              <th class="tr" data-en="Name" data-ar="الاسم">Name</th>
+              <th class="tr" data-en="Base Salary" data-ar="الراتب الأساسي">Base Salary</th>
+              <th class="tr" data-en="Absences" data-ar="الغيابات">Absences</th>
+              <th class="tr" data-en="Deduction" data-ar="الخصم">Deduction</th>
+              <th class="tr" data-en="Net Salary" data-ar="صافي الراتب">Net Salary</th>
+            </tr></thead><tbody id="hr-payroll-table"><tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text-muted)" class="tr" data-en="Select month and year, then click Calculate" data-ar="اختر الشهر والسنة ثم اضغط حساب">Select month and year, then click Calculate</td></tr></tbody></table>
           </div>
         </div>
       </div>
@@ -534,7 +586,7 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
       <div class="form-group">
         <label class="form-label tr" data-en="Attachment (Image/PDF)" data-ar="مرفق (صورة / PDF)">Attachment (Image/PDF)</label>
         <input type="file" id="leave-attachment" class="form-control" accept="image/*,.pdf" style="padding: 0.5rem 1rem;">
-        <small style="color:var(--text-muted); font-size:0.7rem; margin-top:0.25rem; display:block;" class="tr" data-en="Max size: 2MB" data-ar="الحد الأقصى: 2 ميجابايت">Max size: 2MB
+        <small style="color:var(--text-muted); font-size:0.7rem; margin-top:0.25rem; display:block;" class="tr" data-en="Max size: 2MB" data-ar="الحد الأقصى: 2 ميجابايت">Max size: 2MB</small>
       </div>
       <div class="form-group">
         <label class="form-label tr" data-en="Additional Notes" data-ar="ملاحظات">Additional Notes</label>
@@ -567,6 +619,9 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
         <div><label class="form-label tr" data-en="Status" data-ar="الحالة">Status</label><select id="emp-modal-status" class="form-control form-select"><option value="1">Active</option><option value="0">Inactive</option></select></div>
         <div><label class="form-label tr" data-en="Start Time" data-ar="بداية الدوام">Start Time</label><input type="time" id="emp-modal-start" class="form-control" value="09:00"></div>
         <div><label class="form-label tr" data-en="End Time" data-ar="نهاية الدوام">End Time</label><input type="time" id="emp-modal-end" class="form-control" value="17:00"></div>
+        <div><label class="form-label tr" data-en="Department" data-ar="القسم">Department</label><select id="emp-modal-dept" class="form-control form-select"><option value="">—</option></select></div>
+        <div><label class="form-label tr" data-en="Job Title" data-ar="المسمى الوظيفي">Job Title</label><input type="text" id="emp-modal-jobtitle" class="form-control"></div>
+        <div><label class="form-label tr" data-en="Hire Date" data-ar="تاريخ التعيين">Hire Date</label><input type="date" id="emp-modal-hiredate" class="form-control"></div>
       </div>
       <div><label class="form-label tr" data-en="Salary (SAR)" data-ar="الراتب">Salary (SAR)</label><input type="number" id="emp-modal-salary" class="form-control" placeholder="0"></div>
     </div>
@@ -601,6 +656,24 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
       </div>
     </div>
     <div class="modal-footer"><button class="btn btn-outline tr" onclick="UI.closeModal('modal-group')" data-en="Cancel" data-ar="إلغاء">Cancel</button><button class="btn btn-primary tr" onclick="Admin.saveGroup()" data-en="Save" data-ar="حفظ">Save</button></div>
+  </div>
+</div>
+
+<div id="modal-department" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <span style="font-weight:700;font-size:1.1rem;text-transform:uppercase" id="dept-modal-title" class="tr" data-en="Department" data-ar="القسم">Department</span>
+      <button class="btn-ghost" onclick="UI.closeModal('modal-department')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:1rem">
+      <input type="hidden" id="dept-modal-id">
+      <div><label class="form-label tr" data-en="Department Name" data-ar="اسم القسم">Department Name</label><input type="text" id="dept-modal-name" class="form-control"></div>
+      <div><label class="form-label tr" data-en="Manager" data-ar="المدير">Manager</label><select id="dept-modal-manager" class="form-control form-select"><option value="">— None / بدون —</option></select></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline tr" onclick="UI.closeModal('modal-department')" data-en="Cancel" data-ar="إلغاء">Cancel</button>
+      <button class="btn btn-primary tr" onclick="Admin.saveDepartment()" data-en="Save" data-ar="حفظ">Save</button>
+    </div>
   </div>
 </div>
 
@@ -695,15 +768,18 @@ const API = {
 };
 
 const DB = {
-  data: { employees: [], groups: [], locations: [], records: [], workPolicy: null, notificationUnreadCount: 0 },
+  data: { employees: [], groups: [], locations: [], records: [], departments: [], leaveRequests: [], workPolicy: null, notificationUnreadCount: 0 },
   async sync() {
     const role = typeof localStorage !== 'undefined' ? localStorage.getItem('amd_role') : null;
     const path = role === 'emp' ? '/employee/me-data' : '/admin/all-data';
     try { this.data = await API.request(path); } catch(e) { throw e; }
     if (this.data.notificationUnreadCount == null) this.data.notificationUnreadCount = 0;
+    if (!this.data.departments) this.data.departments = [];
+    if (!this.data.leaveRequests) this.data.leaveRequests = [];
   },
   getEmployees(){return this.data.employees||[]}, getGroups(){return this.data.groups||[]}, 
   getLocations(){return this.data.locations||[]}, getRecords(){return this.data.records||[]},
+  getDepartments(){return this.data.departments||[]}, getLeaveRequests(){return this.data.leaveRequests||[]},
   getWorkPolicy(){return this.data.workPolicy||null},
   today(){return new Date().toISOString().split('T')[0]}, nowISO(){return new Date().toISOString()},
   fmtTime(iso){if(!iso)return '—'; return new Date(iso).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})},
@@ -1214,8 +1290,16 @@ const Admin = {
     }).join('');
   },
   filterEmployees(){ this.renderEmployees(document.getElementById('emp-search').value, document.getElementById('emp-group-filter').value); },
+  populateDeptSelect(selId, addEmpty) {
+    const sel = document.getElementById(selId); if (!sel) return;
+    let html = addEmpty ? `<option value="">—</option>` : `<option value="" disabled selected>-- ${Lang.t('Select Department','اختر القسم')} --</option>`;
+    const depts = DB.getDepartments();
+    html += depts.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+    sel.innerHTML = html;
+  },
   openEmployeeModal(id){ 
     this.populateGroupSelect('emp-modal-group'); 
+    this.populateDeptSelect('emp-modal-dept', true);
     document.getElementById('emp-modal-title').textContent = id ? Lang.t('Edit Employee',' تعديل موظف') : Lang.t('Add Employee','إضافة موظف');
     if (id) {
       const e = DB.getEmployees().find(x => x.id === id); if(!e) return;
@@ -1225,15 +1309,36 @@ const Admin = {
       document.getElementById('emp-modal-phone').value = e.phone || ''; document.getElementById('emp-modal-group').value = e.groupId || '';
       document.getElementById('emp-modal-salary').value = e.salary || ''; document.getElementById('emp-modal-status').value = e.active ? '1' : '0';
       document.getElementById('emp-modal-start').value = e.workStart || '09:00'; document.getElementById('emp-modal-end').value = e.workEnd || '17:00';
+      document.getElementById('emp-modal-dept').value = e.departmentId || '';
+      document.getElementById('emp-modal-jobtitle').value = e.jobTitle || '';
+      document.getElementById('emp-modal-hiredate').value = e.hireDate ? e.hireDate.substring(0,10) : '';
     } else {
       document.getElementById('emp-modal-id').value = '';
-      ['eid','name','user','pass','email','phone','salary'].forEach(f=>document.getElementById('emp-modal-'+f).value=''); 
+      ['eid','name','user','pass','email','phone','salary','jobtitle'].forEach(f=>document.getElementById('emp-modal-'+f).value=''); 
       document.getElementById('emp-modal-status').value='1'; document.getElementById('emp-modal-start').value='09:00'; document.getElementById('emp-modal-end').value='17:00';
+      document.getElementById('emp-modal-dept').value = '';
+      document.getElementById('emp-modal-hiredate').value = '';
     }
     UI.openModal('modal-employee'); 
   },
   async saveEmployee(){
-    const data={ id:document.getElementById('emp-modal-id').value, eid:document.getElementById('emp-modal-eid').value.trim(), name:document.getElementById('emp-modal-name').value.trim(), username:document.getElementById('emp-modal-user').value.trim(), password:document.getElementById('emp-modal-pass').value, email:document.getElementById('emp-modal-email').value.trim(), phone:document.getElementById('emp-modal-phone').value.trim(), groupId:document.getElementById('emp-modal-group').value, workStart:document.getElementById('emp-modal-start').value, workEnd:document.getElementById('emp-modal-end').value, salary:parseFloat(document.getElementById('emp-modal-salary').value)||0, active: parseInt(document.getElementById('emp-modal-status').value) === 1 };
+    const data = {
+      id: document.getElementById('emp-modal-id').value,
+      eid: document.getElementById('emp-modal-eid').value.trim(),
+      name: document.getElementById('emp-modal-name').value.trim(),
+      username: document.getElementById('emp-modal-user').value.trim(),
+      password: document.getElementById('emp-modal-pass').value,
+      email: document.getElementById('emp-modal-email').value.trim(),
+      phone: document.getElementById('emp-modal-phone').value.trim(),
+      groupId: document.getElementById('emp-modal-group').value,
+      workStart: document.getElementById('emp-modal-start').value,
+      workEnd: document.getElementById('emp-modal-end').value,
+      salary: parseFloat(document.getElementById('emp-modal-salary').value) || 0,
+      active: parseInt(document.getElementById('emp-modal-status').value) === 1,
+      departmentId: document.getElementById('emp-modal-dept').value,
+      jobTitle: document.getElementById('emp-modal-jobtitle').value.trim(),
+      hireDate: document.getElementById('emp-modal-hiredate').value,
+    };
     if(!data.name||!data.username) return UI.toast(Lang.t('Required fields missing','أكمل الحقول المطلوبة'),'error');
     UI.loader(true); try { await API.request('/admin/employee', 'POST', data); await DB.sync(); UI.closeModal('modal-employee'); this.renderEmployees(); UI.toast(Lang.t('Saved!','تم الحفظ'),'success'); } catch(e){UI.toast(e.message,'error')} UI.loader(false);
   },
@@ -1489,6 +1594,164 @@ const Admin = {
 
     const opt = { margin: 10, filename: `AMD_Report_${DB.today()}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' } };
     html2pdf().set(opt).from(container).save().then(() => { UI.loader(false); UI.toast('PDF Exported!', 'success'); });
+  },
+
+  // ── HR Management Panel ──────────────────────────────────
+
+  loadHrData() {
+    this.renderHrDepts();
+    this.renderHrLeaves();
+    const d = new Date();
+    document.getElementById('hr-payroll-month').value = d.getMonth() + 1;
+    document.getElementById('hr-payroll-year').value = d.getFullYear();
+  },
+
+  renderHrDepts() {
+    const depts = DB.getDepartments();
+    const emps = DB.getEmployees();
+    const tbody = document.getElementById('hr-dept-table');
+    if (!depts.length) {
+      tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:2rem;color:var(--text-muted)">${Lang.t('No departments yet','لا يوجد أقسام')}</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = depts.map(d => {
+      const mgrName = d.managerId && d.managerId.name ? d.managerId.name : '—';
+      const count = emps.filter(e => String(e.departmentId) === d.id).length;
+      return `<tr>
+        <td><strong>${d.name}</strong></td>
+        <td>${mgrName}</td>
+        <td>${count}</td>
+        <td>
+          <button class="btn-ghost btn-sm" onclick="Admin.openDeptModal('${d.id}')"><i class="fas fa-edit"></i></button>
+          <button class="btn-ghost btn-sm" style="color:var(--danger)" onclick="Admin.deleteDepartment('${d.id}')"><i class="fas fa-trash"></i></button>
+        </td>
+      </tr>`;
+    }).join('');
+  },
+
+  renderHrLeaves() {
+    const filter = (document.getElementById('hr-leave-filter') || {}).value || 'all';
+    let leaves = DB.getLeaveRequests();
+    if (filter !== 'all') leaves = leaves.filter(l => l.status === filter);
+    const tbody = document.getElementById('hr-leaves-table');
+    if (!leaves.length) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text-muted)">${Lang.t('No leave requests','لا يوجد طلبات إجازة')}</td></tr>`;
+      return;
+    }
+    const statusBadge = (s) => {
+      const m = { pending: 'warning', approved: 'success', rejected: 'danger' };
+      const lEN = { pending: 'Pending', approved: 'Approved', rejected: 'Rejected' };
+      const lAR = { pending: 'معلقة', approved: 'مقبولة', rejected: 'مرفوضة' };
+      return `<span class="badge badge-${m[s] || 'muted'}">${Lang.current === 'ar' ? lAR[s] : lEN[s] || s}</span>`;
+    };
+    tbody.innerHTML = leaves.map(l => {
+      const empName = l.employeeId && l.employeeId.name ? l.employeeId.name : '—';
+      const startD = l.startDate ? new Date(l.startDate).toLocaleDateString() : '';
+      const endD = l.endDate ? new Date(l.endDate).toLocaleDateString() : '';
+      const actions = l.status === 'pending' ? `
+        <button class="btn btn-sm" style="background:var(--success);color:#fff;margin-right:4px" onclick="Admin.adminActionLeave('${l.id}','approved')"><i class="fas fa-check"></i></button>
+        <button class="btn btn-sm" style="background:var(--danger);color:#fff" onclick="Admin.adminActionLeave('${l.id}','rejected')"><i class="fas fa-times"></i></button>
+      ` : '—';
+      return `<tr>
+        <td><strong>${empName}</strong></td>
+        <td>${l.type}</td>
+        <td dir="ltr">${startD} → ${endD}</td>
+        <td>${l.requestedDays}</td>
+        <td>${statusBadge(l.status)}</td>
+        <td>${actions}</td>
+      </tr>`;
+    }).join('');
+  },
+
+  async adminActionLeave(id, status) {
+    if (!confirm(Lang.t(`Are you sure you want to ${status} this leave?`, `هل تريد ${status === 'approved' ? 'الموافقة على' : 'رفض'} هذا الطلب؟`))) return;
+    UI.loader(true);
+    try {
+      await API.request(`/admin/leave-requests/${id}`, 'PATCH', { status });
+      await DB.sync();
+      this.renderHrLeaves();
+      UI.toast(Lang.t(`Leave ${status}`, `تم ${status === 'approved' ? 'الموافقة' : 'الرفض'}`), 'success');
+    } catch (e) { UI.toast(e.message, 'error'); }
+    UI.loader(false);
+  },
+
+  async loadPayrollOverview() {
+    const month = document.getElementById('hr-payroll-month').value;
+    const year = document.getElementById('hr-payroll-year').value;
+    if (!month || !year) return UI.toast(Lang.t('Select month and year', 'اختر الشهر والسنة'), 'error');
+    const tbody = document.getElementById('hr-payroll-table');
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:1rem;color:var(--text-muted)">...</td></tr>`;
+    try {
+      const data = await API.request(`/admin/payroll-overview?month=${month}&year=${year}`, 'GET');
+      if (!data.length) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text-muted)">${Lang.t('No active employees','لا يوجد موظفين نشطين')}</td></tr>`;
+        return;
+      }
+      let totalNet = 0;
+      tbody.innerHTML = data.map(r => {
+        totalNet += r.netSalary;
+        return `<tr>
+          <td><code>${r.eid || '—'}</code></td>
+          <td><strong>${r.name}</strong></td>
+          <td>${r.baseSalary.toFixed(2)}</td>
+          <td>${r.unpaidAbsences}</td>
+          <td style="color:var(--danger)">${r.deduction.toFixed(2)}</td>
+          <td style="color:var(--success);font-weight:600">${r.netSalary.toFixed(2)}</td>
+        </tr>`;
+      }).join('') + `<tr style="border-top:2px solid var(--border);font-weight:700">
+        <td colspan="5" style="text-align:right;padding-right:1rem">${Lang.t('Total', 'الإجمالي')}</td>
+        <td style="color:var(--success)">${totalNet.toFixed(2)}</td>
+      </tr>`;
+    } catch (e) {
+      tbody.innerHTML = `<tr><td colspan="6" style="color:var(--danger);text-align:center;padding:1rem">${e.message}</td></tr>`;
+    }
+  },
+
+  openDeptModal(id) {
+    const sel = document.getElementById('dept-modal-manager');
+    sel.innerHTML = `<option value="">— ${Lang.t('None','بدون')} —</option>` + DB.getEmployees().map(e => `<option value="${e.id}">${e.name} (${e.eid || e.username})</option>`).join('');
+    document.getElementById('dept-modal-title').textContent = id ? Lang.t('Edit Department', 'تعديل القسم') : Lang.t('Add Department', 'إضافة قسم');
+    if (id) {
+      const d = DB.getDepartments().find(x => x.id === id); if (!d) return;
+      document.getElementById('dept-modal-id').value = d.id;
+      document.getElementById('dept-modal-name').value = d.name || '';
+      document.getElementById('dept-modal-manager').value = d.managerId && d.managerId._id ? d.managerId._id : (d.managerId || '');
+    } else {
+      document.getElementById('dept-modal-id').value = '';
+      document.getElementById('dept-modal-name').value = '';
+      document.getElementById('dept-modal-manager').value = '';
+    }
+    UI.openModal('modal-department');
+  },
+
+  async saveDepartment() {
+    const data = {
+      id: document.getElementById('dept-modal-id').value,
+      name: document.getElementById('dept-modal-name').value.trim(),
+      managerId: document.getElementById('dept-modal-manager').value,
+    };
+    if (!data.name) return UI.toast(Lang.t('Name required', 'الاسم مطلوب'), 'error');
+    UI.loader(true);
+    try {
+      await API.request('/admin/department', 'POST', data);
+      await DB.sync();
+      UI.closeModal('modal-department');
+      this.renderHrDepts();
+      UI.toast(Lang.t('Saved!', 'تم الحفظ'), 'success');
+    } catch (e) { UI.toast(e.message, 'error'); }
+    UI.loader(false);
+  },
+
+  async deleteDepartment(id) {
+    if (!confirm(Lang.t('Delete this department? Employees will be unassigned.', 'حذف القسم؟ سيتم إلغاء ارتباط الموظفين.'))) return;
+    UI.loader(true);
+    try {
+      await API.request(`/admin/department/${id}`, 'DELETE');
+      await DB.sync();
+      this.renderHrDepts();
+      UI.toast(Lang.t('Deleted', 'تم الحذف'), 'warning');
+    } catch (e) { UI.toast(e.message, 'error'); }
+    UI.loader(false);
   }
 };
 

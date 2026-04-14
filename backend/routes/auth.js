@@ -3,9 +3,8 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const Admin = require('../models/Admin');
 const Employee = require('../models/Employee');
+const Department = require('../models/Department');
 const { loginSchema, validateBody } = require('../middleware/validation');
-const mongoose = require('mongoose');
-const Department = mongoose.models.Department;
 
 const router = express.Router();
 

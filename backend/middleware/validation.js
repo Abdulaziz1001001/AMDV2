@@ -19,6 +19,9 @@ const employeeWriteSchema = z
     workEnd: z.string().trim().max(10).optional().or(z.literal('')),
     salary: z.coerce.number().optional(),
     active: z.boolean().optional(),
+    departmentId: z.string().trim().max(100).optional().or(z.literal('')),
+    jobTitle: z.string().trim().max(200).optional().or(z.literal('')),
+    hireDate: z.string().trim().max(20).optional().or(z.literal('')),
   })
   .superRefine((data, ctx) => {
     const hasId = data.id && String(data.id).trim().length > 0;

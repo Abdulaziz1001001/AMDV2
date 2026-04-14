@@ -65,6 +65,18 @@ router.post('/me/leave-request', auth.requireRole(['employee', 'manager']), asyn
     const end = new Date(endDate);
     const requestedDays = Math.max(1, Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1);
 
+    // Check for overlapping leave requests (pending or approved)
+    const overlapping = await LeaveRequest.findOne({
+      employeeId: req.user.id,
+      status: { $in: ['pending', 'approved'] },
+      $or: [
+        { startDate: { $lte: end }, endDate: { $gte: start } },
+      ],
+    });
+    if (overlapping) {
+      return res.status(400).json({ msg: 'You already have a leave request overlapping these dates' });
+    }
+
     if (type === 'annual') {
       const policy = await WorkPolicy.findOne({ key: 'company' });
       const annualAllowed = policy && policy.annualLeaveDays ? policy.annualLeaveDays : 30;
@@ -143,7 +155,7 @@ router.get('/me/payroll', auth.requireRole(['employee', 'manager']), async (req,
     const endDateStr = `${y}-${m.toString().padStart(2, '0')}-${lastDay}`;
 
     const records = await Record.find({
-      employeeId: req.user.id,
+      employeeId: String(req.user.id),
       date: { $gte: startDateStr, $lte: endDateStr }
     });
 
@@ -199,7 +211,17 @@ router.patch('/department/leaves/:id', auth.requireRole('manager'), async (req, 
     leave.status = status;
     await leave.save();
 
-    // Notify employee (email mock)
+    // Admin notification for leave status change
+    const manager = await Employee.findById(req.user.id);
+    await AdminNotification.create({
+      type: 'leave_' + status,
+      title: `Leave ${status.charAt(0).toUpperCase() + status.slice(1)} by Manager`,
+      titleAr: status === 'approved' ? 'تمت الموافقة على الإجازة من المدير' : 'تم رفض الإجازة من المدير',
+      body: `${manager ? manager.name : 'Manager'} ${status} ${leave.employeeId.name}'s ${leave.requestedDays}-day ${leave.type} leave.`,
+      bodyAr: `${manager ? manager.name : 'المدير'} ${status === 'approved' ? 'وافق على' : 'رفض'} إجازة ${leave.employeeId.name} (${leave.requestedDays} يوم).`,
+      ref: { kind: 'leave', id: leave._id.toString() },
+    });
+
     sendEmailNotification(
       leave.employeeId.email || 'employee@amd.com',
       `Leave Request ${status.toUpperCase()}`,
