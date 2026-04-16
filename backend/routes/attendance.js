@@ -129,6 +129,11 @@ router.get('/report', auth.requireRole(['admin', 'manager']), async (req, res) =
     const empMap = {};
     employees.forEach((e) => { empMap[String(e._id)] = e; });
 
+    const Department = require('../models/Department');
+    const depts = await Department.find();
+    const deptMap = {};
+    depts.forEach((d) => { deptMap[String(d._id)] = d.name; });
+
     const summary = empIds.map((eid) => {
       const emp = empMap[eid] || {};
       const empRecs = records.filter((r) => r.employeeId === eid);
@@ -148,6 +153,7 @@ router.get('/report', auth.requireRole(['admin', 'manager']), async (req, res) =
         employeeId: eid,
         name: emp.name || 'Unknown',
         eid: emp.eid || '',
+        department: emp.departmentId ? (deptMap[String(emp.departmentId)] || '') : '',
         totalDays: empRecs.length,
         present, late, absent, onLeave,
         overtimeHours: Math.round(overtimeMin / 60 * 10) / 10,
@@ -155,7 +161,21 @@ router.get('/report', auth.requireRole(['admin', 'manager']), async (req, res) =
       };
     });
 
-    res.json(summary);
+    // Department-level roll-ups
+    const deptRollup = {};
+    summary.forEach((s) => {
+      const d = s.department || 'Unassigned';
+      if (!deptRollup[d]) deptRollup[d] = { department: d, employees: 0, present: 0, late: 0, absent: 0, onLeave: 0, overtimeHours: 0, totalBreakHours: 0 };
+      deptRollup[d].employees++;
+      deptRollup[d].present += s.present;
+      deptRollup[d].late += s.late;
+      deptRollup[d].absent += s.absent;
+      deptRollup[d].onLeave += s.onLeave;
+      deptRollup[d].overtimeHours += s.overtimeHours;
+      deptRollup[d].totalBreakHours += s.totalBreakHours;
+    });
+
+    res.json({ employees: summary, departments: Object.values(deptRollup) });
   } catch (err) { res.status(500).json({ msg: err.message }); }
 });
 

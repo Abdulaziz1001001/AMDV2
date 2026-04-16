@@ -3,6 +3,10 @@ const auth = require('../middleware/authMiddleware');
 const Employee = require('../models/Employee');
 const Location = require('../models/Location');
 const Record = require('../models/Record');
+const { ShiftAssignment, Shift } = require('../models/Shift');
+const Overtime = require('../models/Overtime');
+const WorkPolicy = require('../models/WorkPolicy');
+const AdminNotification = require('../models/AdminNotification');
 const { upsertPendingLeaveNotification, upsertActivityNotification } = require('../lib/recordNotifications');
 
 const router = express.Router();
@@ -12,6 +16,35 @@ router.use(auth.requireRole(['employee', 'manager']));
 
 function formatDocs(arr) {
   return arr.map((doc) => ({ ...doc._doc, id: doc._id.toString() }));
+}
+
+async function getEffectiveShift(employeeId, dateStr) {
+  const assignment = await ShiftAssignment.findOne({ employeeId, date: dateStr }).populate('shiftId');
+  if (assignment && assignment.shiftId) {
+    return { startTime: assignment.shiftId.startTime, endTime: assignment.shiftId.endTime, source: 'roster' };
+  }
+  const defaultShift = await Shift.findOne({ isDefault: true });
+  if (defaultShift) {
+    return { startTime: defaultShift.startTime, endTime: defaultShift.endTime, source: 'default_shift' };
+  }
+  const emp = await Employee.findById(employeeId);
+  if (emp && emp.workStart && emp.workEnd) {
+    return { startTime: emp.workStart, endTime: emp.workEnd, source: 'employee' };
+  }
+  return null;
+}
+
+function riyadhMinutesNow() {
+  const now = new Date();
+  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+  const riyadh = new Date(utc + 3600000 * 3);
+  return riyadh.getHours() * 60 + riyadh.getMinutes();
+}
+
+function parseTimeToMinutes(timeStr) {
+  if (!timeStr) return null;
+  const [h, m] = timeStr.split(':').map(Number);
+  return h * 60 + (m || 0);
 }
 
 /** Same shape as /api/admin/all-data, scoped to the logged-in employee (for DB.sync on the portal). */
@@ -66,6 +99,7 @@ router.post('/record', async (req, res) => {
       notes,
       approvalStatus,
       attachment,
+      projectId,
     } = req.body;
 
     if (!employeeId || !date) {
@@ -88,16 +122,42 @@ router.post('/record', async (req, res) => {
       }
 
       if (checkOut && !record.checkOut) {
-        const emp = await Employee.findById(employeeId);
-        if (emp && emp.workEnd) {
-          const now = new Date();
-          const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-          const riyadh = new Date(utc + (3600000 * 3));
-          const currMin = riyadh.getHours() * 60 + riyadh.getMinutes();
-          const [endH, endM] = emp.workEnd.split(':').map(Number);
-          const endMin = endH * 60 + endM;
-          if (currMin < endMin) {
-            return res.status(400).json({ msg: 'Cannot checkout before scheduled time without early checkout request' });
+        const shift = await getEffectiveShift(employeeId, date);
+        const endMin = shift ? parseTimeToMinutes(shift.endTime) : null;
+        const currMin = riyadhMinutesNow();
+
+        if (endMin !== null && currMin < endMin) {
+          return res.status(400).json({ msg: 'Cannot checkout before scheduled time without early checkout request' });
+        }
+
+        // Auto-flag overtime if checked out after scheduled end
+        if (endMin !== null && currMin > endMin) {
+          const extraMinutes = currMin - endMin;
+          if (extraMinutes >= 5) {
+            record.overtimeMinutes = extraMinutes;
+            try {
+              const existing = await Overtime.findOne({ employeeId, date });
+              if (!existing) {
+                const policy = await WorkPolicy.findOne({ key: 'company' });
+                const ot = await Overtime.create({
+                  employeeId,
+                  attendanceId: record._id,
+                  date,
+                  extraMinutes,
+                  reason: 'Auto-detected on checkout',
+                  rateMultiplier: policy ? policy.overtimeRateMultiplier || 1.5 : 1.5,
+                });
+                const emp = await Employee.findById(employeeId);
+                await AdminNotification.create({
+                  type: 'overtime_pending',
+                  title: 'Overtime Request',
+                  titleAr: 'طلب عمل إضافي',
+                  body: `${emp ? emp.name : 'Employee'} auto-logged ${extraMinutes} min overtime on ${date}.`,
+                  bodyAr: `${emp ? emp.name : 'موظف'} سجل تلقائياً ${extraMinutes} دقيقة عمل إضافي في ${date}.`,
+                  ref: { kind: 'overtime', id: ot._id.toString() },
+                });
+              }
+            } catch (_) { /* best-effort */ }
           }
         }
       }
@@ -135,9 +195,11 @@ router.post('/record', async (req, res) => {
 
     let finalStatus = status || 'present';
 
-    if (checkIn && emp.workStart) {
-      const [startHour, startMin] = emp.workStart.split(':').map(Number);
-      const expectedStartMinutes = startHour * 60 + startMin;
+    // Shift-aware late detection
+    const shift = await getEffectiveShift(employeeId, date);
+    const startTime = shift ? shift.startTime : emp.workStart;
+    if (checkIn && startTime) {
+      const expectedStartMinutes = parseTimeToMinutes(startTime);
 
       const checkInDate = new Date(checkIn);
       const saudiTimeFormatter = new Intl.DateTimeFormat('en-US', {
@@ -151,9 +213,30 @@ router.post('/record', async (req, res) => {
       if (actualHour === 24) actualHour = 0;
       const actualMinutes = actualHour * 60 + actualMin;
 
-      if (actualMinutes > expectedStartMinutes + 15) {
+      const policy = await WorkPolicy.findOne({ key: 'company' });
+      const grace = policy ? policy.lateGraceMinutes || 15 : 15;
+      if (actualMinutes > expectedStartMinutes + grace) {
         finalStatus = 'late';
       }
+    }
+
+    // Auto-detect project by GPS proximity if not provided
+    let resolvedProjectId = projectId || undefined;
+    if (!resolvedProjectId && checkInLat && checkInLng) {
+      try {
+        const Project = require('../models/Project');
+        const activeProjects = await Project.find({ status: 'active', lat: { $exists: true }, lng: { $exists: true } });
+        let closest = null;
+        let closestDist = Infinity;
+        for (const p of activeProjects) {
+          const dlat = (Number(p.lat) - Number(checkInLat)) * 111320;
+          const dlng = (Number(p.lng) - Number(checkInLng)) * 111320 * Math.cos(Number(checkInLat) * Math.PI / 180);
+          const dist = Math.sqrt(dlat * dlat + dlng * dlng);
+          const radius = p.radius || 500;
+          if (dist <= radius && dist < closestDist) { closest = p; closestDist = dist; }
+        }
+        if (closest) resolvedProjectId = closest._id;
+      } catch (_) { /* best-effort */ }
     }
 
     const newRecord = new Record({
@@ -166,6 +249,7 @@ router.post('/record', async (req, res) => {
       approvalStatus: approvalStatus || 'none',
       notes,
       attachment,
+      projectId: resolvedProjectId,
     });
     await newRecord.save();
     

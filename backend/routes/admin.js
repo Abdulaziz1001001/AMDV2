@@ -207,6 +207,21 @@ router.post('/employee', validateBody(employeeWriteSchema), async (req, res) => 
       });
       await emp.save();
       logAudit(req, 'employee_create', 'Employee', emp._id.toString(), null, { name, username });
+
+      // Auto-generate onboarding checklist
+      try {
+        const OnboardingChecklist = require('../models/OnboardingChecklist');
+        const policy = await WorkPolicy.findOne({ key: 'company' });
+        const labels = policy && policy.onboardingItems && policy.onboardingItems.length
+          ? policy.onboardingItems
+          : ['ID Verification', 'Safety Orientation', 'PPE Issued', 'Contract Signed', 'Bank Details Collected'];
+        await OnboardingChecklist.create({
+          employeeId: emp._id,
+          type: 'onboarding',
+          items: labels.map((label) => ({ label, done: false })),
+          createdBy: req.user.id,
+        });
+      } catch (_) { /* best-effort */ }
     }
     res.json({ msg: 'Success' });
   } catch (err) {
@@ -219,6 +234,25 @@ router.post('/employee', validateBody(employeeWriteSchema), async (req, res) => 
 router.delete('/employee/:id', async (req, res) => {
   try {
     const emp = await Employee.findById(req.params.id);
+
+    // Auto-generate offboarding checklist
+    try {
+      const OnboardingChecklist = require('../models/OnboardingChecklist');
+      const existing = await OnboardingChecklist.findOne({ employeeId: req.params.id, type: 'offboarding', completedAt: null });
+      if (!existing) {
+        const policy = await WorkPolicy.findOne({ key: 'company' });
+        const labels = policy && policy.offboardingItems && policy.offboardingItems.length
+          ? policy.offboardingItems
+          : ['Final Settlement', 'Asset Return', 'Access Revocation', 'Exit Interview'];
+        await OnboardingChecklist.create({
+          employeeId: req.params.id,
+          type: 'offboarding',
+          items: labels.map((label) => ({ label, done: false })),
+          createdBy: req.user.id,
+        });
+      }
+    } catch (_) { /* best-effort */ }
+
     await Employee.findByIdAndDelete(req.params.id);
     logAudit(req, 'employee_delete', 'Employee', req.params.id, emp ? { name: emp.name } : null, null);
     res.json({ msg: 'Deleted' });
@@ -391,19 +425,43 @@ router.patch('/leave-requests/:id', async (req, res) => {
     if (!leave) return res.status(404).json({ msg: 'Leave request not found' });
 
     const prevStatus = leave.status;
-    leave.status = status;
+    const policy = await WorkPolicy.findOne({ key: 'company' });
+    const chain = policy && policy.approvalChains ? policy.approvalChains.find(c => c.type === 'leave') : null;
+    const steps = chain ? chain.steps : [];
+
+    leave.approvalHistory.push({
+      role: 'admin',
+      label: 'Admin',
+      actorId: req.user.id,
+      actorName: 'Admin',
+      action: status,
+      actionAt: new Date(),
+    });
+
+    if (status === 'rejected') {
+      leave.status = 'rejected';
+    } else if (steps.length > 0 && leave.approvalLevel < steps.length - 1) {
+      leave.approvalLevel += 1;
+      const nextStep = steps[leave.approvalLevel];
+      leave.status = nextStep ? `${nextStep.role}_approved` : 'approved';
+      if (leave.approvalLevel >= steps.length) leave.status = 'approved';
+    } else {
+      leave.status = 'approved';
+    }
+
     leave.approvedAt = new Date();
     leave.approvedByRole = 'admin';
     leave.approvedBy = req.user.id;
     await leave.save();
-    logAudit(req, 'leave_' + status, 'LeaveRequest', leave._id.toString(), { status: prevStatus }, { status });
+    logAudit(req, 'leave_' + leave.status, 'LeaveRequest', leave._id.toString(), { status: prevStatus }, { status: leave.status });
 
+    const finalStatus = leave.status;
     await AdminNotification.create({
-      type: 'leave_' + status,
-      title: `Leave ${status.charAt(0).toUpperCase() + status.slice(1)}`,
-      titleAr: status === 'approved' ? 'تمت الموافقة على الإجازة' : 'تم رفض الإجازة',
-      body: `${leave.employeeId.name}'s ${leave.requestedDays}-day ${leave.type} leave was ${status}.`,
-      bodyAr: `إجازة ${leave.employeeId.name} (${leave.requestedDays} يوم) تم ${status === 'approved' ? 'الموافقة عليها' : 'رفضها'}.`,
+      type: 'leave_' + finalStatus,
+      title: `Leave ${finalStatus.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}`,
+      titleAr: finalStatus.includes('approved') ? 'تمت الموافقة على الإجازة' : 'تم رفض الإجازة',
+      body: `${leave.employeeId.name}'s ${leave.requestedDays}-day ${leave.type} leave: ${finalStatus}.`,
+      bodyAr: `إجازة ${leave.employeeId.name} (${leave.requestedDays} يوم): ${finalStatus}.`,
       ref: { kind: 'leave', id: leave._id.toString() },
     });
 

@@ -563,6 +563,31 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
           </div>
         </div>
 
+        <!-- Leave, Overtime & Break Policy -->
+        <div class="card" style="margin-bottom:1rem">
+          <div class="card-header"><div class="card-title tr" data-en="Leave, Overtime & Break Policy" data-ar="سياسة الإجازات والعمل الإضافي والاستراحة">Leave, Overtime & Break Policy</div></div>
+          <div style="padding:1.25rem;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem">
+            <div class="form-group" style="margin:0"><label class="form-label tr" data-en="Annual Leave Days" data-ar="أيام الإجازة السنوية">Annual Leave Days</label><input type="number" id="wp-annual-leave" class="form-control" value="30" min="0"></div>
+            <div class="form-group" style="margin:0"><label class="form-label tr" data-en="Overtime Rate Multiplier" data-ar="معدل العمل الإضافي">Overtime Rate Multiplier</label><input type="number" id="wp-ot-rate" class="form-control" value="1.5" step="0.1" min="1"></div>
+            <div class="form-group" style="margin:0"><label class="form-label tr" data-en="Max Break (minutes)" data-ar="أقصى استراحة (دقيقة)">Max Break (minutes)</label><input type="number" id="wp-max-break" class="form-control" value="60" min="0"></div>
+          </div>
+        </div>
+
+        <!-- Leave Accrual Configuration -->
+        <div class="card" style="margin-bottom:1rem">
+          <div class="card-header"><div class="card-title tr" data-en="Leave Accrual Configuration" data-ar="إعدادات استحقاق الإجازات">Leave Accrual Configuration</div></div>
+          <div style="padding:1.25rem">
+            <label style="display:flex;align-items:center;gap:0.5rem;margin-bottom:1rem;cursor:pointer"><input type="checkbox" id="wp-accrual-enabled"> <span class="tr" data-en="Enable monthly leave accrual" data-ar="تفعيل الاستحقاق الشهري">Enable monthly leave accrual</span></label>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem">
+              <div class="form-group" style="margin:0"><label class="form-label tr" data-en="Monthly Rate (days)" data-ar="المعدل الشهري (أيام)">Monthly Rate (days)</label><input type="number" id="wp-accrual-rate" class="form-control" value="2.5" step="0.5" min="0"></div>
+              <div class="form-group" style="margin:0"><label class="form-label tr" data-en="Probation Months" data-ar="أشهر التجربة">Probation Months</label><input type="number" id="wp-accrual-probation" class="form-control" value="3" min="0"></div>
+              <div class="form-group" style="margin:0"><label class="form-label tr" data-en="Max Carry Forward" data-ar="أقصى ترحيل">Max Carry Forward</label><input type="number" id="wp-accrual-carry" class="form-control" value="15" min="0"></div>
+              <div class="form-group" style="margin:0"><label class="form-label tr" data-en="Encashment Max Days" data-ar="أقصى أيام للصرف">Encashment Max Days</label><input type="number" id="wp-accrual-encash" class="form-control" value="10" min="0"></div>
+            </div>
+            <label style="display:flex;align-items:center;gap:0.5rem;margin-top:0.75rem;cursor:pointer"><input type="checkbox" id="wp-accrual-encash-allowed"> <span class="tr" data-en="Allow leave encashment" data-ar="السماح بصرف الإجازات">Allow leave encashment</span></label>
+          </div>
+        </div>
+
         <button type="button" class="btn btn-primary" onclick="Admin.saveWorkPolicy()"><i class="fas fa-save"></i> <span class="tr" data-en="Save Work Policy" data-ar="حفظ سياسة الدوام">Save Work Policy</span></button>
       </div>
 
@@ -677,6 +702,20 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
             <th class="tr" data-en="Break Hours" data-ar="ساعات استراحة">Break Hours</th>
           </tr></thead><tbody id="report-table"><tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--text-muted)">Select filters and click Generate</td></tr></tbody></table>
         </div></div>
+
+        <div id="report-dept-rollup" class="card" style="margin-top:1rem;display:none">
+          <div class="card-header"><div class="card-title tr" data-en="Department Roll-Up" data-ar="ملخص الأقسام">Department Roll-Up</div></div>
+          <div style="overflow-x:auto">
+            <table><thead><tr>
+              <th class="tr" data-en="Department" data-ar="القسم">Department</th>
+              <th class="tr" data-en="Employees" data-ar="الموظفين">Employees</th>
+              <th class="tr" data-en="Present" data-ar="حاضر">Present</th>
+              <th class="tr" data-en="Late" data-ar="متأخر">Late</th>
+              <th class="tr" data-en="Absent" data-ar="غائب">Absent</th>
+              <th class="tr" data-en="OT Hours" data-ar="ساعات إضافية">OT Hours</th>
+            </tr></thead><tbody id="report-dept-table"></tbody></table>
+          </div>
+        </div>
       </div>
 
       <!-- Safety Incidents Panel -->
@@ -1334,10 +1373,10 @@ const UI = {
     setTimeout(()=>{t.classList.add('out');setTimeout(()=>t.remove(),350)},3500);
   },
   badge(status){
-    const map={present:'success',late:'warning',absent:'danger',early_leave:'warning'};
-    const labelEN={present:'Present',late:'Late',absent:'Absent',early_leave:'Early Leave'};
-    const labelAR={present:'حاضر',late:'متأخر',absent:'غائب',early_leave:'استئذان'};
-    return `<span class="badge badge-${map[status]||'muted'}">${Lang.current==='ar' ? labelAR[status] : labelEN[status] || status}</span>`;
+    const map={present:'success',late:'warning',absent:'danger',early_leave:'warning',approved:'success',rejected:'danger',pending:'warning',supervisor_approved:'warning',hr_approved:'success',declined:'danger',open:'danger',investigating:'warning',resolved:'success',closed:'muted'};
+    const labelEN={present:'Present',late:'Late',absent:'Absent',early_leave:'Early Leave',approved:'Approved',rejected:'Rejected',pending:'Pending',supervisor_approved:'Supervisor OK',hr_approved:'HR OK',declined:'Declined',open:'Open',investigating:'Investigating',resolved:'Resolved',closed:'Closed'};
+    const labelAR={present:'حاضر',late:'متأخر',absent:'غائب',early_leave:'استئذان',approved:'مقبول',rejected:'مرفوض',pending:'معلق',supervisor_approved:'موافقة المشرف',hr_approved:'موافقة HR',declined:'مرفوض',open:'مفتوح',investigating:'قيد التحقيق',resolved:'تم الحل',closed:'مغلق'};
+    return `<span class="badge badge-${map[status]||'muted'}">${Lang.current==='ar' ? (labelAR[status]||status) : (labelEN[status]||status)}</span>`;
   }
 };
 
@@ -1764,6 +1803,18 @@ const Admin = {
     ex.innerHTML = '';
     (p.excuseReasons || []).forEach((r) => this.addExcuseRow(r.code, r.labelEn || '', r.labelAr || ''));
     if (!(p.excuseReasons || []).length) this.addExcuseRow();
+
+    document.getElementById('wp-annual-leave').value = p.annualLeaveDays != null ? p.annualLeaveDays : 30;
+    document.getElementById('wp-ot-rate').value = p.overtimeRateMultiplier != null ? p.overtimeRateMultiplier : 1.5;
+    document.getElementById('wp-max-break').value = p.maxBreakMinutes != null ? p.maxBreakMinutes : 60;
+    const la = p.leaveAccrual || {};
+    document.getElementById('wp-accrual-enabled').checked = !!la.enabled;
+    document.getElementById('wp-accrual-rate').value = la.monthlyRate != null ? la.monthlyRate : 2.5;
+    document.getElementById('wp-accrual-probation').value = la.probationMonths != null ? la.probationMonths : 3;
+    document.getElementById('wp-accrual-carry').value = la.maxCarryForward != null ? la.maxCarryForward : 15;
+    document.getElementById('wp-accrual-encash').value = la.encashmentMaxDays != null ? la.encashmentMaxDays : 10;
+    document.getElementById('wp-accrual-encash-allowed').checked = !!la.encashmentAllowed;
+
     this.populateCalGroupFilter();
     this.renderCalendarGrid();
   },
@@ -1884,6 +1935,17 @@ const Admin = {
       companyHolidays: holidays,
       lateGraceMinutes: parseInt(document.getElementById('wp-grace').value, 10) || 0,
       excuseReasons,
+      annualLeaveDays: parseInt(document.getElementById('wp-annual-leave').value, 10) || 30,
+      overtimeRateMultiplier: parseFloat(document.getElementById('wp-ot-rate').value) || 1.5,
+      maxBreakMinutes: parseInt(document.getElementById('wp-max-break').value, 10) || 60,
+      leaveAccrual: {
+        enabled: document.getElementById('wp-accrual-enabled').checked,
+        monthlyRate: parseFloat(document.getElementById('wp-accrual-rate').value) || 2.5,
+        probationMonths: parseInt(document.getElementById('wp-accrual-probation').value, 10) || 3,
+        maxCarryForward: parseInt(document.getElementById('wp-accrual-carry').value, 10) || 15,
+        encashmentAllowed: document.getElementById('wp-accrual-encash-allowed').checked,
+        encashmentMaxDays: parseInt(document.getElementById('wp-accrual-encash').value, 10) || 10,
+      },
     };
     UI.loader(true);
     try {
@@ -2957,12 +3019,14 @@ const Admin = {
     if (empId) q += 'employeeId=' + empId + '&';
     if (month && year) q += 'month=' + month + '&year=' + year;
     try {
-      const items = await API.request(q, 'GET');
+      const res = await API.request(q, 'GET');
+      const items = res.employees || res;
+      const depts = res.departments || [];
       this.reportData = items;
-      if (!items.length) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--text-muted)">No data found</td></tr>'; return; }
+      if (!items.length) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--text-muted)">No data found</td></tr>'; document.getElementById('report-dept-rollup').style.display='none'; return; }
       tbody.innerHTML = items.map(r => `<tr>
         <td><code>${r.eid||'—'}</code></td>
-        <td><strong>${r.name}</strong></td>
+        <td><strong>${r.name}</strong>${r.department ? `<br><small style="color:var(--text-muted)">${r.department}</small>` : ''}</td>
         <td>${r.totalDays}</td>
         <td style="color:var(--success)">${r.present}</td>
         <td style="color:var(--warning)">${r.late}</td>
@@ -2971,6 +3035,19 @@ const Admin = {
         <td>${r.overtimeHours}</td>
         <td>${r.totalBreakHours}</td>
       </tr>`).join('');
+
+      const deptWrap = document.getElementById('report-dept-rollup');
+      if (depts.length) {
+        deptWrap.style.display = '';
+        document.getElementById('report-dept-table').innerHTML = depts.map(d => `<tr>
+          <td><strong>${d.department}</strong></td>
+          <td>${d.employees}</td>
+          <td style="color:var(--success)">${d.present}</td>
+          <td style="color:var(--warning)">${d.late}</td>
+          <td style="color:var(--danger)">${d.absent}</td>
+          <td>${d.overtimeHours}</td>
+        </tr>`).join('');
+      } else { deptWrap.style.display = 'none'; }
     } catch(e) { tbody.innerHTML = `<tr><td colspan="9" style="color:var(--danger)">${e.message}</td></tr>`; }
   },
   exportAdvancedReport() {

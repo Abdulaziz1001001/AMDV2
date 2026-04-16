@@ -249,20 +249,44 @@ router.patch('/department/leaves/:id', auth.requireRole(['manager', 'admin']), a
       }
     }
 
-    leave.status = status;
+    const policy = await WorkPolicy.findOne({ key: 'company' });
+    const chain = policy && policy.approvalChains ? policy.approvalChains.find(c => c.type === 'leave') : null;
+    const steps = chain ? chain.steps : [];
+    const manager = await Employee.findById(req.user.id);
+
+    leave.approvalHistory = leave.approvalHistory || [];
+    leave.approvalHistory.push({
+      role: req.user.role,
+      label: req.user.role === 'admin' ? 'Admin' : 'Manager',
+      actorId: req.user.id,
+      actorName: manager ? manager.name : req.user.role,
+      action: status,
+      actionAt: new Date(),
+    });
+
+    if (status === 'rejected') {
+      leave.status = 'rejected';
+    } else if (steps.length > 0 && (leave.approvalLevel || 0) < steps.length - 1) {
+      leave.approvalLevel = (leave.approvalLevel || 0) + 1;
+      const nextStep = steps[leave.approvalLevel];
+      leave.status = nextStep ? `${nextStep.role}_approved` : 'approved';
+      if (leave.approvalLevel >= steps.length) leave.status = 'approved';
+    } else {
+      leave.status = 'approved';
+    }
+
     leave.approvedAt = new Date();
     leave.approvedByRole = req.user.role === 'admin' ? 'admin' : 'manager';
     leave.approvedBy = req.user.id;
     await leave.save();
 
-    // Admin notification for leave status change
-    const manager = await Employee.findById(req.user.id);
+    const finalStatus = leave.status;
     await AdminNotification.create({
-      type: 'leave_' + status,
-      title: `Leave ${status.charAt(0).toUpperCase() + status.slice(1)} by Manager`,
-      titleAr: status === 'approved' ? 'تمت الموافقة على الإجازة من المدير' : 'تم رفض الإجازة من المدير',
-      body: `${manager ? manager.name : 'Manager'} ${status} ${leave.employeeId.name}'s ${leave.requestedDays}-day ${leave.type} leave.`,
-      bodyAr: `${manager ? manager.name : 'المدير'} ${status === 'approved' ? 'وافق على' : 'رفض'} إجازة ${leave.employeeId.name} (${leave.requestedDays} يوم).`,
+      type: 'leave_' + finalStatus,
+      title: `Leave ${finalStatus.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} by ${manager ? manager.name : 'Manager'}`,
+      titleAr: finalStatus.includes('approved') ? 'تمت الموافقة على الإجازة من المدير' : 'تم رفض الإجازة من المدير',
+      body: `${manager ? manager.name : 'Manager'}: ${leave.employeeId.name}'s ${leave.requestedDays}-day ${leave.type} leave → ${finalStatus}.`,
+      bodyAr: `${manager ? manager.name : 'المدير'}: إجازة ${leave.employeeId.name} (${leave.requestedDays} يوم) → ${finalStatus}.`,
       ref: { kind: 'leave', id: leave._id.toString() },
     });
 
