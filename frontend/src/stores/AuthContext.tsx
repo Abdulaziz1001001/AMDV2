@@ -1,0 +1,110 @@
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
+import * as authApi from '@/api/auth'
+
+type Role = 'admin' | 'manager' | 'employee' | null
+type Page = 'home' | 'admin' | 'employee'
+
+interface Session {
+  id: string
+  name: string
+  username: string
+  email?: string
+  role?: string
+  eid?: string
+  departmentId?: string
+  groupId?: string
+  workStart?: string
+  workEnd?: string
+  salary?: number
+}
+
+interface AuthCtx {
+  page: Page
+  role: Role
+  session: Session | null
+  adminLogin: (u: string, p: string) => Promise<void>
+  empLogin: (u: string, p: string) => Promise<void>
+  logout: () => void
+  goto: (p: Page) => void
+}
+
+const AuthContext = createContext<AuthCtx>({
+  page: 'home',
+  role: null,
+  session: null,
+  adminLogin: async () => {},
+  empLogin: async () => {},
+  logout: () => {},
+  goto: () => {},
+})
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [page, setPage] = useState<Page>('home')
+  const [role, setRole] = useState<Role>(null)
+  const [session, setSession] = useState<Session | null>(null)
+
+  useEffect(() => {
+    const storedRole = authApi.getStoredRole()
+    if (storedRole && authApi.isAuthenticated()) {
+      if (storedRole === 'admin') {
+        setRole('admin')
+        setPage('admin')
+      } else {
+        setRole(storedRole as Role)
+        setPage('employee')
+      }
+    }
+
+    const handleUnauth = () => {
+      setRole(null)
+      setSession(null)
+      setPage('home')
+    }
+    window.addEventListener('amd-unauthorized', handleUnauth)
+    return () => window.removeEventListener('amd-unauthorized', handleUnauth)
+  }, [])
+
+  const adminLogin = useCallback(async (u: string, p: string) => {
+    const res = await authApi.adminLogin(u, p)
+    const admin = res.admin!
+    setSession({ id: admin.id, name: admin.name, username: admin.username, email: admin.email })
+    setRole('admin')
+    setPage('admin')
+  }, [])
+
+  const empLogin = useCallback(async (u: string, p: string) => {
+    const res = await authApi.empLogin(u, p)
+    const emp = res.employee!
+    setSession({
+      id: emp.id,
+      name: emp.name,
+      username: emp.username,
+      eid: emp.eid,
+      role: emp.role,
+      departmentId: emp.departmentId,
+      groupId: emp.groupId,
+      workStart: emp.workStart,
+      workEnd: emp.workEnd,
+      salary: emp.salary,
+    })
+    setRole((emp.role as Role) || 'employee')
+    setPage('employee')
+  }, [])
+
+  const logout = useCallback(() => {
+    authApi.logout()
+    setRole(null)
+    setSession(null)
+    setPage('home')
+  }, [])
+
+  const goto = useCallback((p: Page) => setPage(p), [])
+
+  return (
+    <AuthContext.Provider value={{ page, role, session, adminLogin, empLogin, logout, goto }}>
+      {children}
+    </AuthContext.Provider>
+  )
+}
+
+export const useAuth = () => useContext(AuthContext)

@@ -95,11 +95,19 @@ function createApp() {
   // 5. Health check and Static File serving
   app.get('/health', (req, res) => res.type('text').send('ok'));
 
-  const staticRoot = path.join(__dirname, '..');
-  app.get('/', (req, res) => {
-    res.sendFile(path.join(staticRoot, 'index.html'));
+  const frontendDist = path.join(__dirname, '..', 'frontend', 'dist');
+  const legacyRoot = path.join(__dirname, '..');
+
+  app.use(express.static(frontendDist));
+  app.use('/assets', express.static(path.join(legacyRoot, 'assets')));
+
+  app.get('*', (req, res) => {
+    if (req.path.startsWith('/api')) return res.status(404).json({ msg: 'Not found' });
+    const distIndex = path.join(frontendDist, 'index.html');
+    const fs = require('fs');
+    if (fs.existsSync(distIndex)) return res.sendFile(distIndex);
+    res.sendFile(path.join(legacyRoot, 'index.html'));
   });
-  app.use(express.static(staticRoot));
 
   return app;
 }
