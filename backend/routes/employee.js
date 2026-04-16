@@ -70,13 +70,28 @@ router.post('/record', async (req, res) => {
     let record = await Record.findOne({ employeeId, date });
 
     if (record) {
+      if (checkOut && status === 'early_leave') {
+        return res.status(400).json({ msg: 'Early checkouts must go through /api/checkouts/early' });
+      }
+
+      if (checkOut && !record.checkOut) {
+        const emp = await Employee.findById(employeeId);
+        if (emp && emp.workEnd) {
+          const now = new Date();
+          const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+          const riyadh = new Date(utc + (3600000 * 3));
+          const currMin = riyadh.getHours() * 60 + riyadh.getMinutes();
+          const [endH, endM] = emp.workEnd.split(':').map(Number);
+          const endMin = endH * 60 + endM;
+          if (currMin < endMin) {
+            return res.status(400).json({ msg: 'Cannot checkout before scheduled time without early checkout request' });
+          }
+        }
+      }
+
       record.checkOut = checkOut || record.checkOut;
       record.checkOutLat = checkOutLat || record.checkOutLat;
       record.checkOutLng = checkOutLng || record.checkOutLng;
-
-      if (status === 'early_leave') {
-        record.status = 'early_leave';
-      }
 
       if (approvalStatus) {
         record.approvalStatus = approvalStatus;

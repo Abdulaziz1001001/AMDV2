@@ -102,11 +102,35 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
 .notif-item.unread{border-left:3px solid var(--accent)}
 .notif-badge{min-width:1.1rem;height:1.1rem;padding:0 4px;border-radius:99px;background:var(--danger);color:#fff;font-size:0.65rem;font-weight:700;display:none;align-items:center;justify-content:center;position:absolute;top:-4px;right:-4px}
 
-#toast-wrap{position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;display:flex;flex-direction:column;gap:0.5rem;pointer-events:none}
-.toast{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);padding:0.75rem 1rem;display:flex;align-items:center;gap:0.75rem;font-size:0.85rem;min-width:280px;pointer-events:all;}
-.toast.success i{color:var(--success)} .toast.error i{color:var(--danger)} .toast.warning i{color:var(--warning)}
+#toast-wrap{position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;display:flex;flex-direction:column-reverse;gap:0.5rem;pointer-events:none;max-width:420px}
+.toast{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:0;display:flex;align-items:stretch;font-size:0.85rem;min-width:320px;pointer-events:all;box-shadow:0 8px 32px rgba(0,0,0,0.25);overflow:hidden;animation:toastIn .3s ease-out forwards;position:relative}
+.toast.out{animation:toastOut .3s ease-in forwards}
+.toast-icon{display:flex;align-items:center;justify-content:center;width:48px;flex-shrink:0;font-size:1.1rem}
+.toast.success .toast-icon{background:rgba(39,174,96,0.15);color:var(--success)}
+.toast.error .toast-icon{background:rgba(231,76,60,0.15);color:var(--danger)}
+.toast.warning .toast-icon{background:rgba(241,196,15,0.15);color:var(--warning)}
+.toast.info .toast-icon{background:rgba(52,152,219,0.15);color:var(--info)}
+.toast-body{flex:1;padding:0.75rem 1rem;display:flex;align-items:center;gap:0.5rem}
+.toast-body span{flex:1}
+.toast-close{background:none;border:none;color:var(--text-muted);padding:0.5rem;cursor:pointer;font-size:0.8rem;flex-shrink:0} .toast-close:hover{color:var(--text)}
+.toast-progress{position:absolute;bottom:0;left:0;height:2px;background:var(--accent);animation:toastProgress 3.5s linear forwards}
+@keyframes toastIn{from{opacity:0;transform:translateX(100%)}to{opacity:1;transform:translateX(0)}}
+@keyframes toastOut{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(100%)}}
+@keyframes toastProgress{from{width:100%}to{width:0%}}
 .amd-logo-img{width:36px;height:36px;object-fit:contain;border-radius:6px;display:block}
 .amd-logo-placeholder{width:36px;height:36px;border-radius:6px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700}
+
+.drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1100;opacity:0;pointer-events:none;transition:opacity .25s}
+.drawer-overlay.open{opacity:1;pointer-events:all}
+.drawer-panel{position:fixed;top:0;right:0;bottom:0;width:min(480px,92vw);background:var(--surface);border-left:1px solid var(--border);z-index:1101;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;box-shadow:-8px 0 40px rgba(0,0,0,0.3)}
+.drawer-overlay.open .drawer-panel{transform:translateX(0)}
+.drawer-header{padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.drawer-header h3{font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:1rem;margin:0}
+.drawer-body{flex:1;overflow-y:auto;padding:1.5rem}
+.drawer-footer{padding:1rem 1.5rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:0.75rem;flex-shrink:0}
+.drawer-field{margin-bottom:1.25rem}
+.drawer-field-label{font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);margin-bottom:0.35rem}
+.drawer-field-value{font-size:0.95rem;color:var(--text);line-height:1.5}
 
 #public-controls { position:absolute; top:1.5rem; right:1.5rem; display:flex; gap:0.5rem; z-index:100; transition: opacity 0.3s; }
 
@@ -230,6 +254,8 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
     
     <div class="content">
       <div id="panel-dashboard" class="admin-panel active">
+        <!-- Action Widgets -->
+        <div id="action-widgets" class="stats-grid" style="margin-bottom:0.75rem"></div>
         <div class="stats-grid">
           <div class="stat-card" style="border-left:3px solid var(--accent)"><div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:0.5rem" class="tr" data-en="Total Employees" data-ar="الكل">Total Employees</div><div class="stat-value" id="stat-total">0</div></div>
           <div class="stat-card" style="border-left:3px solid var(--success)"><div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:0.5rem" class="tr" data-en="Present Today" data-ar="حاضر">Present Today</div><div class="stat-value" id="stat-present">0</div></div>
@@ -372,25 +398,34 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
 
         <!-- Early Checkouts Section -->
         <div class="card" style="margin-bottom:1.5rem">
-          <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+          <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem">
             <div class="card-title tr" data-en="Early Checkouts" data-ar="طلبات الانصراف المبكر">Early Checkouts</div>
-            <select id="ec-filter" class="form-control form-select" style="max-width:150px" onchange="Admin.renderEarlyCheckouts()">
-              <option value="all" class="tr" data-en="All" data-ar="الكل">All</option>
-              <option value="pending" class="tr" data-en="Pending" data-ar="معلقة">Pending</option>
-              <option value="approved" class="tr" data-en="Approved" data-ar="مقبولة">Approved</option>
-              <option value="declined" class="tr" data-en="Declined" data-ar="مرفوضة">Declined</option>
-            </select>
+            <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
+              <div class="input-icon-wrap" style="min-width:180px">
+                <i class="fas fa-search"></i>
+                <input type="text" id="ec-search" class="form-control" placeholder="Search..." oninput="Admin.renderEarlyCheckouts()" style="font-size:0.8rem;padding-top:0.5rem;padding-bottom:0.5rem">
+              </div>
+              <select id="ec-filter" class="form-control form-select" style="max-width:130px;font-size:0.8rem;padding:0.45rem 0.75rem" onchange="Admin.renderEarlyCheckouts()">
+                <option value="all" class="tr" data-en="All" data-ar="الكل">All</option>
+                <option value="pending" class="tr" data-en="Pending" data-ar="معلقة">Pending</option>
+                <option value="approved" class="tr" data-en="Approved" data-ar="مقبولة">Approved</option>
+                <option value="declined" class="tr" data-en="Declined" data-ar="مرفوضة">Declined</option>
+              </select>
+              <button class="btn btn-success btn-sm" onclick="Admin.bulkApproveEarlyCheckouts('approved')" title="Bulk Approve"><i class="fas fa-check-double"></i> <span class="tr" data-en="Bulk Approve" data-ar="موافقة جماعية">Bulk Approve</span></button>
+            </div>
           </div>
           <div style="overflow-x:auto">
             <table><thead><tr>
-              <th class="tr" data-en="Employee" data-ar="الموظف">Employee</th>
-              <th class="tr" data-en="Date" data-ar="التاريخ">Date</th>
-              <th class="tr" data-en="Checkout Time" data-ar="وقت الخروج">Checkout Time</th>
+              <th style="width:36px"><input type="checkbox" id="ec-check-all" onchange="document.querySelectorAll('.ec-check').forEach(c=>c.checked=this.checked)"></th>
+              <th class="ec-sortable" data-sort="employee" onclick="Admin.sortEarlyCheckouts('employee')" style="cursor:pointer"><span class="tr" data-en="Employee" data-ar="الموظف">Employee</span> <i class="fas fa-sort" style="font-size:0.65rem;color:var(--text-dim)"></i></th>
+              <th class="ec-sortable" data-sort="date" onclick="Admin.sortEarlyCheckouts('date')" style="cursor:pointer"><span class="tr" data-en="Date" data-ar="التاريخ">Date</span> <i class="fas fa-sort" style="font-size:0.65rem;color:var(--text-dim)"></i></th>
+              <th class="ec-sortable" data-sort="time" onclick="Admin.sortEarlyCheckouts('time')" style="cursor:pointer"><span class="tr" data-en="Checkout Time" data-ar="وقت الخروج">Checkout Time</span> <i class="fas fa-sort" style="font-size:0.65rem;color:var(--text-dim)"></i></th>
               <th class="tr" data-en="Reason" data-ar="السبب">Reason</th>
               <th class="tr" data-en="Status" data-ar="الحالة">Status</th>
               <th><i class="fas fa-cogs"></i></th>
             </tr></thead><tbody id="ec-table"></tbody></table>
           </div>
+          <div id="ec-pagination" style="padding:0.75rem 1rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:0.8rem;color:var(--text-muted)"></div>
         </div>
 
         <!-- Payroll Overview Section -->
@@ -666,30 +701,41 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
 <div id="modal-leave" class="modal-overlay">
   <div class="modal">
     <div class="modal-header">
-      <span style="font-weight:700;font-size:1.1rem;text-transform:uppercase" class="tr" data-en="Leave Request" data-ar="طلب استئذان">Leave Request</span>
+      <span style="font-weight:700;font-size:1.1rem;text-transform:uppercase" class="tr" data-en="Early Checkout Request" data-ar="طلب انصراف مبكر">Early Checkout Request</span>
       <button class="btn-ghost" onclick="UI.closeModal('modal-leave')"><i class="fas fa-times"></i></button>
     </div>
     <div class="modal-body" style="display:flex;flex-direction:column;gap:1.25rem">
-      <div class="form-group">
-        <label class="form-label tr" data-en="Reason" data-ar="السبب">Reason</label>
-        <select id="leave-reason" class="form-control form-select">
+      <div style="background:rgba(241,196,15,0.1);border:1px solid rgba(241,196,15,0.3);border-radius:var(--radius);padding:0.75rem 1rem;display:flex;align-items:center;gap:0.75rem">
+        <i class="fas fa-exclamation-triangle" style="color:var(--warning);font-size:1.1rem"></i>
+        <span style="font-size:0.85rem" class="tr" data-en="You are leaving before your scheduled checkout time. A reason is required for approval." data-ar="أنت تغادر قبل وقت الانصراف المحدد. يجب تقديم سبب للموافقة.">You are leaving before your scheduled checkout time. A reason is required for approval.</span>
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label tr" data-en="Reason Category" data-ar="فئة السبب">Reason Category</label>
+        <select id="leave-reason" class="form-control form-select" onchange="Emp.validateEarlyCheckoutForm()">
           <option value="" disabled selected>-- Select / اختر --</option>
         </select>
       </div>
-      <div class="form-group">
-        <label class="form-label tr" data-en="Attachment (Image/PDF)" data-ar="مرفق (صورة / PDF)">Attachment (Image/PDF)</label>
-        <input type="file" id="leave-attachment" class="form-control" accept="image/*,.pdf" style="padding: 0.5rem 1rem;">
-        <small style="color:var(--text-muted); font-size:0.7rem; margin-top:0.25rem; display:block;" class="tr" data-en="Max size: 2MB" data-ar="الحد الأقصى: 2 ميجابايت">Max size: 2MB</small>
-      </div>
-      <div class="form-group">
-        <label class="form-label tr" data-en="Additional Notes" data-ar="ملاحظات">Additional Notes</label>
-        <textarea id="leave-notes" class="form-control" rows="3"></textarea>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label tr" data-en="Reason Details (min 5 characters)" data-ar="تفاصيل السبب (5 أحرف على الأقل)">Reason Details (min 5 characters)</label>
+        <textarea id="leave-notes" class="form-control" rows="3" placeholder="Explain your reason..." oninput="Emp.validateEarlyCheckoutForm()"></textarea>
+        <small id="leave-notes-counter" style="color:var(--text-muted);font-size:0.7rem;margin-top:0.25rem;display:block">0 / 5</small>
       </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline tr" onclick="UI.closeModal('modal-leave')" data-en="Cancel" data-ar="إلغاء">Cancel</button>
-      <button class="btn btn-primary tr" onclick="Emp.submitLeaveRequest()" data-en="Submit Request" data-ar="إرسال الطلب">Submit Request</button>
+      <button id="btn-submit-early" class="btn btn-primary tr" onclick="Emp.submitLeaveRequest()" data-en="Submit Request" data-ar="إرسال الطلب" disabled style="opacity:0.5;cursor:not-allowed">Submit Request</button>
     </div>
+  </div>
+</div>
+
+<div id="drawer-ec-overlay" class="drawer-overlay" onclick="Admin.closeEcDrawer(event)">
+  <div class="drawer-panel" onclick="event.stopPropagation()">
+    <div class="drawer-header">
+      <h3 class="tr" data-en="Early Checkout Details" data-ar="تفاصيل الانصراف المبكر">Early Checkout Details</h3>
+      <button class="btn-ghost" onclick="Admin.closeEcDrawer()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="drawer-body" id="drawer-ec-body"></div>
+    <div class="drawer-footer" id="drawer-ec-footer"></div>
   </div>
 </div>
 
@@ -840,8 +886,12 @@ const UI = {
   },
   toast(msg,type='info'){
     const icons={success:'fa-check-circle',error:'fa-exclamation-circle',warning:'fa-exclamation-triangle',info:'fa-info-circle'};
-    const t=document.createElement('div'); t.className=`toast ${type}`; t.innerHTML=`<i class="fas ${icons[type]||icons.info}"></i><span>${msg}</span>`;
-    document.getElementById('toast-wrap').appendChild(t); setTimeout(()=>{t.classList.add('out');setTimeout(()=>t.remove(),350)},3500);
+    const wrap = document.getElementById('toast-wrap');
+    const t = document.createElement('div');
+    t.className = `toast ${type}`;
+    t.innerHTML = `<div class="toast-icon"><i class="fas ${icons[type]||icons.info}"></i></div><div class="toast-body"><span>${msg}</span><button class="toast-close" onclick="this.closest('.toast').remove()"><i class="fas fa-times"></i></button></div><div class="toast-progress"></div>`;
+    wrap.appendChild(t);
+    setTimeout(()=>{t.classList.add('out');setTimeout(()=>t.remove(),350)},3500);
   },
   badge(status){
     const map={present:'success',late:'warning',absent:'danger',early_leave:'warning'};
@@ -1101,7 +1151,7 @@ const Admin = {
       this.populateRecordEmployeeFilter();
       this.filterRecords();
     }
-    if(panel==='dashboard') this.renderDashboard();
+    if(panel==='dashboard') { if(!this.earlyCheckouts || !this.earlyCheckouts.length) this.loadEarlyCheckouts(); this.renderDashboard(); }
     if(panel==='hr' && typeof Admin.loadHrData === 'function') Admin.loadHrData();
   },
   async saveSettings() {
@@ -1116,7 +1166,7 @@ const Admin = {
     } catch(err) { UI.toast(err.message, 'error'); }
     UI.loader(false);
   },
-  async refresh(){ UI.loader(true); try{ await DB.sync(); this.updateNotifBadge(); this.showPanel(this.currentPanel); UI.toast(Lang.t('Synced','تمت المزامنة'), 'success'); } catch(e){UI.toast(e.message,'error')} UI.loader(false); },
+  async refresh(){ UI.loader(true); try{ await DB.sync(); await this.loadEarlyCheckouts(); this.updateNotifBadge(); this.showPanel(this.currentPanel); UI.toast(Lang.t('Synced','تمت المزامنة'), 'success'); } catch(e){UI.toast(e.message,'error')} UI.loader(false); },
   updateNotifBadge(){
     const el = document.getElementById('admin-notif-badge');
     if (!el) return;
@@ -1320,6 +1370,20 @@ const Admin = {
     document.getElementById('stat-present').textContent = recsExp.filter((r) => ['present', 'late', 'early_leave'].includes(r.status)).length;
     document.getElementById('stat-late').textContent = recsExp.filter((r) => r.status === 'late').length;
     document.getElementById('stat-absent').textContent = Math.max(0, expected.length - recsExp.length);
+
+    const pendingLeaves = DB.getLeaveRequests().filter(l => l.status === 'pending').length;
+    const pendingEC = (this.earlyCheckouts || []).filter(e => e.status === 'pending').length;
+    const pendingRecords = recs.filter(r => r.approvalStatus === 'pending').length;
+    const widgetWrap = document.getElementById('action-widgets');
+    if (widgetWrap) {
+      const widgets = [];
+      if (pendingLeaves > 0) widgets.push(`<div class="stat-card" style="border-left:3px solid var(--danger);cursor:pointer" onclick="Admin.showPanel('hr')"><div style="display:flex;align-items:center;gap:0.75rem"><span style="font-size:1.5rem">🔴</span><div><div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase">${Lang.t('Pending Leaves','إجازات معلقة')}</div><div class="stat-value" style="font-size:1.8rem">${pendingLeaves}</div></div></div></div>`);
+      if (pendingEC > 0) widgets.push(`<div class="stat-card" style="border-left:3px solid var(--warning);cursor:pointer" onclick="Admin.showPanel('hr')"><div style="display:flex;align-items:center;gap:0.75rem"><span style="font-size:1.5rem">🟠</span><div><div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase">${Lang.t('Pending Early Checkouts','انصراف مبكر معلق')}</div><div class="stat-value" style="font-size:1.8rem">${pendingEC}</div></div></div></div>`);
+      if (pendingRecords > 0) widgets.push(`<div class="stat-card" style="border-left:3px solid var(--info);cursor:pointer" onclick="Admin.showPanel('records')"><div style="display:flex;align-items:center;gap:0.75rem"><span style="font-size:1.5rem">🔵</span><div><div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase">${Lang.t('Pending Records','سجلات معلقة')}</div><div class="stat-value" style="font-size:1.8rem">${pendingRecords}</div></div></div></div>`);
+      widgetWrap.innerHTML = widgets.join('');
+      widgetWrap.style.display = widgets.length ? 'grid' : 'none';
+    }
+
     const tbody = document.getElementById('dash-attendance-table');
     if (!recs.length) { tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:2rem;color:var(--text-muted)">${Lang.t('No records','لا يوجد سجلات')}</td></tr>`; return; }
     tbody.innerHTML = recs.slice(0, 10).map((r) => {
@@ -1757,33 +1821,85 @@ const Admin = {
     this.renderEarlyCheckouts();
   },
 
+  ecSort: { col: 'date', dir: -1 },
+  ecPage: 1,
+  EC_PER_PAGE: 10,
+
+  sortEarlyCheckouts(col) {
+    if (this.ecSort.col === col) this.ecSort.dir *= -1;
+    else { this.ecSort.col = col; this.ecSort.dir = -1; }
+    this.ecPage = 1;
+    this.renderEarlyCheckouts();
+  },
+
   renderEarlyCheckouts() {
     const filter = (document.getElementById('ec-filter') || {}).value || 'all';
-    let items = this.earlyCheckouts || [];
+    const search = (document.getElementById('ec-search') || {}).value || '';
+    const searchLc = search.toLowerCase();
+    let items = (this.earlyCheckouts || []).slice();
+
     if (filter !== 'all') items = items.filter(i => i.status === filter);
+    if (searchLc) items = items.filter(ec => {
+      const name = (ec.employeeId && ec.employeeId.name || '').toLowerCase();
+      const reason = (ec.reason || '').toLowerCase();
+      return name.includes(searchLc) || reason.includes(searchLc);
+    });
+
+    const { col, dir } = this.ecSort;
+    items.sort((a, b) => {
+      let va, vb;
+      if (col === 'employee') { va = (a.employeeId && a.employeeId.name || ''); vb = (b.employeeId && b.employeeId.name || ''); return va.localeCompare(vb) * dir; }
+      if (col === 'date') { va = (a.attendanceId && a.attendanceId.date || ''); vb = (b.attendanceId && b.attendanceId.date || ''); return va.localeCompare(vb) * dir; }
+      if (col === 'time') { va = a.checkoutTime ? new Date(a.checkoutTime).getTime() : 0; vb = b.checkoutTime ? new Date(b.checkoutTime).getTime() : 0; return (va - vb) * dir; }
+      return 0;
+    });
+
+    document.querySelectorAll('.ec-sortable i').forEach(i => { i.className = 'fas fa-sort'; i.style.color = 'var(--text-dim)'; });
+    const activeHeader = document.querySelector(`.ec-sortable[data-sort="${col}"] i`);
+    if (activeHeader) { activeHeader.className = dir === 1 ? 'fas fa-sort-up' : 'fas fa-sort-down'; activeHeader.style.color = 'var(--accent)'; }
+
+    const total = items.length;
+    const totalPages = Math.max(1, Math.ceil(total / this.EC_PER_PAGE));
+    if (this.ecPage > totalPages) this.ecPage = totalPages;
+    const start = (this.ecPage - 1) * this.EC_PER_PAGE;
+    const page = items.slice(start, start + this.EC_PER_PAGE);
+
     const tbody = document.getElementById('ec-table');
-    if (!items.length) {
-      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text-muted)">${Lang.t('No early checkout requests','لا يوجد طلبات انصراف مبكر')}</td></tr>`;
+    if (!page.length) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-muted)">${Lang.t('No early checkout requests','لا يوجد طلبات انصراف مبكر')}</td></tr>`;
+      document.getElementById('ec-pagination').innerHTML = '';
       return;
     }
-    tbody.innerHTML = items.map(ec => {
+    tbody.innerHTML = page.map(ec => {
+      const ecId = ec.id || ec._id;
       const empName = ec.employeeId && ec.employeeId.name ? ec.employeeId.name : '—';
       const date = ec.attendanceId && ec.attendanceId.date ? ec.attendanceId.date : '—';
       const time = ec.checkoutTime ? new Date(ec.checkoutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—';
       const badgeCls = ec.status === 'pending' ? 'badge-warning' : ec.status === 'approved' ? 'badge-success' : 'badge-danger';
-      const actions = ec.status === 'pending' ? `
-        <button class="btn btn-sm" style="background:var(--success);color:#fff;margin-right:4px" onclick="Admin.actionEarlyCheckout('${ec.id || ec._id}','approved')"><i class="fas fa-check"></i></button>
-        <button class="btn btn-sm" style="background:var(--danger);color:#fff" onclick="Admin.actionEarlyCheckout('${ec.id || ec._id}','declined')"><i class="fas fa-times"></i></button>
-      ` : (ec.approvedBy && ec.approvedBy.name ? ec.approvedBy.name : '—');
-      return `<tr>
+      const actions = ec.status === 'pending'
+        ? `<button class="btn btn-sm" style="background:var(--success);color:#fff;margin-right:4px" onclick="event.stopPropagation();Admin.actionEarlyCheckout('${ecId}','approved')" title="Approve"><i class="fas fa-check"></i></button><button class="btn btn-sm" style="background:var(--danger);color:#fff" onclick="event.stopPropagation();Admin.actionEarlyCheckout('${ecId}','declined')" title="Decline"><i class="fas fa-times"></i></button>`
+        : (ec.approvedBy && ec.approvedBy.name ? `<span style="font-size:0.8rem;color:var(--text-muted)">${ec.approvedBy.name}</span>` : '—');
+      return `<tr style="cursor:pointer" onclick="Admin.openEcDrawer('${ecId}')">
+        <td onclick="event.stopPropagation()"><input type="checkbox" class="ec-check" value="${ecId}" ${ec.status !== 'pending' ? 'disabled' : ''}></td>
         <td>${empName}</td>
         <td>${date}</td>
         <td dir="ltr">${time}</td>
-        <td style="max-width:200px;word-wrap:break-word">${ec.reason}</td>
+        <td style="max-width:200px;word-wrap:break-word;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ec.reason}</td>
         <td><span class="badge ${badgeCls}">${ec.status}</span></td>
         <td>${actions}</td>
       </tr>`;
     }).join('');
+
+    const pgEl = document.getElementById('ec-pagination');
+    pgEl.innerHTML = `
+      <span>${Lang.t('Showing','عرض')} ${start+1}–${Math.min(start+this.EC_PER_PAGE, total)} ${Lang.t('of','من')} ${total}</span>
+      <div style="display:flex;gap:0.25rem">
+        <button class="btn-ghost btn-sm" ${this.ecPage <= 1 ? 'disabled' : ''} onclick="Admin.ecPage--;Admin.renderEarlyCheckouts()"><i class="fas fa-chevron-left"></i></button>
+        <span style="padding:0.25rem 0.5rem">${this.ecPage} / ${totalPages}</span>
+        <button class="btn-ghost btn-sm" ${this.ecPage >= totalPages ? 'disabled' : ''} onclick="Admin.ecPage++;Admin.renderEarlyCheckouts()"><i class="fas fa-chevron-right"></i></button>
+      </div>
+    `;
+    if (document.getElementById('ec-check-all')) document.getElementById('ec-check-all').checked = false;
   },
 
   async actionEarlyCheckout(id, status) {
@@ -1792,12 +1908,84 @@ const Admin = {
     UI.loader(true);
     try {
       await API.request(`/checkouts/early/${id}/approve`, 'PUT', { status });
-      UI.toast(Lang.t(`Early checkout ${status}`, `تم تحديث طلب الانصراف المبكر`), 'success');
+      UI.toast(Lang.t(status === 'approved' ? 'Request Approved' : 'Request Declined', status === 'approved' ? 'تمت الموافقة' : 'تم الرفض'), 'success');
+      this.closeEcDrawer();
       await this.loadEarlyCheckouts();
       await DB.sync();
-      this.showPanel(this.currentPanel);
+      this.renderDashboard();
     } catch(e) { UI.toast(e.message, 'error'); }
     UI.loader(false);
+  },
+
+  async bulkApproveEarlyCheckouts(status) {
+    const checked = document.querySelectorAll('.ec-check:checked');
+    if (!checked.length) return UI.toast(Lang.t('Select at least one request','اختر طلب واحد على الأقل'), 'warning');
+    const label = status === 'approved' ? Lang.t('approve','الموافقة على') : Lang.t('decline','رفض');
+    if (!confirm(Lang.t(`${label} ${checked.length} request(s)?`, `${label} ${checked.length} طلب؟`))) return;
+    UI.loader(true);
+    let ok = 0;
+    for (const cb of checked) {
+      try {
+        await API.request(`/checkouts/early/${cb.value}/approve`, 'PUT', { status });
+        ok++;
+      } catch(_) {}
+    }
+    UI.toast(Lang.t(`${ok} request(s) ${status}`, `${ok} طلبات تم تحديثها`), 'success');
+    await this.loadEarlyCheckouts();
+    await DB.sync();
+    this.renderDashboard();
+    UI.loader(false);
+  },
+
+  openEcDrawer(id) {
+    const ec = (this.earlyCheckouts || []).find(e => (e.id || e._id) === id);
+    if (!ec) return;
+    const empName = ec.employeeId && ec.employeeId.name ? ec.employeeId.name : '—';
+    const empEid = ec.employeeId && ec.employeeId.eid ? ec.employeeId.eid : '';
+    const date = ec.attendanceId && ec.attendanceId.date ? ec.attendanceId.date : '—';
+    const checkIn = ec.attendanceId && ec.attendanceId.checkIn ? new Date(ec.attendanceId.checkIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—';
+    const checkOut = ec.checkoutTime ? new Date(ec.checkoutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—';
+    const badgeCls = ec.status === 'pending' ? 'badge-warning' : ec.status === 'approved' ? 'badge-success' : 'badge-danger';
+    const approverName = ec.approvedBy && ec.approvedBy.name ? ec.approvedBy.name : '';
+    const approvedAt = ec.approvedAt ? new Date(ec.approvedAt).toLocaleString() : '';
+
+    document.getElementById('drawer-ec-body').innerHTML = `
+      <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem">
+        <div style="width:48px;height:48px;border-radius:50%;background:var(--accent-glow);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.2rem;color:var(--accent)">${(empName[0]||'?').toUpperCase()}</div>
+        <div>
+          <div style="font-weight:600;font-size:1.05rem">${empName}</div>
+          ${empEid ? `<div style="font-size:0.8rem;color:var(--text-muted)">${empEid}</div>` : ''}
+        </div>
+        <span class="badge ${badgeCls}" style="margin-left:auto">${ec.status}</span>
+      </div>
+      <div class="drawer-field"><div class="drawer-field-label">${Lang.t('Date','التاريخ')}</div><div class="drawer-field-value">${date}</div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+        <div class="drawer-field"><div class="drawer-field-label">${Lang.t('Check In','الدخول')}</div><div class="drawer-field-value" dir="ltr">${checkIn}</div></div>
+        <div class="drawer-field"><div class="drawer-field-label">${Lang.t('Early Checkout','الخروج المبكر')}</div><div class="drawer-field-value" dir="ltr" style="color:var(--warning);font-weight:600">${checkOut}</div></div>
+      </div>
+      <div class="drawer-field">
+        <div class="drawer-field-label">${Lang.t('Reason','السبب')}</div>
+        <div class="drawer-field-value" style="background:var(--surface2);padding:0.75rem 1rem;border-radius:var(--radius);border:1px solid var(--border);white-space:pre-wrap">${ec.reason}</div>
+      </div>
+      ${approverName ? `<div class="drawer-field"><div class="drawer-field-label">${Lang.t('Processed By','بواسطة')}</div><div class="drawer-field-value">${approverName} — ${approvedAt}</div></div>` : ''}
+    `;
+
+    const footer = document.getElementById('drawer-ec-footer');
+    if (ec.status === 'pending') {
+      footer.innerHTML = `
+        <button class="btn btn-outline" onclick="Admin.closeEcDrawer()">${Lang.t('Close','إغلاق')}</button>
+        <button class="btn btn-danger" onclick="Admin.actionEarlyCheckout('${ec.id || ec._id}','declined')"><i class="fas fa-times"></i> ${Lang.t('Decline','رفض')}</button>
+        <button class="btn btn-success" onclick="Admin.actionEarlyCheckout('${ec.id || ec._id}','approved')"><i class="fas fa-check"></i> ${Lang.t('Approve','موافقة')}</button>
+      `;
+    } else {
+      footer.innerHTML = `<button class="btn btn-outline" onclick="Admin.closeEcDrawer()">${Lang.t('Close','إغلاق')}</button>`;
+    }
+    document.getElementById('drawer-ec-overlay').classList.add('open');
+  },
+
+  closeEcDrawer(ev) {
+    if (ev && ev.target !== ev.currentTarget) return;
+    document.getElementById('drawer-ec-overlay').classList.remove('open');
   },
 
   renderHrDepts() {
@@ -2215,6 +2403,20 @@ const Emp = {
     UI.loader(false);
   },
 
+  validateEarlyCheckoutForm() {
+    const sel = document.getElementById('leave-reason');
+    const notes = (document.getElementById('leave-notes').value || '').trim();
+    const btn = document.getElementById('btn-submit-early');
+    const counter = document.getElementById('leave-notes-counter');
+    if (counter) counter.textContent = `${notes.length} / 5`;
+    const valid = sel && sel.value && notes.length >= 5;
+    if (btn) {
+      btn.disabled = !valid;
+      btn.style.opacity = valid ? '1' : '0.5';
+      btn.style.cursor = valid ? 'pointer' : 'not-allowed';
+    }
+  },
+
   async submitLeaveRequest() {
     const sel = document.getElementById('leave-reason');
     const code = sel.value;
@@ -2222,8 +2424,9 @@ const Emp = {
     const notes = document.getElementById('leave-notes').value.trim();
 
     if (!code) return UI.toast(Lang.t('Please select a reason','الرجاء اختيار السبب'), 'error');
+    if (notes.length < 5) return UI.toast(Lang.t('Reason must be at least 5 characters','السبب يجب أن يكون 5 أحرف على الأقل'), 'error');
 
-    const reason = notes ? `[${label || code}] ${notes}` : (label || code);
+    const reason = `[${label || code}] ${notes}`;
 
     UI.loader(true);
     try {
@@ -2237,6 +2440,7 @@ const Emp = {
 
         document.getElementById('leave-reason').selectedIndex = 0;
         document.getElementById('leave-notes').value = '';
+        this.validateEarlyCheckoutForm();
     } catch(e) { UI.toast(e.message, 'error'); }
     UI.loader(false);
   },
