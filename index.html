@@ -1768,7 +1768,7 @@ const Admin = {
       return `<tr>
         <td><strong>${empName}</strong></td>
         <td>${l.type}</td>
-        <td dir="ltr">${startD} → ${endD}${l.attachmentUrl ? `<div><a href="/api/hr/leave-request/${l.id || l._id}/attachment" target="_blank" style="color:var(--info);font-size:0.75rem"><i class="fas fa-paperclip"></i> Attachment</a></div>` : ''}</td>
+        <td dir="ltr">${startD} → ${endD}${l.attachmentUrl ? `<div style="display:flex;gap:0.35rem;flex-wrap:wrap;margin-top:0.35rem"><a class="btn btn-sm btn-outline" href="/api/hr/leave-request/${l.id || l._id}/attachment" target="_blank" rel="noopener">View Document</a><a class="btn btn-sm btn-outline" href="/api/hr/leave-request/${l.id || l._id}/attachment" download>Download Document</a></div>` : ''}</td>
         <td>${l.requestedDays}</td>
         <td>${statusBadge(l.status)}</td>
         <td>${actions}</td>
@@ -2286,7 +2286,7 @@ const Emp = {
                </div>
                <div style="font-size:0.8rem; color:var(--text-muted);">
                  ${new Date(l.startDate).toLocaleDateString()} - ${new Date(l.endDate).toLocaleDateString()} (${l.requestedDays} days) [${l.type}]
-                 ${l.attachmentUrl ? `<div><a href="/api/hr/leave-request/${l._id || l.id}/attachment" target="_blank" style="color:var(--info);font-size:0.75rem"><i class="fas fa-paperclip"></i> Attachment</a></div>` : ''}
+                 ${l.attachmentUrl ? `<div style="display:flex;gap:0.35rem;flex-wrap:wrap;margin-top:0.35rem"><a class="btn btn-sm btn-outline" href="/api/hr/leave-request/${l._id || l.id}/attachment" target="_blank" rel="noopener">View Document</a><a class="btn btn-sm btn-outline" href="/api/hr/leave-request/${l._id || l.id}/attachment" download>Download Document</a></div>` : ''}
                </div>
                ${l.status === 'pending' ? `
                  <div style="margin-top:0.5rem;">
