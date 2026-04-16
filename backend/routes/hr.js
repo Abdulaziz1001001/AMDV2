@@ -74,6 +74,16 @@ router.get('/me/profile', auth.requireRole(['employee', 'manager']), async (req,
   }
 });
 
+router.get('/me/leave-requests', auth.requireRole(['employee', 'manager']), async (req, res) => {
+  try {
+    const leaves = await LeaveRequest.find({ employeeId: req.user.id }).sort({ createdAt: -1 });
+    const format = (arr) => arr.map((doc) => ({ ...doc._doc, id: doc._id.toString() }));
+    res.json(format(leaves));
+  } catch (err) {
+    res.status(500).json({ msg: 'Server error' });
+  }
+});
+
 // Submit a leave request
 router.post('/me/leave-request', auth.requireRole(['employee', 'manager']), upload.single('attachment'), async (req, res) => {
   try {

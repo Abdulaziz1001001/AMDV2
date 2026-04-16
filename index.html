@@ -341,7 +341,7 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
               <option value="all" class="tr" data-en="All" data-ar="الكل">All</option>
               <option value="pending" class="tr" data-en="Pending" data-ar="معلقة">Pending</option>
               <option value="approved" class="tr" data-en="Approved" data-ar="مقبولة">Approved</option>
-              <option value="declined" class="tr" data-en="Declined" data-ar="مرفوضة">Declined</option>
+              <option value="rejected" class="tr" data-en="Rejected" data-ar="مرفوضة">Rejected</option>
             </select>
           </div>
           <div style="overflow-x:auto">
@@ -753,12 +753,10 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>window.__AMD_API_BASE__ = window.__AMD_API_BASE__ || '';</script>
 <script src="/app-config.js"></script>
 <script src="/assets/js/http.js"></script>
-<script src="/assets/js/supabase-service.js"></script>
 
 <script>
 'use strict';
@@ -1712,33 +1710,13 @@ const Admin = {
 
   // ── HR Management Panel ──────────────────────────────────
 
-  async loadHrData() {
+  loadHrData() {
     this.renderHrDepts();
-    await this.refreshSupabaseHrData();
     this.renderHrLeaves();
     this.renderLeaveBalances();
     const d = new Date();
     document.getElementById('hr-payroll-month').value = d.getMonth() + 1;
     document.getElementById('hr-payroll-year').value = d.getFullYear();
-  },
-  async refreshSupabaseHrData() {
-    try {
-      const sb = SupabaseService.ensureClient();
-      const leavesRes = await sb.from('leave_requests').select('id, employee_id, start_date, end_date, requested_days, type, status, attachment_url, created_at, profiles!leave_requests_employee_id_fkey(full_name)').order('created_at', { ascending: false });
-      if (leavesRes.error) this.hrLeaves = [];
-      else this.hrLeaves = leavesRes.data || [];
-      const users = DB.getEmployees().map((e) => ({ id: e.id, name: e.name, eid: e.eid, role: e.role || 'employee' }));
-      const balRes = await sb.from('leave_balances').select('id, user_id, annual_balance_days');
-      if (balRes.error) {
-        this.hrBalances = [];
-      } else {
-        const map = new Map((balRes.data || []).map((b) => [String(b.user_id), b]));
-        this.hrBalances = users.map((u) => ({ userId: u.id, name: u.name, eid: u.eid, role: u.role, days: map.get(String(u.id)) ? map.get(String(u.id)).annual_balance_days : 0 }));
-      }
-    } catch (_) {
-      this.hrLeaves = [];
-      this.hrBalances = [];
-    }
   },
 
   renderHrDepts() {
@@ -1766,7 +1744,7 @@ const Admin = {
 
   renderHrLeaves() {
     const filter = (document.getElementById('hr-leave-filter') || {}).value || 'all';
-    let leaves = this.hrLeaves && this.hrLeaves.length ? this.hrLeaves : DB.getLeaveRequests();
+    let leaves = DB.getLeaveRequests();
     if (filter !== 'all') leaves = leaves.filter(l => l.status === filter);
     const tbody = document.getElementById('hr-leaves-table');
     if (!leaves.length) {
@@ -1780,18 +1758,18 @@ const Admin = {
       return `<span class="badge badge-${m[s] || 'muted'}">${Lang.current === 'ar' ? lAR[s] : lEN[s] || s}</span>`;
     };
     tbody.innerHTML = leaves.map(l => {
-      const empName = (l.profiles && l.profiles.full_name) || (l.employeeId && l.employeeId.name) || l.employee_id || '—';
-      const startD = l.start_date ? new Date(l.start_date).toLocaleDateString() : (l.startDate ? new Date(l.startDate).toLocaleDateString() : '');
-      const endD = l.end_date ? new Date(l.end_date).toLocaleDateString() : (l.endDate ? new Date(l.endDate).toLocaleDateString() : '');
+      const empName = l.employeeId && l.employeeId.name ? l.employeeId.name : '—';
+      const startD = l.startDate ? new Date(l.startDate).toLocaleDateString() : '';
+      const endD = l.endDate ? new Date(l.endDate).toLocaleDateString() : '';
       const actions = l.status === 'pending' ? `
         <button class="btn btn-sm" style="background:var(--success);color:#fff;margin-right:4px" onclick="Admin.adminActionLeave('${l.id}','approved')"><i class="fas fa-check"></i></button>
-        <button class="btn btn-sm" style="background:var(--danger);color:#fff" onclick="Admin.adminActionLeave('${l.id}','declined')"><i class="fas fa-times"></i></button>
+        <button class="btn btn-sm" style="background:var(--danger);color:#fff" onclick="Admin.adminActionLeave('${l.id}','rejected')"><i class="fas fa-times"></i></button>
       ` : '—';
       return `<tr>
         <td><strong>${empName}</strong></td>
         <td>${l.type}</td>
-        <td dir="ltr">${startD} → ${endD}${(l.attachment_url || l.attachmentUrl) ? `<div style="margin-top:0.25rem"><button class="btn btn-sm btn-outline" onclick="Admin.viewAttachment('${l.attachment_url || l.attachmentUrl}')">View Document</button> <button class="btn btn-sm btn-outline" onclick="Admin.downloadAttachment('${l.attachment_url || l.attachmentUrl}')">Download Document</button></div>` : ''}</td>
-        <td>${l.requested_days || l.requestedDays}</td>
+        <td dir="ltr">${startD} → ${endD}${l.attachmentUrl ? `<div><a href="/api/hr/leave-request/${l.id || l._id}/attachment" target="_blank" style="color:var(--info);font-size:0.75rem"><i class="fas fa-paperclip"></i> Attachment</a></div>` : ''}</td>
+        <td>${l.requestedDays}</td>
         <td>${statusBadge(l.status)}</td>
         <td>${actions}</td>
       </tr>`;
@@ -1804,24 +1782,8 @@ const Admin = {
     if (!confirm(Lang.t(`Are you sure you want to ${actionWordEn} this leave?`, `هل تريد ${actionWordAr} هذا الطلب؟`))) return;
     UI.loader(true);
     try {
-      const sb = SupabaseService.ensureClient();
-      const me = await sb.auth.getUser();
-      const uid = me && me.data && me.data.user ? me.data.user.id : null;
-      const upd = await sb.from('leave_requests').update({ status, approved_by: uid, approved_by_role: 'admin', approved_at: new Date().toISOString() }).eq('id', id);
-      if (upd.error) throw new Error(upd.error.message);
-      const leave = await sb.from('leave_requests').select('employee_id, type, start_date, end_date').eq('id', id).maybeSingle();
-      if (leave.error) throw new Error(leave.error.message);
-      if (leave.data) {
-        const notif = await sb.from('notifications').insert([{
-          recipient_user_id: leave.data.employee_id,
-          leave_request_id: id,
-          type: 'leave_status_changed',
-          title: 'Leave request updated',
-          body: `${leave.data.type}: ${status} (${leave.data.start_date} to ${leave.data.end_date})`,
-        }]);
-        if (notif.error) throw new Error(notif.error.message);
-      }
-      await this.refreshSupabaseHrData();
+      await API.request(`/admin/leave-requests/${id}`, 'PATCH', { status: status === 'declined' ? 'rejected' : status });
+      await DB.sync();
       this.renderHrLeaves();
       UI.toast(Lang.t(`Leave ${status}`, `تم ${status === 'approved' ? 'الموافقة' : 'الرفض'}`), 'success');
     } catch (e) { UI.toast(e.message, 'error'); }
@@ -1830,42 +1792,16 @@ const Admin = {
   renderLeaveBalances() {
     const tbody = document.getElementById('hr-balance-table');
     if (!tbody) return;
-    if (!this.hrBalances.length) {
-      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:1rem;color:var(--text-muted)">No balances</td></tr>`;
-      return;
-    }
-    tbody.innerHTML = this.hrBalances.map((b) => `<tr>
-      <td><code>${b.eid || '—'}</code></td>
-      <td>${b.name || b.userId}</td>
-      <td>${b.role || 'employee'}</td>
-      <td><input id="balance-${b.userId}" class="form-control" type="number" min="0" step="0.5" value="${b.days || 0}" /></td>
-      <td><button class="btn btn-sm btn-primary" onclick="Admin.saveLeaveBalance('${b.userId}')">Save</button></td>
-    </tr>`).join('');
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:1rem;color:var(--text-muted)">Managed by company policy in Mongo workflow.</td></tr>`;
   },
   async saveLeaveBalance(userId) {
-    const input = document.getElementById(`balance-${userId}`);
-    const val = input ? Number(input.value) : 0;
-    if (Number.isNaN(val) || val < 0) return UI.toast('Invalid balance value', 'error');
-    UI.loader(true);
-    try {
-      await SupabaseService.setLeaveBalance(userId, val);
-      UI.toast('Balance updated', 'success');
-      await this.refreshSupabaseHrData();
-      this.renderLeaveBalances();
-    } catch (e) { UI.toast(e.message, 'error'); }
-    UI.loader(false);
+    UI.toast('Leave balances are policy-driven in this mode', 'warning');
   },
-  async viewAttachment(path) {
-    try {
-      const url = await SupabaseService.getAttachmentSignedUrl(path, false);
-      window.open(url, '_blank', 'noopener');
-    } catch (e) { UI.toast(e.message, 'error'); }
+  async viewAttachment() {
+    UI.toast('Use attachment link in row', 'warning');
   },
-  async downloadAttachment(path) {
-    try {
-      const url = await SupabaseService.getAttachmentSignedUrl(path, true);
-      window.open(url, '_blank', 'noopener');
-    } catch (e) { UI.toast(e.message, 'error'); }
+  async downloadAttachment() {
+    UI.toast('Use attachment link in row', 'warning');
   },
 
   async loadPayrollOverview() {
@@ -2224,15 +2160,7 @@ const Emp = {
     }).join('');
   },
   async initRealtime() {
-    try {
-      this.notifChannel = SupabaseService.subscribeToLeaveAndNotifications(
-        () => { this.loadRequestHistory(); this.loadNotificationsList(); },
-        () => { this.loadNotificationsList(); },
-      );
-      this.loadNotificationsList();
-    } catch (_) {
-      // Supabase may be unavailable in some environments.
-    }
+    this.loadNotificationsList();
   },
   updateNotifBadge(count){
     const el = document.getElementById('emp-notif-badge');
@@ -2262,54 +2190,33 @@ const Emp = {
   async loadNotificationsList(){
     const dd = document.getElementById('emp-notif-dropdown');
     if (!dd) return;
-    dd.innerHTML = `<div style="padding:1rem;color:var(--text-muted)">...</div>`;
-    try {
-      const items = await SupabaseService.getNotifications();
-      const unread = items.filter((n) => !n.read_at).length;
-      this.updateNotifBadge(unread);
-      if (!items.length) {
-        dd.innerHTML = `<div style="padding:1rem;color:var(--text-muted)">${Lang.t('No notifications','لا إشعارات')}</div>`;
-        return;
-      }
-      dd.innerHTML = items.map((n) => `<div class="notif-item${n.read_at ? '' : ' unread'}" data-id="${n.id}">
-        <div style="font-weight:600;font-size:0.85rem">${n.title}</div>
-        <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.2rem">${n.body}</div>
-      </div>`).join('');
-      dd.querySelectorAll('.notif-item').forEach((el) => {
-        el.onclick = async () => {
-          const id = el.getAttribute('data-id');
-          await SupabaseService.markNotificationRead(id);
-          this.loadNotificationsList();
-        };
-      });
-    } catch (e) {
-      dd.innerHTML = `<div style="padding:1rem;color:var(--danger)">${e.message}</div>`;
-    }
+    this.updateNotifBadge(0);
+    dd.innerHTML = `<div style="padding:1rem;color:var(--text-muted)">${Lang.t('Notifications are available in admin panel','الإشعارات متاحة في لوحة الإدارة')}</div>`;
   },
   async loadRequestHistory() {
     const wrap = document.getElementById('emp-request-history');
     if (!wrap) return;
     wrap.innerHTML = `<div style="color:var(--text-muted)">Loading...</div>`;
     try {
-      const items = await SupabaseService.getEmployeeLeaveRequests();
+      const items = await API.request('/hr/me/leave-requests', 'GET');
       if (!items.length) {
         wrap.innerHTML = `<div style="color:var(--text-muted)">${Lang.t('No leave requests yet','لا توجد طلبات إجازة')}</div>`;
         return;
       }
       const statusBadge = (s) => {
-        const cls = s === 'approved' ? 'badge-success' : s === 'declined' ? 'badge-danger' : 'badge-warning';
+        const cls = s === 'approved' ? 'badge-success' : (s === 'declined' || s === 'rejected') ? 'badge-danger' : 'badge-warning';
         return `<span class="badge ${cls}">${s}</span>`;
       };
       wrap.innerHTML = items.map((r) => `
         <div style="border-bottom:1px solid var(--border);padding:0.65rem 0">
           <div style="display:flex;justify-content:space-between;gap:0.5rem"><strong>${r.type}</strong>${statusBadge(r.status)}</div>
-          <div style="font-size:0.8rem;color:var(--text-muted)" dir="ltr">${r.start_date} → ${r.end_date} (${r.requested_days} days)</div>
+          <div style="font-size:0.8rem;color:var(--text-muted)" dir="ltr">${(r.startDate || '').slice(0, 10)} → ${(r.endDate || '').slice(0, 10)} (${r.requestedDays} days)</div>
         </div>`).join('');
     } catch (e) {
       wrap.innerHTML = `<div style="color:var(--danger)">${e.message}</div>`;
     }
   },
-  async showTab(tab) {
+  showTab(tab) {
     document.getElementById('emp-tab-attendance-content').style.display = tab === 'attendance' ? 'block' : 'none';
     document.getElementById('emp-tab-hr-content').style.display = tab === 'hr' ? 'block' : 'none';
     
@@ -2319,11 +2226,9 @@ const Emp = {
     if (tab === 'attendance') {
         if (Maps.empMap) setTimeout(() => Maps.empMap.invalidateSize(true), 350);
     } else if (tab === 'hr') {
-        await Promise.all([
-          this.loadHrData(),
-          this.loadRequestHistory(),
-          this.loadNotificationsList(),
-        ]);
+        this.loadHrData();
+        this.loadRequestHistory();
+        this.loadNotificationsList();
         const d = new Date();
         document.getElementById('hr-pay-month').value = d.getMonth() + 1;
         document.getElementById('hr-pay-year').value = d.getFullYear();
@@ -2342,16 +2247,11 @@ const Emp = {
           <div style="margin-bottom:0.5rem"><small style="color:var(--text-muted)" class="tr" data-en="Department" data-ar="القسم">Department</small><div>${p.departmentId ? p.departmentId.name : '—'}</div></div>
         `;
         
-        try {
-          const bal = await SupabaseService.getMyLeaveBalance();
-          document.getElementById('emp-hr-balance-val').textContent = bal.annual_balance_days || 0;
-        } catch (_) {
-          document.getElementById('emp-hr-balance-val').textContent = (res.leaveBalance && res.leaveBalance.balance) || 0;
-        }
+        document.getElementById('emp-hr-balance-val').textContent = (res.leaveBalance && res.leaveBalance.balance) || 0;
         Lang.apply();
 
         if (Auth.empSession && Auth.empSession.role === 'manager') {
-            this.loadManagerLeaves();
+            await this.loadManagerLeaves();
         }
     } catch(e) {
         document.getElementById('emp-hr-profile').innerHTML = `<div style="color:var(--danger)">Error loading profile</div>`;
@@ -2373,16 +2273,7 @@ const Emp = {
       const body = document.getElementById('manager-leaves-body');
       body.innerHTML = 'Loading...';
       try {
-          const sb = SupabaseService.ensureClient();
-          const me = await sb.auth.getUser();
-          const uid = me && me.data && me.data.user ? me.data.user.id : null;
-          const myProfile = await sb.from('profiles').select('department_id').eq('id', uid).maybeSingle();
-          const depId = myProfile && myProfile.data ? myProfile.data.department_id : null;
-          let q = sb.from('leave_requests').select('id, employee_id, start_date, end_date, requested_days, type, status, attachment_url, created_at, profiles!leave_requests_employee_id_fkey(full_name)').order('created_at', { ascending: false });
-          if (depId) q = q.eq('department_id', depId);
-          const res = await q;
-          if (res.error) throw new Error(res.error.message);
-          const leaves = res.data || [];
+          const leaves = await API.request('/hr/department/leaves', 'GET');
           if (!leaves.length) {
               body.innerHTML = '<span style="color:var(--text-muted)">No leaves found</span>';
               return;
@@ -2390,17 +2281,17 @@ const Emp = {
           body.innerHTML = leaves.map(l => `
             <div style="border-bottom:1px solid var(--border); padding-bottom:0.5rem; margin-bottom:0.5rem;">
                <div style="display:flex; justify-content:space-between;">
-                 <strong>${(l.profiles && l.profiles.full_name) || l.employee_id}</strong>
+                 <strong>${l.employeeId.name}</strong>
                  <span class="badge ${l.status === 'pending' ? 'badge-warning' : l.status === 'approved' ? 'badge-success' : 'badge-danger'}">${l.status}</span>
                </div>
                <div style="font-size:0.8rem; color:var(--text-muted);">
-                 ${new Date(l.start_date).toLocaleDateString()} - ${new Date(l.end_date).toLocaleDateString()} (${l.requested_days} days) [${l.type}]
-                 ${l.attachment_url ? `<div style="margin-top:0.25rem"><button class="btn btn-sm btn-outline" onclick="Emp.viewAttachment('${l.attachment_url}')">View Document</button> <button class="btn btn-sm btn-outline" onclick="Emp.downloadAttachment('${l.attachment_url}')">Download Document</button></div>` : ''}
+                 ${new Date(l.startDate).toLocaleDateString()} - ${new Date(l.endDate).toLocaleDateString()} (${l.requestedDays} days) [${l.type}]
+                 ${l.attachmentUrl ? `<div><a href="/api/hr/leave-request/${l._id || l.id}/attachment" target="_blank" style="color:var(--info);font-size:0.75rem"><i class="fas fa-paperclip"></i> Attachment</a></div>` : ''}
                </div>
                ${l.status === 'pending' ? `
                  <div style="margin-top:0.5rem;">
-                   <button class="btn btn-sm btn-success" onclick="Emp.actionLeave('${l.id}', 'approved')">Approve</button>
-                   <button class="btn btn-sm btn-danger" onclick="Emp.actionLeave('${l.id}', 'declined')">Reject</button>
+                   <button class="btn btn-sm btn-success" onclick="Emp.actionLeave('${l._id || l.id}', 'approved')">Approve</button>
+                   <button class="btn btn-sm btn-danger" onclick="Emp.actionLeave('${l._id || l.id}', 'rejected')">Reject</button>
                  </div>
                ` : ''}
             </div>
@@ -2414,38 +2305,11 @@ const Emp = {
       if(!confirm(`Are you sure you want to ${status} this leave?`)) return;
       UI.loader(true);
       try {
-          const sb = SupabaseService.ensureClient();
-          const me = await sb.auth.getUser();
-          const uid = me && me.data && me.data.user ? me.data.user.id : null;
-          const role = (Auth.empSession && Auth.empSession.role) || 'manager';
-          const upd = await sb.from('leave_requests').update({ status, approved_by: uid, approved_by_role: role === 'admin' ? 'admin' : 'manager', approved_at: new Date().toISOString() }).eq('id', id);
-          if (upd.error) throw new Error(upd.error.message);
-          const leave = await sb.from('leave_requests').select('employee_id, type, start_date, end_date').eq('id', id).maybeSingle();
-          if (leave.data) {
-            await sb.from('notifications').insert([{
-              recipient_user_id: leave.data.employee_id,
-              leave_request_id: id,
-              type: 'leave_status_changed',
-              title: 'Leave request updated',
-              body: `${leave.data.type}: ${status} (${leave.data.start_date} to ${leave.data.end_date})`,
-            }]);
-          }
+          await API.request(`/hr/department/leaves/${id}`, 'PATCH', { status });
           UI.toast(`Leave ${status}`, 'success');
-          this.loadManagerLeaves();
+          await this.loadManagerLeaves();
       } catch(e) { UI.toast(e.message, 'error'); }
       UI.loader(false);
-  },
-  async viewAttachment(path) {
-      try {
-        const url = await SupabaseService.getAttachmentSignedUrl(path, false);
-        window.open(url, '_blank', 'noopener');
-      } catch (e) { UI.toast(e.message, 'error'); }
-  },
-  async downloadAttachment(path) {
-      try {
-        const url = await SupabaseService.getAttachmentSignedUrl(path, true);
-        window.open(url, '_blank', 'noopener');
-      } catch (e) { UI.toast(e.message, 'error'); }
   },
 
   async submitHrLeave() {
@@ -2463,16 +2327,24 @@ const Emp = {
 
     UI.loader(true);
     try {
-        let attachmentKey = null;
-        if (file) attachmentKey = await SupabaseService.uploadLeaveAttachment(file);
-        await SupabaseService.createLeaveRequest({
-          start_date: startDate,
-          end_date: endDate,
-          type: type,
-          reason: reason,
-          requested_days: requestedDays,
-          attachment_url: attachmentKey,
-        });
+        if (file) {
+          const fd = new FormData();
+          fd.append('startDate', startDate);
+          fd.append('endDate', endDate);
+          fd.append('type', type);
+          fd.append('reason', reason);
+          fd.append('attachment', file);
+          const token = localStorage.getItem('amd_token');
+          const res = await fetch(window.AMD_HTTP.base + '/hr/me/leave-request', {
+            method: 'POST',
+            headers: token ? { Authorization: 'Bearer ' + token } : {},
+            body: fd,
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.msg || 'Request failed');
+        } else {
+          await API.request('/hr/me/leave-request', 'POST', { startDate, endDate, type, reason });
+        }
         UI.toast(Lang.t('Leave requested','تم طلب الإجازة'), 'success');
         document.getElementById('hr-leave-start').value = '';
         document.getElementById('hr-leave-end').value = '';

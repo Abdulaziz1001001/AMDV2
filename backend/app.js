@@ -51,14 +51,8 @@ function createApp() {
   app.get('/app-config.js', (req, res) => {
     res.type('application/javascript');
     const base = process.env.PUBLIC_API_BASE || '';
-    const supabaseUrl = process.env.PUBLIC_SUPABASE_URL || '';
-    const supabaseAnonKey = process.env.PUBLIC_SUPABASE_ANON_KEY || '';
     res.setHeader('Cache-Control', 'no-store');
-    res.send(
-      `window.__AMD_API_BASE__=${JSON.stringify(base)};` +
-      `window.__AMD_SUPABASE_URL__=${JSON.stringify(supabaseUrl)};` +
-      `window.__AMD_SUPABASE_ANON_KEY__=${JSON.stringify(supabaseAnonKey)};`,
-    );
+    res.send(`window.__AMD_API_BASE__=${JSON.stringify(base)};`);
   });
 
   const authLimiter = rateLimit({
