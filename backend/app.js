@@ -12,6 +12,13 @@ const hrRoutes = require('./routes/hr');
 const adminRoutes = require('./routes/admin');
 const employeeRoutes = require('./routes/employee');
 const earlyCheckoutRoutes = require('./routes/earlyCheckout');
+const overtimeRoutes = require('./routes/overtime');
+const shiftRoutes = require('./routes/shifts');
+const projectRoutes = require('./routes/projects');
+const attendanceRoutes = require('./routes/attendance');
+const auditRoutes = require('./routes/audit');
+const announcementRoutes = require('./routes/announcements');
+const onboardingRoutes = require('./routes/onboarding');
 
 function assertJwtSecret() {
   const secret = process.env.JWT_SECRET;
@@ -69,6 +76,13 @@ function createApp() {
   app.use('/api/employee', employeeRoutes);
   app.use('/api/hr', hrRoutes);
   app.use('/api/checkouts', earlyCheckoutRoutes);
+  app.use('/api/overtime', overtimeRoutes);
+  app.use('/api/shifts', shiftRoutes);
+  app.use('/api/projects', projectRoutes);
+  app.use('/api/attendance', attendanceRoutes);
+  app.use('/api/audit', auditRoutes);
+  app.use('/api/announcements', announcementRoutes);
+  app.use('/api/onboarding', onboardingRoutes);
 
   // 5. Health check and Static File serving
   app.get('/health', (req, res) => res.type('text').send('ok'));

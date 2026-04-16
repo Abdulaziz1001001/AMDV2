@@ -20,17 +20,30 @@ router.get('/me-data', async (req, res) => {
     const emp = await Employee.findById(req.user.id);
     if (!emp) return res.status(404).json({ msg: 'Employee not found' });
 
+    const Announcement = require('../models/Announcement');
     const allLocs = await Location.find();
     const gid = String(emp.groupId);
     const locations = allLocs.filter((loc) => String(loc.groupId) === gid);
 
-    const records = await Record.find({ employeeId: String(req.user.id) });
+    const now = new Date();
+    const [records, announcements] = await Promise.all([
+      Record.find({ employeeId: String(req.user.id) }),
+      Announcement.find({
+        $or: [{ expiresAt: null }, { expiresAt: { $exists: false } }, { expiresAt: { $gte: now } }],
+        $and: [{ $or: [
+          { targetType: 'all' },
+          ...(emp.departmentId ? [{ targetType: 'department', targetId: String(emp.departmentId) }] : []),
+          ...(emp.groupId ? [{ targetType: 'group', targetId: String(emp.groupId) }] : []),
+        ]}],
+      }).sort({ pinned: -1, createdAt: -1 }).limit(10),
+    ]);
 
     res.json({
       employees: [],
       groups: [],
       locations: formatDocs(locations),
       records: formatDocs(records),
+      announcements: formatDocs(announcements),
     });
   } catch (err) {
     console.error('me-data error:', err);

@@ -229,8 +229,14 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
       <div class="nav-link" onclick="Admin.showPanel('calendar',this)"><i class="fas fa-calendar-alt" style="width:20px"></i><span class="tr" data-en="Work calendar" data-ar="التقويم والدوام">Work calendar</span></div>
       <div class="nav-link" onclick="Admin.showPanel('records',this)"><i class="fas fa-clipboard-list" style="width:20px"></i><span class="tr" data-en="Records" data-ar="التقارير">Records</span></div>
       <div class="nav-link" onclick="Admin.showPanel('hr',this)"><i class="fas fa-briefcase" style="width:20px"></i><span class="tr" data-en="HR Management" data-ar="الموارد البشرية">HR Management</span></div>
+      <div class="nav-link" onclick="Admin.showPanel('shifts',this)"><i class="fas fa-exchange-alt" style="width:20px"></i><span class="tr" data-en="Shifts & Roster" data-ar="الورديات والجدول">Shifts & Roster</span></div>
+      <div class="nav-link" onclick="Admin.showPanel('projects',this)"><i class="fas fa-hard-hat" style="width:20px"></i><span class="tr" data-en="Projects / Sites" data-ar="المشاريع / المواقع">Projects / Sites</span></div>
+      <div class="nav-link" onclick="Admin.showPanel('onboarding',this)"><i class="fas fa-clipboard-check" style="width:20px"></i><span class="tr" data-en="Onboarding" data-ar="إعداد الموظفين">Onboarding</span></div>
+      <div class="nav-link" onclick="Admin.showPanel('announcements',this)"><i class="fas fa-bullhorn" style="width:20px"></i><span class="tr" data-en="Announcements" data-ar="الإعلانات">Announcements</span></div>
       
       <span style="display:block;padding:1.5rem 1.25rem 0.4rem;font-size:0.65rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--text-dim)" class="tr" data-en="System" data-ar="النظام">System</span>
+      <div class="nav-link" onclick="Admin.showPanel('audit',this)"><i class="fas fa-history" style="width:20px"></i><span class="tr" data-en="Audit Log" data-ar="سجل المراجعة">Audit Log</span></div>
+      <div class="nav-link" onclick="Admin.showPanel('reports',this)"><i class="fas fa-file-alt" style="width:20px"></i><span class="tr" data-en="Reports" data-ar="التقارير المتقدمة">Reports</span></div>
       <div class="nav-link" onclick="Admin.showPanel('settings',this)"><i class="fas fa-cog" style="width:20px"></i><span class="tr" data-en="Settings" data-ar="الإعدادات">Settings</span></div>
     </nav>
     
@@ -468,8 +474,9 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
               <th class="tr" data-en="Base Salary" data-ar="الراتب الأساسي">Base Salary</th>
               <th class="tr" data-en="Absences" data-ar="الغيابات">Absences</th>
               <th class="tr" data-en="Deduction" data-ar="الخصم">Deduction</th>
+              <th class="tr" data-en="OT Pay" data-ar="بدل إضافي">OT Pay</th>
               <th class="tr" data-en="Net Salary" data-ar="صافي الراتب">Net Salary</th>
-            </tr></thead><tbody id="hr-payroll-table"><tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text-muted)" class="tr" data-en="Select month and year, then click Calculate" data-ar="اختر الشهر والسنة ثم اضغط حساب">Select month and year, then click Calculate</td></tr></tbody></table>
+            </tr></thead><tbody id="hr-payroll-table"><tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-muted)" class="tr" data-en="Select month and year, then click Calculate" data-ar="اختر الشهر والسنة ثم اضغط حساب">Select month and year, then click Calculate</td></tr></tbody></table>
           </div>
         </div>
       </div>
@@ -553,6 +560,119 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
         </div>
 
         <button type="button" class="btn btn-primary" onclick="Admin.saveWorkPolicy()"><i class="fas fa-save"></i> <span class="tr" data-en="Save Work Policy" data-ar="حفظ سياسة الدوام">Save Work Policy</span></button>
+      </div>
+
+      <!-- Shifts & Roster Panel -->
+      <div id="panel-shifts" class="admin-panel">
+        <div style="display:flex;gap:0.75rem;margin-bottom:1.25rem;align-items:center;flex-wrap:wrap">
+          <h3 style="margin:0;color:var(--accent);text-transform:uppercase" class="tr" data-en="Shift Templates" data-ar="قوالب الورديات">Shift Templates</h3>
+          <div style="flex:1"></div>
+          <button class="btn btn-primary btn-sm" onclick="Admin.openShiftModal()"><i class="fas fa-plus"></i> <span class="tr" data-en="Add Shift" data-ar="إضافة وردية">Add Shift</span></button>
+        </div>
+        <div class="card"><div style="overflow-x:auto">
+          <table><thead><tr>
+            <th class="tr" data-en="Name" data-ar="الاسم">Name</th>
+            <th class="tr" data-en="Start" data-ar="البداية">Start</th>
+            <th class="tr" data-en="End" data-ar="النهاية">End</th>
+            <th class="tr" data-en="Default" data-ar="افتراضي">Default</th>
+            <th><i class="fas fa-cogs"></i></th>
+          </tr></thead><tbody id="shifts-table"></tbody></table>
+        </div></div>
+        <div class="card" style="margin-top:1.5rem">
+          <div class="card-header"><div class="card-title tr" data-en="Roster Assignment" data-ar="تعيين الجدول">Roster Assignment</div></div>
+          <div style="padding:1.25rem;display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;align-items:end">
+            <div class="form-group" style="margin:0"><label class="form-label tr" data-en="Employee" data-ar="الموظف">Employee</label><select id="roster-emp" class="form-control form-select"></select></div>
+            <div class="form-group" style="margin:0"><label class="form-label tr" data-en="Shift" data-ar="الوردية">Shift</label><select id="roster-shift" class="form-control form-select"></select></div>
+            <div class="form-group" style="margin:0"><label class="form-label tr" data-en="Date Range" data-ar="الفترة">Date Range</label><div style="display:flex;gap:0.5rem"><input type="date" id="roster-from" class="form-control"><input type="date" id="roster-to" class="form-control"></div></div>
+          </div>
+          <div style="padding:0 1.25rem 1.25rem"><button class="btn btn-primary btn-sm" onclick="Admin.assignRoster()"><i class="fas fa-calendar-check"></i> <span class="tr" data-en="Assign" data-ar="تعيين">Assign</span></button></div>
+        </div>
+      </div>
+
+      <!-- Projects / Sites Panel -->
+      <div id="panel-projects" class="admin-panel">
+        <div style="display:flex;gap:0.75rem;margin-bottom:1.25rem;align-items:center;flex-wrap:wrap">
+          <h3 style="margin:0;color:var(--accent);text-transform:uppercase" class="tr" data-en="Projects / Sites" data-ar="المشاريع / المواقع">Projects / Sites</h3>
+          <div style="flex:1"></div>
+          <button class="btn btn-primary btn-sm" onclick="Admin.openProjectModal()"><i class="fas fa-plus"></i> <span class="tr" data-en="Add Project" data-ar="إضافة مشروع">Add Project</span></button>
+        </div>
+        <div class="card"><div style="overflow-x:auto">
+          <table><thead><tr>
+            <th class="tr" data-en="Name" data-ar="الاسم">Name</th>
+            <th class="tr" data-en="Code" data-ar="الرمز">Code</th>
+            <th class="tr" data-en="Status" data-ar="الحالة">Status</th>
+            <th class="tr" data-en="Manager" data-ar="المدير">Manager</th>
+            <th class="tr" data-en="Address" data-ar="العنوان">Address</th>
+            <th><i class="fas fa-cogs"></i></th>
+          </tr></thead><tbody id="projects-table"></tbody></table>
+        </div></div>
+      </div>
+
+      <!-- Onboarding Panel -->
+      <div id="panel-onboarding" class="admin-panel">
+        <div style="display:flex;gap:0.75rem;margin-bottom:1.25rem;align-items:center;flex-wrap:wrap">
+          <h3 style="margin:0;color:var(--accent);text-transform:uppercase" class="tr" data-en="Onboarding & Offboarding" data-ar="إعداد الموظفين">Onboarding & Offboarding</h3>
+          <div style="flex:1"></div>
+          <select id="onboard-emp-sel" class="form-control form-select" style="max-width:200px"></select>
+          <button class="btn btn-success btn-sm" onclick="Admin.generateChecklist('onboarding')"><i class="fas fa-user-plus"></i> <span class="tr" data-en="Onboard" data-ar="إعداد">Onboard</span></button>
+          <button class="btn btn-danger btn-sm" onclick="Admin.generateChecklist('offboarding')"><i class="fas fa-user-minus"></i> <span class="tr" data-en="Offboard" data-ar="إنهاء">Offboard</span></button>
+        </div>
+        <div id="onboarding-list"></div>
+      </div>
+
+      <!-- Announcements Panel -->
+      <div id="panel-announcements" class="admin-panel">
+        <div style="display:flex;gap:0.75rem;margin-bottom:1.25rem;align-items:center;flex-wrap:wrap">
+          <h3 style="margin:0;color:var(--accent);text-transform:uppercase" class="tr" data-en="Announcements" data-ar="الإعلانات">Announcements</h3>
+          <div style="flex:1"></div>
+          <button class="btn btn-primary btn-sm" onclick="Admin.openAnnouncementModal()"><i class="fas fa-plus"></i> <span class="tr" data-en="New" data-ar="جديد">New</span></button>
+        </div>
+        <div id="announcements-list"></div>
+      </div>
+
+      <!-- Audit Log Panel -->
+      <div id="panel-audit" class="admin-panel">
+        <div style="display:flex;gap:0.75rem;margin-bottom:1.25rem;align-items:center;flex-wrap:wrap">
+          <h3 style="margin:0;color:var(--accent);text-transform:uppercase" class="tr" data-en="Audit Log" data-ar="سجل المراجعة">Audit Log</h3>
+          <div style="flex:1"></div>
+          <input type="text" id="audit-action-filter" class="form-control" placeholder="Filter action..." style="max-width:200px" oninput="Admin.loadAuditLog()">
+          <input type="date" id="audit-from" class="form-control" style="max-width:160px" onchange="Admin.loadAuditLog()">
+          <input type="date" id="audit-to" class="form-control" style="max-width:160px" onchange="Admin.loadAuditLog()">
+        </div>
+        <div class="card"><div style="overflow-x:auto">
+          <table><thead><tr>
+            <th class="tr" data-en="Time" data-ar="الوقت">Time</th>
+            <th class="tr" data-en="Actor" data-ar="المستخدم">Actor</th>
+            <th class="tr" data-en="Role" data-ar="الدور">Role</th>
+            <th class="tr" data-en="Action" data-ar="الإجراء">Action</th>
+            <th class="tr" data-en="Target" data-ar="الهدف">Target</th>
+          </tr></thead><tbody id="audit-table"></tbody></table>
+        </div></div>
+      </div>
+
+      <!-- Advanced Reports Panel -->
+      <div id="panel-reports" class="admin-panel">
+        <h3 style="margin-bottom:1rem;color:var(--accent);text-transform:uppercase" class="tr" data-en="Advanced Reports" data-ar="التقارير المتقدمة">Advanced Reports</h3>
+        <div style="display:flex;gap:0.75rem;margin-bottom:1.25rem;flex-wrap:wrap;align-items:end">
+          <div class="form-group" style="margin:0"><label class="form-label tr" data-en="Employee" data-ar="الموظف">Employee</label><select id="rpt-emp" class="form-control form-select" style="max-width:200px"><option value="">All</option></select></div>
+          <div class="form-group" style="margin:0"><label class="form-label">Month</label><input type="number" id="rpt-month" class="form-control" min="1" max="12" style="max-width:80px"></div>
+          <div class="form-group" style="margin:0"><label class="form-label">Year</label><input type="number" id="rpt-year" class="form-control" style="max-width:90px"></div>
+          <button class="btn btn-primary btn-sm" onclick="Admin.loadAdvancedReport()"><i class="fas fa-search"></i> <span class="tr" data-en="Generate" data-ar="إنشاء">Generate</span></button>
+          <button class="btn btn-outline btn-sm" onclick="Admin.exportAdvancedReport()"><i class="fas fa-file-csv"></i> CSV</button>
+        </div>
+        <div class="card"><div style="overflow-x:auto">
+          <table><thead><tr>
+            <th>ID</th>
+            <th class="tr" data-en="Name" data-ar="الاسم">Name</th>
+            <th class="tr" data-en="Days" data-ar="الأيام">Days</th>
+            <th class="tr" data-en="Present" data-ar="حاضر">Present</th>
+            <th class="tr" data-en="Late" data-ar="متأخر">Late</th>
+            <th class="tr" data-en="Absent" data-ar="غائب">Absent</th>
+            <th class="tr" data-en="Leave" data-ar="إجازة">Leave</th>
+            <th class="tr" data-en="OT Hours" data-ar="ساعات إضافية">OT Hours</th>
+            <th class="tr" data-en="Break Hours" data-ar="ساعات استراحة">Break Hours</th>
+          </tr></thead><tbody id="report-table"><tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--text-muted)">Select filters and click Generate</td></tr></tbody></table>
+        </div></div>
       </div>
 
       <div id="panel-settings" class="admin-panel">
@@ -650,10 +770,15 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
             <div id="checkout-container" class="hidden">
                 <button id="emp-checkout-btn" class="btn btn-danger btn-block" style="padding:1rem;font-size:1.1rem;margin-bottom:0.5rem" onclick="Emp.checkOut()"><i class="fas fa-sign-out-alt"></i> <span class="tr" data-en="Check Out" data-ar="تسجيل الخروج">Check Out</span></button>
                 <button id="emp-early-checkout-btn" class="btn btn-block hidden" style="padding:1rem;font-size:1.1rem;background:var(--accent);color:#fff" onclick="Emp.openEarlyCheckoutModal()"><i class="fas fa-clock"></i> <span class="tr" data-en="Request Early Checkout" data-ar="طلب انصراف مبكر">Request Early Checkout</span></button>
+                <div id="break-container" class="hidden" style="margin-top:0.5rem;display:flex;gap:0.5rem">
+                  <button id="emp-break-start-btn" class="btn btn-outline btn-block" onclick="Emp.startBreak()"><i class="fas fa-coffee"></i> <span class="tr" data-en="Start Break" data-ar="بدء استراحة">Start Break</span></button>
+                  <button id="emp-break-end-btn" class="btn btn-outline btn-block hidden" onclick="Emp.endBreak()"><i class="fas fa-play"></i> <span class="tr" data-en="End Break" data-ar="إنهاء استراحة">End Break</span></button>
+                </div>
             </div>
           </div>
           <div class="card"><div class="card-header"><div class="card-title tr" data-en="Today's Record" data-ar="سجل اليوم">Today's Record</div></div><div style="padding:1.25rem" id="today-record-body"></div></div>
           <div class="card"><div class="card-header"><div class="card-title tr" data-en="Recent History" data-ar="السجل السابق">Recent History</div></div><div style="padding:0.5rem 1.25rem" id="emp-history-list"></div></div>
+          <div class="card" id="emp-announcements-card" style="display:none"><div class="card-header"><div class="card-title tr" data-en="Announcements" data-ar="الإعلانات">Announcements</div></div><div style="padding:0.75rem 1.25rem" id="emp-announcements-list"></div></div>
         </div>
       </div>
     </div>
@@ -875,6 +1000,66 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
   </div>
 </div>
 
+<div id="modal-shift" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header"><span style="font-weight:700;font-size:1.1rem;text-transform:uppercase" id="shift-modal-title">Shift</span><button class="btn-ghost" onclick="UI.closeModal('modal-shift')"><i class="fas fa-times"></i></button></div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:1rem">
+      <input type="hidden" id="shift-modal-id">
+      <div><label class="form-label tr" data-en="Shift Name" data-ar="اسم الوردية">Shift Name</label><input type="text" id="shift-modal-name" class="form-control" placeholder="Day Shift"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+        <div><label class="form-label tr" data-en="Start Time" data-ar="البداية">Start Time</label><input type="time" id="shift-modal-start" class="form-control" value="06:00"></div>
+        <div><label class="form-label tr" data-en="End Time" data-ar="النهاية">End Time</label><input type="time" id="shift-modal-end" class="form-control" value="14:00"></div>
+      </div>
+      <div><label class="form-label tr" data-en="Color" data-ar="اللون">Color</label><input type="color" id="shift-modal-color" class="form-control" value="#C45A28" style="height:40px;padding:0"></div>
+      <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer"><input type="checkbox" id="shift-modal-default"> <span class="tr" data-en="Default shift for unassigned employees" data-ar="الوردية الافتراضية">Default shift for unassigned employees</span></label>
+    </div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="UI.closeModal('modal-shift')">Cancel</button><button class="btn btn-primary" onclick="Admin.saveShift()">Save</button></div>
+  </div>
+</div>
+
+<div id="modal-project" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header"><span style="font-weight:700;font-size:1.1rem;text-transform:uppercase" id="project-modal-title">Project</span><button class="btn-ghost" onclick="UI.closeModal('modal-project')"><i class="fas fa-times"></i></button></div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:1rem">
+      <input type="hidden" id="project-modal-id">
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:1rem">
+        <div><label class="form-label tr" data-en="Project Name" data-ar="اسم المشروع">Project Name</label><input type="text" id="project-modal-name" class="form-control"></div>
+        <div><label class="form-label tr" data-en="Code" data-ar="الرمز">Code</label><input type="text" id="project-modal-code" class="form-control" placeholder="PRJ-001"></div>
+      </div>
+      <div><label class="form-label tr" data-en="Address" data-ar="العنوان">Address</label><input type="text" id="project-modal-address" class="form-control"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+        <div><label class="form-label tr" data-en="Status" data-ar="الحالة">Status</label><select id="project-modal-status" class="form-control form-select"><option value="active">Active</option><option value="on_hold">On Hold</option><option value="completed">Completed</option></select></div>
+        <div><label class="form-label tr" data-en="Manager" data-ar="المدير">Manager</label><select id="project-modal-manager" class="form-control form-select"><option value="">— None —</option></select></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+        <div><label class="form-label tr" data-en="Start Date" data-ar="تاريخ البدء">Start Date</label><input type="date" id="project-modal-start" class="form-control"></div>
+        <div><label class="form-label tr" data-en="Expected End" data-ar="الانتهاء المتوقع">Expected End</label><input type="date" id="project-modal-end" class="form-control"></div>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="UI.closeModal('modal-project')">Cancel</button><button class="btn btn-primary" onclick="Admin.saveProject()">Save</button></div>
+  </div>
+</div>
+
+<div id="modal-announcement" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header"><span style="font-weight:700;font-size:1.1rem;text-transform:uppercase" id="ann-modal-title">Announcement</span><button class="btn-ghost" onclick="UI.closeModal('modal-announcement')"><i class="fas fa-times"></i></button></div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:1rem">
+      <input type="hidden" id="ann-modal-id">
+      <div><label class="form-label tr" data-en="Title (EN)" data-ar="العنوان (إنجليزي)">Title (EN)</label><input type="text" id="ann-modal-title-en" class="form-control"></div>
+      <div><label class="form-label tr" data-en="Title (AR)" data-ar="العنوان (عربي)">Title (AR)</label><input type="text" id="ann-modal-title-ar" class="form-control"></div>
+      <div><label class="form-label tr" data-en="Body (EN)" data-ar="المحتوى (إنجليزي)">Body (EN)</label><textarea id="ann-modal-body-en" class="form-control" rows="3"></textarea></div>
+      <div><label class="form-label tr" data-en="Body (AR)" data-ar="المحتوى (عربي)">Body (AR)</label><textarea id="ann-modal-body-ar" class="form-control" rows="3"></textarea></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+        <div><label class="form-label tr" data-en="Priority" data-ar="الأولوية">Priority</label><select id="ann-modal-priority" class="form-control form-select"><option value="normal">Normal</option><option value="important">Important</option><option value="urgent">Urgent</option></select></div>
+        <div><label class="form-label tr" data-en="Target" data-ar="الفئة المستهدفة">Target</label><select id="ann-modal-target" class="form-control form-select"><option value="all">All Employees</option><option value="department">Department</option><option value="group">Group</option></select></div>
+      </div>
+      <div><label class="form-label tr" data-en="Expires" data-ar="ينتهي في">Expires</label><input type="date" id="ann-modal-expires" class="form-control"></div>
+      <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer"><input type="checkbox" id="ann-modal-pinned"> <span class="tr" data-en="Pin to top" data-ar="تثبيت في الأعلى">Pin to top</span></label>
+    </div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="UI.closeModal('modal-announcement')">Cancel</button><button class="btn btn-primary" onclick="Admin.saveAnnouncement()">Save</button></div>
+  </div>
+</div>
+
 <div id="toast-wrap"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -983,6 +1168,8 @@ const DB = {
   getLocations(){return this.data.locations||[]}, getRecords(){return this.data.records||[]},
   getDepartments(){return this.data.departments||[]}, getLeaveRequests(){return this.data.leaveRequests||[]},
   getWorkPolicy(){return this.data.workPolicy||null},
+  getProjects(){return this.data.projects||[]}, getShifts(){return this.data.shifts||[]},
+  getAnnouncements(){return this.data.announcements||[]},
   today(){return new Date().toISOString().split('T')[0]}, nowISO(){return new Date().toISOString()},
   fmtTime(iso){if(!iso)return '—'; return new Date(iso).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})},
   fmtDate(iso){if(!iso)return '—'; return new Date(iso).toLocaleDateString('en-US')}
@@ -1210,8 +1397,20 @@ const Admin = {
       this.populateRecordEmployeeFilter();
       this.filterRecords();
     }
-    if(panel==='dashboard') { if(!this.earlyCheckouts || !this.earlyCheckouts.length) this.loadEarlyCheckouts(); this.renderDashboard(); }
+    if(panel==='dashboard') { if(!this.earlyCheckouts || !this.earlyCheckouts.length) this.loadEarlyCheckouts(); if(!this.overtimes || !this.overtimes.length) this.loadOvertimes(); this.renderDashboard(); }
     if(panel==='hr' && typeof Admin.loadHrData === 'function') Admin.loadHrData();
+    if(panel==='shifts') this.renderShifts();
+    if(panel==='projects') this.renderProjects();
+    if(panel==='onboarding') this.loadOnboarding();
+    if(panel==='announcements') this.renderAnnouncements();
+    if(panel==='audit') this.loadAuditLog();
+    if(panel==='reports') {
+      const sel = document.getElementById('rpt-emp');
+      if (sel) { sel.innerHTML = `<option value="">All</option>` + DB.getEmployees().filter(e=>e.active).map(e=>`<option value="${e.id}">${e.name}</option>`).join(''); }
+      const d = new Date();
+      document.getElementById('rpt-month').value = d.getMonth()+1;
+      document.getElementById('rpt-year').value = d.getFullYear();
+    }
   },
   async saveSettings() {
     const u = document.getElementById('admin-set-user').value.trim(); const e = document.getElementById('admin-set-email').value.trim(); const p = document.getElementById('admin-set-pass').value;
@@ -1225,7 +1424,7 @@ const Admin = {
     } catch(err) { UI.toast(err.message, 'error'); }
     UI.loader(false);
   },
-  async refresh(){ UI.loader(true); try{ await DB.sync(); await this.loadEarlyCheckouts(); this.updateNotifBadge(); this.showPanel(this.currentPanel); UI.toast(Lang.t('Synced','تمت المزامنة'), 'success'); } catch(e){UI.toast(e.message,'error')} UI.loader(false); },
+  async refresh(){ UI.loader(true); try{ await DB.sync(); await Promise.all([this.loadEarlyCheckouts(), this.loadOvertimes()]); this.updateNotifBadge(); this.showPanel(this.currentPanel); UI.toast(Lang.t('Synced','تمت المزامنة'), 'success'); } catch(e){UI.toast(e.message,'error')} UI.loader(false); },
   updateNotifBadge(){
     const el = document.getElementById('admin-notif-badge');
     if (!el) return;
@@ -1511,6 +1710,9 @@ const Admin = {
       if (pendingLeaves > 0) widgets.push(`<div class="stat-card" style="border-left:3px solid var(--danger);cursor:pointer" onclick="Admin.showPanel('hr')"><div style="display:flex;align-items:center;gap:0.75rem"><span style="font-size:1.5rem">🔴</span><div><div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase">${Lang.t('Pending Leaves','إجازات معلقة')}</div><div class="stat-value" style="font-size:1.8rem">${pendingLeaves}</div></div></div></div>`);
       if (pendingEC > 0) widgets.push(`<div class="stat-card" style="border-left:3px solid var(--warning);cursor:pointer" onclick="Admin.showPanel('hr')"><div style="display:flex;align-items:center;gap:0.75rem"><span style="font-size:1.5rem">🟠</span><div><div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase">${Lang.t('Pending Early Checkouts','انصراف مبكر معلق')}</div><div class="stat-value" style="font-size:1.8rem">${pendingEC}</div></div></div></div>`);
       if (pendingRecords > 0) widgets.push(`<div class="stat-card" style="border-left:3px solid var(--info);cursor:pointer" onclick="Admin.showPanel('records')"><div style="display:flex;align-items:center;gap:0.75rem"><span style="font-size:1.5rem">🔵</span><div><div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase">${Lang.t('Pending Records','سجلات معلقة')}</div><div class="stat-value" style="font-size:1.8rem">${pendingRecords}</div></div></div></div>`);
+      const pendingOT = (this.overtimes || []).filter(o => o.status === 'pending').length;
+      if (pendingOT > 0) widgets.push(`<div class="stat-card" style="border-left:3px solid var(--info);cursor:pointer" onclick="Admin.showPanel('hr')"><div style="display:flex;align-items:center;gap:0.75rem"><span style="font-size:1.5rem">🟣</span><div><div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase">${Lang.t('Pending Overtime','عمل إضافي معلق')}</div><div class="stat-value" style="font-size:1.8rem">${pendingOT}</div></div></div></div>`);
+      widgets.push(`<div class="stat-card" style="border-left:3px solid var(--text-dim);cursor:pointer" onclick="Admin.closeDay()"><div style="display:flex;align-items:center;gap:0.75rem"><span style="font-size:1.5rem"><i class="fas fa-calendar-check" style="color:var(--text-muted)"></i></span><div><div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase">${Lang.t('Close Day','إغلاق اليوم')}</div><div style="font-size:0.8rem;color:var(--text-muted)">${Lang.t('Mark absentees','تسجيل الغياب')}</div></div></div></div>`);
       widgetWrap.innerHTML = widgets.join('');
       widgetWrap.style.display = widgets.length ? 'grid' : 'none';
     }
@@ -1938,6 +2140,7 @@ const Admin = {
     this.renderHrLeaves();
     this.renderLeaveBalances();
     this.loadEarlyCheckouts();
+    this.loadOvertimes();
     const d = new Date();
     document.getElementById('hr-payroll-month').value = d.getMonth() + 1;
     document.getElementById('hr-payroll-year').value = d.getFullYear();
@@ -2267,10 +2470,11 @@ const Admin = {
           <td>${r.baseSalary.toFixed(2)}</td>
           <td>${r.unpaidAbsences}</td>
           <td style="color:var(--danger)">${r.deduction.toFixed(2)}</td>
+          <td style="color:var(--info)">${(r.overtimePay||0).toFixed(2)}</td>
           <td style="color:var(--success);font-weight:600">${r.netSalary.toFixed(2)}</td>
         </tr>`;
       }).join('') + `<tr style="border-top:2px solid var(--border);font-weight:700">
-        <td colspan="5" style="text-align:right;padding-right:1rem">${Lang.t('Total', 'الإجمالي')}</td>
+        <td colspan="6" style="text-align:right;padding-right:1rem">${Lang.t('Total', 'الإجمالي')}</td>
         <td style="color:var(--success)">${totalNet.toFixed(2)}</td>
       </tr>`;
     } catch (e) {
@@ -2323,6 +2527,267 @@ const Admin = {
       UI.toast(Lang.t('Deleted', 'تم الحذف'), 'warning');
     } catch (e) { UI.toast(e.message, 'error'); }
     UI.loader(false);
+  },
+
+  /* ── Overtime ── */
+  overtimes: [],
+  async loadOvertimes() { try { this.overtimes = await API.request('/overtime', 'GET'); } catch(_) { this.overtimes = []; } },
+
+  /* ── Shifts & Roster ── */
+  renderShifts() {
+    const shifts = DB.getShifts();
+    const tbody = document.getElementById('shifts-table');
+    if (!shifts.length) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text-muted)">${Lang.t('No shifts defined','لا توجد ورديات')}</td></tr>`; return; }
+    tbody.innerHTML = shifts.map(s => `<tr>
+      <td><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${s.color||'var(--accent)'}"></span> <strong>${s.name}</strong></td>
+      <td dir="ltr">${s.startTime}</td><td dir="ltr">${s.endTime}</td>
+      <td>${s.isDefault ? '<span class="badge badge-success">Default</span>' : '—'}</td>
+      <td><button class="btn-ghost btn-sm" onclick="Admin.openShiftModal('${s.id}')"><i class="fas fa-edit"></i></button> <button class="btn-ghost btn-sm" style="color:var(--danger)" onclick="Admin.deleteShift('${s.id}')"><i class="fas fa-trash"></i></button></td>
+    </tr>`).join('');
+    const rosterEmp = document.getElementById('roster-emp');
+    const rosterShift = document.getElementById('roster-shift');
+    if (rosterEmp) { rosterEmp.innerHTML = DB.getEmployees().filter(e=>e.active).map(e=>`<option value="${e.id}">${e.name}</option>`).join(''); }
+    if (rosterShift) { rosterShift.innerHTML = shifts.map(s=>`<option value="${s.id}">${s.name}</option>`).join(''); }
+  },
+  openShiftModal(id) {
+    document.getElementById('shift-modal-title').textContent = id ? 'Edit Shift' : 'Add Shift';
+    if (id) {
+      const s = DB.getShifts().find(x => x.id === id); if (!s) return;
+      document.getElementById('shift-modal-id').value = s.id;
+      document.getElementById('shift-modal-name').value = s.name;
+      document.getElementById('shift-modal-start').value = s.startTime;
+      document.getElementById('shift-modal-end').value = s.endTime;
+      document.getElementById('shift-modal-color').value = s.color || '#C45A28';
+      document.getElementById('shift-modal-default').checked = !!s.isDefault;
+    } else {
+      document.getElementById('shift-modal-id').value = '';
+      document.getElementById('shift-modal-name').value = '';
+      document.getElementById('shift-modal-start').value = '06:00';
+      document.getElementById('shift-modal-end').value = '14:00';
+      document.getElementById('shift-modal-color').value = '#C45A28';
+      document.getElementById('shift-modal-default').checked = false;
+    }
+    UI.openModal('modal-shift');
+  },
+  async saveShift() {
+    const data = { id: document.getElementById('shift-modal-id').value, name: document.getElementById('shift-modal-name').value.trim(), startTime: document.getElementById('shift-modal-start').value, endTime: document.getElementById('shift-modal-end').value, color: document.getElementById('shift-modal-color').value, isDefault: document.getElementById('shift-modal-default').checked };
+    if (!data.name) return UI.toast(Lang.t('Name required','الاسم مطلوب'), 'error');
+    UI.loader(true);
+    try { await API.request('/shifts', 'POST', data); await DB.sync(); UI.closeModal('modal-shift'); this.renderShifts(); UI.toast(Lang.t('Saved','تم الحفظ'), 'success'); } catch(e){ UI.toast(e.message,'error'); }
+    UI.loader(false);
+  },
+  async deleteShift(id) { if (!confirm(Lang.t('Delete?','حذف؟'))) return; UI.loader(true); try { await API.request(`/shifts/${id}`, 'DELETE'); await DB.sync(); this.renderShifts(); UI.toast(Lang.t('Deleted','تم الحذف'), 'warning'); } catch(e){ UI.toast(e.message,'error'); } UI.loader(false); },
+  async assignRoster() {
+    const empId = document.getElementById('roster-emp').value;
+    const shiftId = document.getElementById('roster-shift').value;
+    const from = document.getElementById('roster-from').value;
+    const to = document.getElementById('roster-to').value;
+    if (!empId || !shiftId || !from) return UI.toast(Lang.t('Fill all fields','أكمل الحقول'), 'error');
+    const dates = [];
+    const end = to || from;
+    let d = new Date(from);
+    while (d <= new Date(end)) { dates.push(d.toISOString().slice(0,10)); d.setDate(d.getDate()+1); }
+    UI.loader(true);
+    try { await API.request('/shifts/assign', 'POST', { employeeId: empId, shiftId, dates }); UI.toast(Lang.t(`${dates.length} day(s) assigned`, `تم تعيين ${dates.length} يوم`), 'success'); } catch(e) { UI.toast(e.message, 'error'); }
+    UI.loader(false);
+  },
+
+  /* ── Projects / Sites ── */
+  renderProjects() {
+    const projects = DB.getProjects();
+    const tbody = document.getElementById('projects-table');
+    if (!projects.length) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text-muted)">${Lang.t('No projects','لا توجد مشاريع')}</td></tr>`; return; }
+    tbody.innerHTML = projects.map(p => {
+      const mgr = p.managerId && p.managerId.name ? p.managerId.name : '—';
+      const badge = { active: 'badge-success', on_hold: 'badge-warning', completed: 'badge-muted' };
+      return `<tr>
+        <td><strong>${p.name}</strong></td>
+        <td><code>${p.code||'—'}</code></td>
+        <td><span class="badge ${badge[p.status]||'badge-muted'}">${p.status}</span></td>
+        <td>${mgr}</td>
+        <td>${p.address||'—'}</td>
+        <td><button class="btn-ghost btn-sm" onclick="Admin.openProjectModal('${p.id}')"><i class="fas fa-edit"></i></button> <button class="btn-ghost btn-sm" style="color:var(--danger)" onclick="Admin.deleteProject('${p.id}')"><i class="fas fa-trash"></i></button></td>
+      </tr>`;
+    }).join('');
+  },
+  openProjectModal(id) {
+    document.getElementById('project-modal-title').textContent = id ? 'Edit Project' : 'Add Project';
+    const mgrSel = document.getElementById('project-modal-manager');
+    mgrSel.innerHTML = `<option value="">— None —</option>` + DB.getEmployees().map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
+    if (id) {
+      const p = DB.getProjects().find(x => x.id === id); if (!p) return;
+      document.getElementById('project-modal-id').value = p.id;
+      document.getElementById('project-modal-name').value = p.name;
+      document.getElementById('project-modal-code').value = p.code || '';
+      document.getElementById('project-modal-address').value = p.address || '';
+      document.getElementById('project-modal-status').value = p.status || 'active';
+      document.getElementById('project-modal-manager').value = (p.managerId && p.managerId._id) || p.managerId || '';
+      document.getElementById('project-modal-start').value = p.startDate ? new Date(p.startDate).toISOString().slice(0,10) : '';
+      document.getElementById('project-modal-end').value = p.expectedEnd ? new Date(p.expectedEnd).toISOString().slice(0,10) : '';
+    } else {
+      ['id','name','code','address','start','end'].forEach(f=>document.getElementById('project-modal-'+f).value='');
+      document.getElementById('project-modal-status').value = 'active';
+      document.getElementById('project-modal-manager').value = '';
+    }
+    UI.openModal('modal-project');
+  },
+  async saveProject() {
+    const data = { id: document.getElementById('project-modal-id').value, name: document.getElementById('project-modal-name').value.trim(), code: document.getElementById('project-modal-code').value.trim(), address: document.getElementById('project-modal-address').value.trim(), status: document.getElementById('project-modal-status').value, managerId: document.getElementById('project-modal-manager').value, startDate: document.getElementById('project-modal-start').value, expectedEnd: document.getElementById('project-modal-end').value };
+    if (!data.name) return UI.toast(Lang.t('Name required','الاسم مطلوب'), 'error');
+    UI.loader(true);
+    try { await API.request('/projects', 'POST', data); await DB.sync(); UI.closeModal('modal-project'); this.renderProjects(); UI.toast(Lang.t('Saved','تم الحفظ'), 'success'); } catch(e){ UI.toast(e.message,'error'); }
+    UI.loader(false);
+  },
+  async deleteProject(id) { if (!confirm(Lang.t('Delete?','حذف؟'))) return; UI.loader(true); try { await API.request(`/projects/${id}`, 'DELETE'); await DB.sync(); this.renderProjects(); UI.toast(Lang.t('Deleted','تم الحذف'), 'warning'); } catch(e){ UI.toast(e.message,'error'); } UI.loader(false); },
+
+  /* ── Onboarding / Offboarding ── */
+  async loadOnboarding() {
+    const sel = document.getElementById('onboard-emp-sel');
+    if (sel) { sel.innerHTML = DB.getEmployees().map(e=>`<option value="${e.id}">${e.name} (${e.eid||e.username})</option>`).join(''); }
+    const wrap = document.getElementById('onboarding-list');
+    wrap.innerHTML = '<div style="color:var(--text-muted)">Loading...</div>';
+    try {
+      const items = await API.request('/onboarding', 'GET');
+      if (!items.length) { wrap.innerHTML = `<div style="color:var(--text-muted);padding:2rem;text-align:center">${Lang.t('No active checklists','لا توجد قوائم تحقق')}</div>`; return; }
+      wrap.innerHTML = items.map(cl => {
+        const empName = cl.employeeId && cl.employeeId.name ? cl.employeeId.name : '—';
+        const done = cl.items.filter(i=>i.done).length;
+        const total = cl.items.length;
+        const pct = total ? Math.round(done/total*100) : 0;
+        const typeBadge = cl.type === 'onboarding' ? '<span class="badge badge-success">Onboarding</span>' : '<span class="badge badge-danger">Offboarding</span>';
+        return `<div class="card" style="margin-bottom:1rem">
+          <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
+            <div><strong>${empName}</strong> ${typeBadge}</div>
+            <div style="display:flex;align-items:center;gap:0.5rem"><span style="font-size:0.8rem;color:var(--text-muted)">${done}/${total} (${pct}%)</span>${cl.completedAt ? '<span class="badge badge-success">Complete</span>' : ''}<button class="btn-ghost btn-sm" style="color:var(--danger)" onclick="Admin.deleteChecklist('${cl.id}')"><i class="fas fa-trash"></i></button></div>
+          </div>
+          <div style="padding:1rem">${cl.items.map(item => `
+            <label style="display:flex;align-items:center;gap:0.75rem;padding:0.4rem 0;cursor:pointer;border-bottom:1px solid var(--border)">
+              <input type="checkbox" ${item.done?'checked':''} onchange="Admin.toggleChecklistItem('${cl.id}','${item._id}',this.checked)">
+              <span style="${item.done?'text-decoration:line-through;color:var(--text-muted)':''}">${item.label}</span>
+            </label>`).join('')}</div>
+        </div>`;
+      }).join('');
+    } catch(e) { wrap.innerHTML = `<div style="color:var(--danger)">${e.message}</div>`; }
+  },
+  async generateChecklist(type) {
+    const empId = document.getElementById('onboard-emp-sel').value;
+    if (!empId) return UI.toast(Lang.t('Select an employee','اختر موظف'), 'error');
+    UI.loader(true);
+    try { await API.request('/onboarding/generate', 'POST', { employeeId: empId, type }); this.loadOnboarding(); UI.toast(Lang.t('Checklist created','تم إنشاء القائمة'), 'success'); } catch(e) { UI.toast(e.message, 'error'); }
+    UI.loader(false);
+  },
+  async toggleChecklistItem(clId, itemId, done) {
+    try { await API.request(`/onboarding/${clId}/item/${itemId}`, 'PATCH', { done }); this.loadOnboarding(); } catch(e) { UI.toast(e.message, 'error'); }
+  },
+  async deleteChecklist(id) { if(!confirm(Lang.t('Delete?','حذف؟'))) return; try { await API.request(`/onboarding/${id}`, 'DELETE'); this.loadOnboarding(); } catch(e) { UI.toast(e.message, 'error'); } },
+
+  /* ── Announcements ── */
+  renderAnnouncements() {
+    const items = DB.getAnnouncements();
+    const wrap = document.getElementById('announcements-list');
+    if (!items.length) { wrap.innerHTML = `<div style="color:var(--text-muted);padding:2rem;text-align:center">${Lang.t('No announcements','لا توجد إعلانات')}</div>`; return; }
+    const priorityIcon = { normal: '', important: '<i class="fas fa-exclamation-circle" style="color:var(--warning)"></i> ', urgent: '<i class="fas fa-fire" style="color:var(--danger)"></i> ' };
+    wrap.innerHTML = items.map(a => {
+      const title = Lang.current === 'ar' && a.titleAr ? a.titleAr : a.title;
+      const body = Lang.current === 'ar' && a.bodyAr ? a.bodyAr : a.body;
+      return `<div class="card" style="margin-bottom:0.75rem;border-left:3px solid ${a.priority==='urgent'?'var(--danger)':a.priority==='important'?'var(--warning)':'var(--border2)'}">
+        <div style="padding:1rem;display:flex;justify-content:space-between;align-items:start;gap:1rem">
+          <div><div style="font-weight:600;margin-bottom:0.25rem">${priorityIcon[a.priority]||''}${a.pinned?'<i class="fas fa-thumbtack" style="color:var(--accent);margin-right:0.25rem"></i>':''}${title}</div><div style="font-size:0.85rem;color:var(--text-muted);white-space:pre-wrap">${body}</div><div style="font-size:0.7rem;color:var(--text-dim);margin-top:0.5rem">${new Date(a.createdAt).toLocaleDateString()}</div></div>
+          <button class="btn-ghost btn-sm" style="color:var(--danger);flex-shrink:0" onclick="Admin.deleteAnnouncement('${a.id}')"><i class="fas fa-trash"></i></button>
+        </div>
+      </div>`;
+    }).join('');
+  },
+  openAnnouncementModal() {
+    document.getElementById('ann-modal-title').textContent = 'New Announcement';
+    ['id','title-en','title-ar','body-en','body-ar','expires'].forEach(f => document.getElementById('ann-modal-'+f).value = '');
+    document.getElementById('ann-modal-priority').value = 'normal';
+    document.getElementById('ann-modal-target').value = 'all';
+    document.getElementById('ann-modal-pinned').checked = false;
+    UI.openModal('modal-announcement');
+  },
+  async saveAnnouncement() {
+    const data = { id: document.getElementById('ann-modal-id').value, title: document.getElementById('ann-modal-title-en').value.trim(), titleAr: document.getElementById('ann-modal-title-ar').value.trim(), body: document.getElementById('ann-modal-body-en').value.trim(), bodyAr: document.getElementById('ann-modal-body-ar').value.trim(), priority: document.getElementById('ann-modal-priority').value, targetType: document.getElementById('ann-modal-target').value, expiresAt: document.getElementById('ann-modal-expires').value || undefined, pinned: document.getElementById('ann-modal-pinned').checked };
+    if (!data.title || !data.body) return UI.toast(Lang.t('Title and body required','العنوان والمحتوى مطلوبان'), 'error');
+    UI.loader(true);
+    try { await API.request('/announcements', 'POST', data); await DB.sync(); UI.closeModal('modal-announcement'); this.renderAnnouncements(); UI.toast(Lang.t('Published','تم النشر'), 'success'); } catch(e) { UI.toast(e.message, 'error'); }
+    UI.loader(false);
+  },
+  async deleteAnnouncement(id) { if(!confirm(Lang.t('Delete?','حذف؟'))) return; try { await API.request(`/announcements/${id}`, 'DELETE'); await DB.sync(); this.renderAnnouncements(); UI.toast(Lang.t('Deleted','تم الحذف'), 'warning'); } catch(e) { UI.toast(e.message, 'error'); } },
+
+  /* ── Audit Log ── */
+  async loadAuditLog() {
+    const tbody = document.getElementById('audit-table');
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:1rem;color:var(--text-muted)">Loading...</td></tr>';
+    const action = (document.getElementById('audit-action-filter')||{}).value || '';
+    const from = (document.getElementById('audit-from')||{}).value || '';
+    const to = (document.getElementById('audit-to')||{}).value || '';
+    let q = '/audit?limit=100';
+    if (action) q += '&action=' + encodeURIComponent(action);
+    if (from) q += '&from=' + from;
+    if (to) q += '&to=' + to;
+    try {
+      const items = await API.request(q, 'GET');
+      if (!items.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text-muted)">No audit records</td></tr>'; return; }
+      tbody.innerHTML = items.map(l => `<tr>
+        <td style="font-size:0.8rem;white-space:nowrap">${new Date(l.createdAt).toLocaleString()}</td>
+        <td>${l.actorName || l.actor}</td>
+        <td><span class="badge badge-muted">${l.actorRole}</span></td>
+        <td><strong>${l.action}</strong></td>
+        <td>${l.target}${l.targetId ? ' <code>'+l.targetId.slice(-6)+'</code>' : ''}</td>
+      </tr>`).join('');
+    } catch(e) { tbody.innerHTML = `<tr><td colspan="5" style="color:var(--danger)">${e.message}</td></tr>`; }
+  },
+
+  /* ── Advanced Reports ── */
+  reportData: [],
+  async loadAdvancedReport() {
+    const tbody = document.getElementById('report-table');
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:1rem;color:var(--text-muted)">Loading...</td></tr>';
+    const empId = (document.getElementById('rpt-emp')||{}).value || '';
+    const month = (document.getElementById('rpt-month')||{}).value || '';
+    const year = (document.getElementById('rpt-year')||{}).value || '';
+    let q = '/attendance/report?';
+    if (empId) q += 'employeeId=' + empId + '&';
+    if (month && year) q += 'month=' + month + '&year=' + year;
+    try {
+      const items = await API.request(q, 'GET');
+      this.reportData = items;
+      if (!items.length) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--text-muted)">No data found</td></tr>'; return; }
+      tbody.innerHTML = items.map(r => `<tr>
+        <td><code>${r.eid||'—'}</code></td>
+        <td><strong>${r.name}</strong></td>
+        <td>${r.totalDays}</td>
+        <td style="color:var(--success)">${r.present}</td>
+        <td style="color:var(--warning)">${r.late}</td>
+        <td style="color:var(--danger)">${r.absent}</td>
+        <td>${r.onLeave}</td>
+        <td>${r.overtimeHours}</td>
+        <td>${r.totalBreakHours}</td>
+      </tr>`).join('');
+    } catch(e) { tbody.innerHTML = `<tr><td colspan="9" style="color:var(--danger)">${e.message}</td></tr>`; }
+  },
+  exportAdvancedReport() {
+    if (!this.reportData || !this.reportData.length) return UI.toast('No data', 'warning');
+    const headers = ['ID','Name','Days','Present','Late','Absent','Leave','OT Hours','Break Hours'];
+    const lines = [headers.join(',')];
+    this.reportData.forEach(r => { lines.push([r.eid||'',`"${r.name}"`,r.totalDays,r.present,r.late,r.absent,r.onLeave,r.overtimeHours,r.totalBreakHours].join(',')); });
+    const blob = new Blob(['\uFEFF'+lines.join('\n')], { type:'text/csv;charset=utf-8;' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `AMD_Report_${DB.today()}.csv`; a.click();
+  },
+
+  /* ── Close Day (Auto-absence) ── */
+  async closeDay() {
+    const date = prompt(Lang.t('Enter date to close (YYYY-MM-DD) or leave empty for today:', 'أدخل التاريخ لإغلاقه أو اتركه فارغاً لليوم:'), DB.today());
+    if (date === null) return;
+    UI.loader(true);
+    try {
+      const result = await API.request('/attendance/close-day', 'POST', { date: date || undefined });
+      UI.toast(result.msg, 'success');
+      await DB.sync();
+      this.renderDashboard();
+    } catch(e) { UI.toast(e.message, 'error'); }
+    UI.loader(false);
   }
 };
 
@@ -2362,6 +2827,7 @@ const Emp = {
     const defaultLng = this.assignedZones[0] ? this.assignedZones[0].lng : 46.6753;
     Maps.initEmp(defaultLat, defaultLng, this.assignedZones, null, null);
     this.renderTodayRecord(); this.renderHistory(); this.updateButtons(); this.startTracking();
+    this.updateBreakButtons(); this.renderAnnouncements();
     this.initRealtime();
   },
   cleanup(){
@@ -2434,6 +2900,7 @@ const Emp = {
         checkoutContainer.classList.add('hidden'); 
         document.getElementById('emp-location-info').textContent=Lang.t('Attendance complete for today.','اكتمل الحضور لهذا اليوم.'); 
     }
+    this.updateBreakButtons();
   },
   
   async checkIn(){
@@ -2591,6 +3058,7 @@ const Emp = {
   },
   async initRealtime() {
     this.loadNotificationsList();
+    PushHelper.register();
   },
   updateNotifBadge(count){
     const el = document.getElementById('emp-notif-badge');
@@ -2916,6 +3384,49 @@ const Emp = {
     UI.loader(false);
   },
 
+  /* ── Break Tracking ── */
+  updateBreakButtons() {
+    const rec = this.currentRecord;
+    const container = document.getElementById('break-container');
+    const startBtn = document.getElementById('emp-break-start-btn');
+    const endBtn = document.getElementById('emp-break-end-btn');
+    if (!container || !rec || rec.checkOut) { if(container) container.classList.add('hidden'); return; }
+    if (!rec.checkIn) { container.classList.add('hidden'); return; }
+    container.classList.remove('hidden');
+    const openBreak = (rec.breaks || []).find(b => !b.end);
+    if (openBreak) { startBtn.classList.add('hidden'); endBtn.classList.remove('hidden'); }
+    else { startBtn.classList.remove('hidden'); endBtn.classList.add('hidden'); }
+  },
+  async startBreak() {
+    UI.loader(true);
+    try { await API.request('/attendance/break-start', 'POST', {}); await DB.sync(); this.currentRecord = DB.getRecords().find(r=>r.employeeId===Auth.empSession.id&&r.date===DB.today()); this.updateBreakButtons(); UI.toast(Lang.t('Break started','بدأت الاستراحة'), 'info'); } catch(e) { UI.toast(e.message, 'error'); }
+    UI.loader(false);
+  },
+  async endBreak() {
+    UI.loader(true);
+    try { await API.request('/attendance/break-end', 'POST', {}); await DB.sync(); this.currentRecord = DB.getRecords().find(r=>r.employeeId===Auth.empSession.id&&r.date===DB.today()); this.updateBreakButtons(); UI.toast(Lang.t('Break ended','انتهت الاستراحة'), 'success'); } catch(e) { UI.toast(e.message, 'error'); }
+    UI.loader(false);
+  },
+
+  /* ── Announcements ── */
+  renderAnnouncements() {
+    const items = DB.getAnnouncements();
+    const card = document.getElementById('emp-announcements-card');
+    const list = document.getElementById('emp-announcements-list');
+    if (!card || !list) return;
+    if (!items || !items.length) { card.style.display = 'none'; return; }
+    card.style.display = 'block';
+    const priorityIcon = { normal: '', important: '<i class="fas fa-exclamation-circle" style="color:var(--warning)"></i> ', urgent: '<i class="fas fa-fire" style="color:var(--danger)"></i> ' };
+    list.innerHTML = items.map(a => {
+      const title = Lang.current === 'ar' && a.titleAr ? a.titleAr : a.title;
+      const body = Lang.current === 'ar' && a.bodyAr ? a.bodyAr : a.body;
+      return `<div style="border-bottom:1px solid var(--border);padding:0.65rem 0">
+        <div style="font-weight:600;font-size:0.9rem">${priorityIcon[a.priority]||''}${a.pinned?'<i class="fas fa-thumbtack" style="color:var(--accent);margin-right:0.25rem"></i>':''}${title}</div>
+        <div style="font-size:0.8rem;color:var(--text-muted);margin-top:0.25rem;white-space:pre-wrap">${body}</div>
+      </div>`;
+    }).join('');
+  },
+
   async fetchPayroll() {
       const month = document.getElementById('hr-pay-month').value;
       const year = document.getElementById('hr-pay-year').value;
@@ -2937,6 +3448,22 @@ const Emp = {
       }
   }
 };
+/* ── Push Notifications ── */
+const PushHelper = {
+  async register() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    try {
+      const reg = await navigator.serviceWorker.register('/sw.js');
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') return;
+      const sub = await reg.pushManager.getSubscription();
+      if (!sub) {
+        UI.toast(Lang.t('Push notifications enabled','تم تفعيل الإشعارات'), 'info');
+      }
+    } catch (_) {}
+  },
+};
+
 document.addEventListener('keydown',e=>{
   if(e.key==='Enter'){ if(App.current==='admin-login') Auth.adminLogin(); if(App.current==='emp-login') Auth.empLogin(); }
   if(e.key==='Escape') document.querySelectorAll('.modal-overlay.show').forEach(m=>m.classList.remove('show'));

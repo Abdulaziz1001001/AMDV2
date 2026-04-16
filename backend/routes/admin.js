@@ -11,6 +11,7 @@ const Department = require('../models/Department');
 const LeaveRequest = require('../models/LeaveRequest');
 const auth = require('../middleware/authMiddleware');
 const { employeeWriteSchema, validateBody } = require('../middleware/validation');
+const { logAudit } = require('../lib/auditHelper');
 
 const router = express.Router();
 
@@ -19,7 +20,11 @@ router.use(auth.requireRole('admin'));
 
 router.get('/all-data', async (req, res) => {
   try {
-    const [employees, groups, locations, records, departments, leaveRequests, workPolicy, notificationUnreadCount] = await Promise.all([
+    const Project = require('../models/Project');
+    const { Shift } = require('../models/Shift');
+    const Announcement = require('../models/Announcement');
+
+    const [employees, groups, locations, records, departments, leaveRequests, workPolicy, notificationUnreadCount, projects, shifts, announcements] = await Promise.all([
       Employee.find(),
       Group.find(),
       Location.find(),
@@ -28,6 +33,9 @@ router.get('/all-data', async (req, res) => {
       LeaveRequest.find().populate('employeeId', 'name eid'),
       WorkPolicy.findOne({ key: 'company' }),
       AdminNotification.countDocuments({ readAt: null }),
+      Project.find().sort({ name: 1 }).populate('managerId', 'name eid'),
+      Shift.find().sort({ name: 1 }),
+      Announcement.find({ $or: [{ expiresAt: null }, { expiresAt: { $exists: false } }, { expiresAt: { $gte: new Date() } }] }).sort({ pinned: -1, createdAt: -1 }).limit(20),
     ]);
 
     const format = (arr) => arr.map((doc) => ({ ...doc._doc, id: doc._id.toString() }));
@@ -41,6 +49,9 @@ router.get('/all-data', async (req, res) => {
       leaveRequests: format(leaveRequests),
       workPolicy: workPolicy ? { ...workPolicy._doc, id: workPolicy._id.toString() } : null,
       notificationUnreadCount,
+      projects: format(projects),
+      shifts: format(shifts),
+      announcements: format(announcements),
     });
   } catch (err) {
     res.status(500).json({ msg: err.message, stack: err.stack });
@@ -50,12 +61,14 @@ router.get('/all-data', async (req, res) => {
 router.put('/work-policy', async (req, res) => {
   try {
     let policy = await WorkPolicy.findOne({ key: 'company' });
+    const prev = policy ? JSON.parse(JSON.stringify(policy._doc)) : null;
     if (!policy) {
       policy = new WorkPolicy({ key: 'company', ...req.body });
     } else {
       Object.assign(policy, req.body);
     }
     await policy.save();
+    logAudit(req, 'work_policy_update', 'WorkPolicy', policy._id.toString(), prev, req.body);
     res.json({ ...policy._doc, id: policy._id.toString() });
   } catch (err) {
     res.status(500).json({ msg: err.message });
@@ -172,6 +185,7 @@ router.post('/employee', validateBody(employeeWriteSchema), async (req, res) => 
       const updateOp = { $set: setFields };
       if (!departmentId) updateOp.$unset = { departmentId: 1 };
       await Employee.findByIdAndUpdate(id, updateOp);
+      logAudit(req, 'employee_update', 'Employee', id, null, { name, username });
     } else {
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
@@ -192,6 +206,7 @@ router.post('/employee', validateBody(employeeWriteSchema), async (req, res) => 
         hireDate: hireDate ? new Date(hireDate) : undefined,
       });
       await emp.save();
+      logAudit(req, 'employee_create', 'Employee', emp._id.toString(), null, { name, username });
     }
     res.json({ msg: 'Success' });
   } catch (err) {
@@ -203,7 +218,9 @@ router.post('/employee', validateBody(employeeWriteSchema), async (req, res) => 
 
 router.delete('/employee/:id', async (req, res) => {
   try {
+    const emp = await Employee.findById(req.params.id);
     await Employee.findByIdAndDelete(req.params.id);
+    logAudit(req, 'employee_delete', 'Employee', req.params.id, emp ? { name: emp.name } : null, null);
     res.json({ msg: 'Deleted' });
   } catch (err) {
     res.status(500).json({ msg: 'Error' });
@@ -373,11 +390,13 @@ router.patch('/leave-requests/:id', async (req, res) => {
     const leave = await LeaveRequest.findById(req.params.id).populate('employeeId', 'name eid');
     if (!leave) return res.status(404).json({ msg: 'Leave request not found' });
 
+    const prevStatus = leave.status;
     leave.status = status;
     leave.approvedAt = new Date();
     leave.approvedByRole = 'admin';
     leave.approvedBy = req.user.id;
     await leave.save();
+    logAudit(req, 'leave_' + status, 'LeaveRequest', leave._id.toString(), { status: prevStatus }, { status });
 
     await AdminNotification.create({
       type: 'leave_' + status,
@@ -407,15 +426,24 @@ router.get('/payroll-overview', async (req, res) => {
     const lastDay = new Date(y, m, 0).getDate();
     const endDateStr = `${y}-${String(m).padStart(2, '0')}-${lastDay}`;
 
+    const Overtime = require('../models/Overtime');
     const employees = await Employee.find({ active: true });
-    const records = await Record.find({ date: { $gte: startDateStr, $lte: endDateStr } });
+    const [records, overtimes] = await Promise.all([
+      Record.find({ date: { $gte: startDateStr, $lte: endDateStr } }),
+      Overtime.find({ date: { $gte: startDateStr, $lte: endDateStr }, status: 'approved' }),
+    ]);
 
     const result = employees.map(emp => {
       const empRecords = records.filter(r => String(r.employeeId) === String(emp._id));
       const unpaidAbsences = empRecords.filter(r => r.status === 'absent' || r.status === 'unpaid_leave').length;
       const baseSalary = emp.salary || 0;
       const dailyRate = baseSalary / 30;
+      const hourlyRate = dailyRate / 8;
       const deduction = unpaidAbsences * dailyRate;
+      const empOT = overtimes.filter(o => String(o.employeeId) === String(emp._id));
+      const otMinutes = empOT.reduce((a, o) => a + o.extraMinutes, 0);
+      const avgMultiplier = empOT.length ? empOT.reduce((a, o) => a + o.rateMultiplier, 0) / empOT.length : 1.5;
+      const overtimePay = Math.round((otMinutes / 60) * hourlyRate * avgMultiplier * 100) / 100;
       return {
         employeeId: emp._id,
         name: emp.name,
@@ -423,7 +451,9 @@ router.get('/payroll-overview', async (req, res) => {
         baseSalary,
         unpaidAbsences,
         deduction,
-        netSalary: baseSalary - deduction,
+        overtimeMinutes: otMinutes,
+        overtimePay,
+        netSalary: baseSalary - deduction + overtimePay,
       };
     });
 

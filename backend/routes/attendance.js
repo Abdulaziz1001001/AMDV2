@@ -1,0 +1,162 @@
+const express = require('express');
+const auth = require('../middleware/authMiddleware');
+const Record = require('../models/Record');
+const Employee = require('../models/Employee');
+const Group = require('../models/Group');
+const WorkPolicy = require('../models/WorkPolicy');
+
+const router = express.Router();
+router.use(auth);
+
+function todayStr() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function isWorkingDay(dateStr, empGroupId, policy, groups) {
+  const d = new Date(dateStr);
+  const dow = d.getUTCDay();
+  const group = groups.find((g) => String(g._id) === String(empGroupId));
+
+  const weekendDays = group && group.weekendDays && group.weekendDays.length
+    ? group.weekendDays
+    : (policy && policy.defaultWeekendDays ? policy.defaultWeekendDays : [5, 6]);
+
+  if (weekendDays.includes(dow)) return false;
+
+  const holidays = policy && policy.companyHolidays ? policy.companyHolidays : [];
+  if (!(group && group.ignoreCompanyHolidays)) {
+    if (holidays.some((h) => h.date === dateStr)) return false;
+  }
+
+  if (group && group.extraNonWorkDates && group.extraNonWorkDates.includes(dateStr)) return false;
+
+  return true;
+}
+
+router.post('/close-day', auth.requireRole('admin'), async (req, res) => {
+  try {
+    const date = req.body.date || todayStr();
+
+    const [employees, groups, policy, existingRecords] = await Promise.all([
+      Employee.find({ active: true }),
+      Group.find(),
+      WorkPolicy.findOne({ key: 'company' }),
+      Record.find({ date }),
+    ]);
+
+    const checkedInIds = new Set(existingRecords.map((r) => r.employeeId));
+    const absentees = [];
+
+    for (const emp of employees) {
+      if (checkedInIds.has(String(emp._id))) continue;
+      if (!isWorkingDay(date, emp.groupId, policy, groups)) continue;
+
+      absentees.push({
+        employeeId: String(emp._id),
+        date,
+        status: 'absent',
+        approvalStatus: 'none',
+      });
+    }
+
+    if (absentees.length) {
+      await Record.insertMany(absentees);
+    }
+
+    res.json({ msg: `${absentees.length} absent record(s) created for ${date}`, count: absentees.length });
+  } catch (err) {
+    res.status(500).json({ msg: err.message });
+  }
+});
+
+router.post('/break-start', auth.requireRole(['employee', 'manager']), async (req, res) => {
+  try {
+    const date = todayStr();
+    const record = await Record.findOne({ employeeId: String(req.user.id), date });
+    if (!record) return res.status(400).json({ msg: 'No check-in record for today' });
+    if (record.checkOut) return res.status(400).json({ msg: 'Already checked out' });
+
+    const openBreak = record.breaks.find((b) => !b.end);
+    if (openBreak) return res.status(400).json({ msg: 'Break already in progress' });
+
+    record.breaks.push({ start: new Date().toISOString() });
+    await record.save();
+    res.json({ msg: 'Break started', record });
+  } catch (err) { res.status(500).json({ msg: err.message }); }
+});
+
+router.post('/break-end', auth.requireRole(['employee', 'manager']), async (req, res) => {
+  try {
+    const date = todayStr();
+    const record = await Record.findOne({ employeeId: String(req.user.id), date });
+    if (!record) return res.status(400).json({ msg: 'No record for today' });
+
+    const openBreak = record.breaks.find((b) => !b.end);
+    if (!openBreak) return res.status(400).json({ msg: 'No active break to end' });
+
+    openBreak.end = new Date().toISOString();
+    await record.save();
+    res.json({ msg: 'Break ended', record });
+  } catch (err) { res.status(500).json({ msg: err.message }); }
+});
+
+router.get('/report', auth.requireRole(['admin', 'manager']), async (req, res) => {
+  try {
+    const { employeeId, from, to } = req.query;
+    const month = req.query.month;
+    const year = req.query.year;
+
+    let startDate, endDate;
+    if (month && year) {
+      const m = parseInt(month, 10);
+      const y = parseInt(year, 10);
+      startDate = `${y}-${String(m).padStart(2, '0')}-01`;
+      const lastDay = new Date(y, m, 0).getDate();
+      endDate = `${y}-${String(m).padStart(2, '0')}-${lastDay}`;
+    } else {
+      startDate = from;
+      endDate = to;
+    }
+
+    const q = {};
+    if (employeeId) q.employeeId = employeeId;
+    if (startDate || endDate) { q.date = {}; if (startDate) q.date.$gte = startDate; if (endDate) q.date.$lte = endDate; }
+
+    const records = await Record.find(q).sort({ date: 1 });
+
+    const empIds = employeeId ? [employeeId] : [...new Set(records.map((r) => r.employeeId))];
+    const employees = await Employee.find({ _id: { $in: empIds } });
+    const empMap = {};
+    employees.forEach((e) => { empMap[String(e._id)] = e; });
+
+    const summary = empIds.map((eid) => {
+      const emp = empMap[eid] || {};
+      const empRecs = records.filter((r) => r.employeeId === eid);
+      const present = empRecs.filter((r) => ['present', 'late', 'early_leave'].includes(r.status)).length;
+      const late = empRecs.filter((r) => r.status === 'late').length;
+      const absent = empRecs.filter((r) => r.status === 'absent').length;
+      const onLeave = empRecs.filter((r) => r.status === 'unpaid_leave').length;
+      const overtimeMin = empRecs.reduce((a, r) => a + (r.overtimeMinutes || 0), 0);
+      const totalBreakMin = empRecs.reduce((a, r) => {
+        return a + (r.breaks || []).reduce((b, br) => {
+          if (!br.start || !br.end) return b;
+          return b + (new Date(br.end) - new Date(br.start)) / 60000;
+        }, 0);
+      }, 0);
+
+      return {
+        employeeId: eid,
+        name: emp.name || 'Unknown',
+        eid: emp.eid || '',
+        totalDays: empRecs.length,
+        present, late, absent, onLeave,
+        overtimeHours: Math.round(overtimeMin / 60 * 10) / 10,
+        totalBreakHours: Math.round(totalBreakMin / 60 * 10) / 10,
+      };
+    });
+
+    res.json(summary);
+  } catch (err) { res.status(500).json({ msg: err.message }); }
+});
+
+module.exports = router;

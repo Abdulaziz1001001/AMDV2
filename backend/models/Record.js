@@ -1,5 +1,13 @@
 const mongoose = require('mongoose');
 
+const BreakEntrySchema = new mongoose.Schema(
+  {
+    start: { type: String, required: true },
+    end: { type: String },
+  },
+  { _id: true },
+);
+
 const RecordSchema = new mongoose.Schema({
   employeeId: { type: String, required: true },
   date: { type: String, required: true },
@@ -13,7 +21,10 @@ const RecordSchema = new mongoose.Schema({
   notes: { type: String },
   approvalStatus: { type: String, enum: ['pending', 'approved', 'rejected', 'none'], default: 'none' },
   isForgiven: { type: Boolean, default: false },
-  attachment: { type: String }
+  attachment: { type: String },
+  projectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Project' },
+  breaks: { type: [BreakEntrySchema], default: [] },
+  overtimeMinutes: { type: Number, default: 0 },
 }, { timestamps: true });
 
 module.exports = mongoose.models.Record || mongoose.model('Record', RecordSchema);
