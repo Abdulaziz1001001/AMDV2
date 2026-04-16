@@ -19,6 +19,10 @@ const attendanceRoutes = require('./routes/attendance');
 const auditRoutes = require('./routes/audit');
 const announcementRoutes = require('./routes/announcements');
 const onboardingRoutes = require('./routes/onboarding');
+const selfServiceRoutes = require('./routes/selfService');
+const safetyRoutes = require('./routes/safety');
+const leaveAccrualRoutes = require('./routes/leaveAccrual');
+const directoryRoutes = require('./routes/directory');
 
 function assertJwtSecret() {
   const secret = process.env.JWT_SECRET;
@@ -83,6 +87,10 @@ function createApp() {
   app.use('/api/audit', auditRoutes);
   app.use('/api/announcements', announcementRoutes);
   app.use('/api/onboarding', onboardingRoutes);
+  app.use('/api/self-service', selfServiceRoutes);
+  app.use('/api/safety', safetyRoutes);
+  app.use('/api/leave-accrual', leaveAccrualRoutes);
+  app.use('/api/directory', directoryRoutes);
 
   // 5. Health check and Static File serving
   app.get('/health', (req, res) => res.type('text').send('ok'));

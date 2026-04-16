@@ -37,6 +37,14 @@ const WorkPolicySchema = new mongoose.Schema(
     approvalChains: { type: [ApprovalChainSchema], default: [] },
     onboardingItems: { type: [String], default: ['ID Verification', 'Safety Orientation', 'PPE Issued', 'Contract Signed', 'Bank Details Collected'] },
     offboardingItems: { type: [String], default: ['Final Settlement', 'Asset Return', 'Access Revocation', 'Exit Interview'] },
+    leaveAccrual: {
+      enabled: { type: Boolean, default: false },
+      monthlyRate: { type: Number, default: 2.5 },
+      probationMonths: { type: Number, default: 3 },
+      maxCarryForward: { type: Number, default: 15 },
+      encashmentAllowed: { type: Boolean, default: false },
+      encashmentMaxDays: { type: Number, default: 10 },
+    },
   },
   { timestamps: true },
 );

@@ -7,14 +7,19 @@ const EmployeeSchema = new mongoose.Schema({
   password: { type: String, required: true },
   email: String,
   phone: String,
-  groupId: { type: mongoose.Schema.Types.Mixed }, // يقبل نص أو معرف أو أي شيء
+  groupId: { type: mongoose.Schema.Types.Mixed },
   workStart: String,
   workEnd: String,
   salary: Number,
   departmentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Department' },
   jobTitle: String,
   hireDate: Date,
-  active: { type: Boolean, default: true }
+  active: { type: Boolean, default: true },
+  emergencyContact: { name: String, phone: String, relation: String },
+  address: String,
+  photoUrl: String,
+  leaveBalance: { type: Number, default: 0 },
+  lastAccrualDate: Date,
 }, { timestamps: true });
 
 module.exports = mongoose.models.Employee || mongoose.model('Employee', EmployeeSchema);

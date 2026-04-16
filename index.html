@@ -233,6 +233,10 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
       <div class="nav-link" onclick="Admin.showPanel('projects',this)"><i class="fas fa-hard-hat" style="width:20px"></i><span class="tr" data-en="Projects / Sites" data-ar="المشاريع / المواقع">Projects / Sites</span></div>
       <div class="nav-link" onclick="Admin.showPanel('onboarding',this)"><i class="fas fa-clipboard-check" style="width:20px"></i><span class="tr" data-en="Onboarding" data-ar="إعداد الموظفين">Onboarding</span></div>
       <div class="nav-link" onclick="Admin.showPanel('announcements',this)"><i class="fas fa-bullhorn" style="width:20px"></i><span class="tr" data-en="Announcements" data-ar="الإعلانات">Announcements</span></div>
+      <div class="nav-link" onclick="Admin.showPanel('safety',this)"><i class="fas fa-exclamation-triangle" style="width:20px"></i><span class="tr" data-en="Safety Incidents" data-ar="حوادث السلامة">Safety Incidents</span></div>
+      <div class="nav-link" onclick="Admin.showPanel('documents',this)"><i class="fas fa-folder-open" style="width:20px"></i><span class="tr" data-en="Document Vault" data-ar="خزنة الوثائق">Document Vault</span></div>
+      <div class="nav-link" onclick="Admin.showPanel('directory',this)"><i class="fas fa-address-book" style="width:20px"></i><span class="tr" data-en="Directory / Org Chart" data-ar="الدليل / الهيكل التنظيمي">Directory / Org Chart</span></div>
+      <div class="nav-link" onclick="Admin.showPanel('accrual',this)"><i class="fas fa-calculator" style="width:20px"></i><span class="tr" data-en="Leave Accrual" data-ar="استحقاق الإجازات">Leave Accrual</span></div>
       
       <span style="display:block;padding:1.5rem 1.25rem 0.4rem;font-size:0.65rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--text-dim)" class="tr" data-en="System" data-ar="النظام">System</span>
       <div class="nav-link" onclick="Admin.showPanel('audit',this)"><i class="fas fa-history" style="width:20px"></i><span class="tr" data-en="Audit Log" data-ar="سجل المراجعة">Audit Log</span></div>
@@ -675,6 +679,113 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
         </div></div>
       </div>
 
+      <!-- Safety Incidents Panel -->
+      <div id="panel-safety" class="admin-panel">
+        <div style="display:flex;gap:0.75rem;margin-bottom:1.25rem;align-items:center;flex-wrap:wrap">
+          <h3 style="margin:0;color:var(--accent);text-transform:uppercase" class="tr" data-en="Safety Incidents" data-ar="حوادث السلامة">Safety Incidents</h3>
+          <div style="flex:1"></div>
+          <select id="safety-status-filter" class="form-control form-select" style="max-width:160px" onchange="Admin.loadSafetyIncidents()">
+            <option value="">All Statuses</option>
+            <option value="open">Open</option>
+            <option value="investigating">Investigating</option>
+            <option value="resolved">Resolved</option>
+            <option value="closed">Closed</option>
+          </select>
+          <select id="safety-severity-filter" class="form-control form-select" style="max-width:160px" onchange="Admin.loadSafetyIncidents()">
+            <option value="">All Severities</option>
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+            <option value="critical">Critical</option>
+          </select>
+        </div>
+        <div class="stats-grid" id="safety-stats"></div>
+        <div class="card"><div style="overflow-x:auto">
+          <table><thead><tr>
+            <th>#</th>
+            <th class="tr" data-en="Date" data-ar="التاريخ">Date</th>
+            <th class="tr" data-en="Reporter" data-ar="المبلغ">Reporter</th>
+            <th class="tr" data-en="Severity" data-ar="الشدة">Severity</th>
+            <th class="tr" data-en="Status" data-ar="الحالة">Status</th>
+            <th class="tr" data-en="Description" data-ar="الوصف">Description</th>
+            <th class="tr" data-en="Action" data-ar="إجراء">Action</th>
+          </tr></thead><tbody id="safety-table"></tbody></table>
+        </div></div>
+      </div>
+
+      <!-- Document Vault Panel -->
+      <div id="panel-documents" class="admin-panel">
+        <div style="display:flex;gap:0.75rem;margin-bottom:1.25rem;align-items:center;flex-wrap:wrap">
+          <h3 style="margin:0;color:var(--accent);text-transform:uppercase" class="tr" data-en="Document Vault" data-ar="خزنة الوثائق">Document Vault</h3>
+          <div style="flex:1"></div>
+          <select id="doc-emp-filter" class="form-control form-select" style="max-width:200px" onchange="Admin.loadDocuments()">
+            <option value="">All Employees</option>
+          </select>
+          <button class="btn btn-primary btn-sm" onclick="Admin.openUploadDocModal()"><i class="fas fa-upload"></i> <span class="tr" data-en="Upload" data-ar="رفع">Upload</span></button>
+        </div>
+        <div id="doc-expiring-alert" class="hidden" style="background:rgba(241,196,15,0.1);border:1px solid var(--warning);padding:0.75rem 1rem;border-radius:var(--radius);margin-bottom:1rem;color:var(--warning);font-size:0.85rem"></div>
+        <div class="card"><div style="overflow-x:auto">
+          <table><thead><tr>
+            <th class="tr" data-en="Employee" data-ar="الموظف">Employee</th>
+            <th class="tr" data-en="Title" data-ar="العنوان">Title</th>
+            <th class="tr" data-en="Category" data-ar="الفئة">Category</th>
+            <th class="tr" data-en="Uploaded" data-ar="تاريخ الرفع">Uploaded</th>
+            <th class="tr" data-en="Expires" data-ar="انتهاء الصلاحية">Expires</th>
+            <th class="tr" data-en="Action" data-ar="إجراء">Action</th>
+          </tr></thead><tbody id="documents-table"></tbody></table>
+        </div></div>
+      </div>
+
+      <!-- Profile Update Requests Panel (embedded in HR for admin) -->
+
+      <!-- Directory / Org Chart Panel -->
+      <div id="panel-directory" class="admin-panel">
+        <div style="display:flex;gap:0.75rem;margin-bottom:1.25rem;align-items:center;flex-wrap:wrap">
+          <h3 style="margin:0;color:var(--accent);text-transform:uppercase" class="tr" data-en="Employee Directory & Org Chart" data-ar="دليل الموظفين والهيكل التنظيمي">Employee Directory & Org Chart</h3>
+          <div style="flex:1"></div>
+          <input type="text" id="dir-search" class="form-control ph-tr" data-phen="Search..." data-phar="بحث..." style="max-width:200px" oninput="Admin.filterDirectory()">
+          <button class="btn btn-sm" style="background:var(--surface2);border:1px solid var(--border)" onclick="Admin.toggleDirView('list')" id="dir-view-list"><i class="fas fa-list"></i></button>
+          <button class="btn btn-sm" style="background:var(--surface2);border:1px solid var(--border)" onclick="Admin.toggleDirView('orgchart')" id="dir-view-orgchart"><i class="fas fa-sitemap"></i></button>
+        </div>
+        <div id="directory-list-view">
+          <div class="card"><div style="overflow-x:auto">
+            <table><thead><tr>
+              <th></th>
+              <th class="tr" data-en="Name" data-ar="الاسم">Name</th>
+              <th>ID</th>
+              <th class="tr" data-en="Job Title" data-ar="المسمى">Job Title</th>
+              <th class="tr" data-en="Department" data-ar="القسم">Department</th>
+              <th class="tr" data-en="Email" data-ar="البريد">Email</th>
+              <th class="tr" data-en="Phone" data-ar="الهاتف">Phone</th>
+            </tr></thead><tbody id="directory-table"></tbody></table>
+          </div></div>
+        </div>
+        <div id="directory-orgchart-view" class="hidden"></div>
+      </div>
+
+      <!-- Leave Accrual Panel -->
+      <div id="panel-accrual" class="admin-panel">
+        <div style="display:flex;gap:0.75rem;margin-bottom:1.25rem;align-items:center;flex-wrap:wrap">
+          <h3 style="margin:0;color:var(--accent);text-transform:uppercase" class="tr" data-en="Leave Accrual" data-ar="استحقاق الإجازات">Leave Accrual</h3>
+          <div style="flex:1"></div>
+          <button class="btn btn-primary btn-sm" onclick="Admin.runLeaveAccrual()"><i class="fas fa-play"></i> <span class="tr" data-en="Run Monthly Accrual" data-ar="تشغيل الاستحقاق الشهري">Run Monthly Accrual</span></button>
+          <button class="btn btn-outline btn-sm" onclick="Admin.loadCarryForwardReport()"><i class="fas fa-file-alt"></i> <span class="tr" data-en="Carry-Forward Report" data-ar="تقرير الترحيل">Carry-Forward Report</span></button>
+        </div>
+        <div class="stats-grid" id="accrual-stats"></div>
+        <div class="card"><div style="overflow-x:auto">
+          <table><thead><tr>
+            <th>ID</th>
+            <th class="tr" data-en="Name" data-ar="الاسم">Name</th>
+            <th class="tr" data-en="Department" data-ar="القسم">Department</th>
+            <th class="tr" data-en="Hire Date" data-ar="تاريخ التعيين">Hire Date</th>
+            <th class="tr" data-en="Accrued" data-ar="المستحق">Accrued</th>
+            <th class="tr" data-en="Used" data-ar="المستخدم">Used</th>
+            <th class="tr" data-en="Balance" data-ar="الرصيد">Balance</th>
+            <th class="tr" data-en="Action" data-ar="إجراء">Action</th>
+          </tr></thead><tbody id="accrual-table"></tbody></table>
+        </div></div>
+      </div>
+
       <div id="panel-settings" class="admin-panel">
         <div class="card" style="max-width: 500px; margin: 0 auto; margin-top: 2rem;">
           <div class="card-header"><div class="card-title tr" data-en="Profile Settings" data-ar="إعدادات الحساب">Profile Settings</div></div>
@@ -862,6 +973,45 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
             <div class="card">
               <div class="card-header"><div class="card-title tr" data-en="Request History" data-ar="سجل الطلبات">Request History</div></div>
               <div style="padding:1rem;max-height:260px;overflow:auto" id="emp-request-history"></div>
+            </div>
+
+            <!-- Safety Incident Report -->
+            <div class="card">
+              <div class="card-header"><div class="card-title tr" data-en="Report Safety Incident" data-ar="الإبلاغ عن حادث سلامة">Report Safety Incident</div></div>
+              <div style="padding:1.5rem;">
+                <div class="form-group"><label class="form-label tr" data-en="Description" data-ar="الوصف">Description</label><textarea id="emp-safety-desc" class="form-control" rows="3" placeholder="Describe the incident..."></textarea></div>
+                <div style="display:flex;gap:1rem;flex-wrap:wrap">
+                  <div class="form-group" style="flex:1;min-width:140px"><label class="form-label tr" data-en="Severity" data-ar="الشدة">Severity</label><select id="emp-safety-severity" class="form-control form-select"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option><option value="critical">Critical</option></select></div>
+                  <div class="form-group" style="flex:1;min-width:140px"><label class="form-label tr" data-en="Location" data-ar="الموقع">Location</label><input type="text" id="emp-safety-location" class="form-control" placeholder="Site/area"></div>
+                </div>
+                <div class="form-group"><label class="form-label tr" data-en="Photos (up to 5)" data-ar="صور (حتى 5)">Photos (up to 5)</label><input type="file" id="emp-safety-photos" class="form-control" accept="image/*" multiple></div>
+                <button class="btn btn-danger" onclick="Emp.reportSafetyIncident()"><i class="fas fa-exclamation-triangle"></i> <span class="tr" data-en="Report Incident" data-ar="إبلاغ عن حادث">Report Incident</span></button>
+              </div>
+            </div>
+
+            <!-- My Documents -->
+            <div class="card">
+              <div class="card-header" style="display:flex;justify-content:space-between;align-items:center"><div class="card-title tr" data-en="My Documents" data-ar="وثائقي">My Documents</div><button class="btn btn-sm btn-primary" onclick="Emp.openUploadDocModal()"><i class="fas fa-upload"></i></button></div>
+              <div style="padding:1rem;max-height:260px;overflow:auto" id="emp-documents-list"></div>
+            </div>
+
+            <!-- Update Profile Request -->
+            <div class="card">
+              <div class="card-header"><div class="card-title tr" data-en="Update My Info" data-ar="تحديث معلوماتي">Update My Info</div></div>
+              <div style="padding:1.5rem;">
+                <small style="color:var(--text-muted);display:block;margin-bottom:1rem" class="tr" data-en="Changes will be sent for admin approval." data-ar="التغييرات سترسل لموافقة الإدارة.">Changes will be sent for admin approval.</small>
+                <div style="display:flex;gap:1rem;flex-wrap:wrap">
+                  <div class="form-group" style="flex:1;min-width:200px"><label class="form-label">Phone</label><input type="text" id="emp-update-phone" class="form-control"></div>
+                  <div class="form-group" style="flex:1;min-width:200px"><label class="form-label">Email</label><input type="email" id="emp-update-email" class="form-control"></div>
+                </div>
+                <div class="form-group"><label class="form-label tr" data-en="Address" data-ar="العنوان">Address</label><input type="text" id="emp-update-address" class="form-control"></div>
+                <div style="display:flex;gap:1rem;flex-wrap:wrap">
+                  <div class="form-group" style="flex:1;min-width:140px"><label class="form-label tr" data-en="Emergency Contact Name" data-ar="اسم جهة اتصال الطوارئ">Emergency Name</label><input type="text" id="emp-update-ec-name" class="form-control"></div>
+                  <div class="form-group" style="flex:1;min-width:140px"><label class="form-label tr" data-en="Emergency Phone" data-ar="هاتف الطوارئ">Emergency Phone</label><input type="text" id="emp-update-ec-phone" class="form-control"></div>
+                  <div class="form-group" style="flex:1;min-width:140px"><label class="form-label tr" data-en="Relation" data-ar="صلة القرابة">Relation</label><input type="text" id="emp-update-ec-relation" class="form-control"></div>
+                </div>
+                <button class="btn btn-primary" onclick="Emp.submitProfileUpdate()"><i class="fas fa-paper-plane"></i> <span class="tr" data-en="Submit for Approval" data-ar="إرسال للموافقة">Submit for Approval</span></button>
+              </div>
             </div>
           </div>
 
@@ -1057,6 +1207,52 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
       <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer"><input type="checkbox" id="ann-modal-pinned"> <span class="tr" data-en="Pin to top" data-ar="تثبيت في الأعلى">Pin to top</span></label>
     </div>
     <div class="modal-footer"><button class="btn btn-outline" onclick="UI.closeModal('modal-announcement')">Cancel</button><button class="btn btn-primary" onclick="Admin.saveAnnouncement()">Save</button></div>
+  </div>
+</div>
+
+<!-- Upload Document Modal -->
+<div id="modal-upload-doc" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header"><span style="font-weight:700;font-size:1.1rem;text-transform:uppercase" class="tr" data-en="Upload Document" data-ar="رفع وثيقة">Upload Document</span><button class="btn-ghost" onclick="UI.closeModal('modal-upload-doc')"><i class="fas fa-times"></i></button></div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:1rem">
+      <div><label class="form-label tr" data-en="Employee" data-ar="الموظف">Employee</label><select id="doc-modal-emp" class="form-control form-select"></select></div>
+      <div><label class="form-label tr" data-en="Title" data-ar="العنوان">Title</label><input type="text" id="doc-modal-title" class="form-control"></div>
+      <div><label class="form-label tr" data-en="Category" data-ar="الفئة">Category</label><select id="doc-modal-category" class="form-control form-select">
+        <option value="id_copy">ID Copy</option>
+        <option value="contract">Contract</option>
+        <option value="certification">Certification</option>
+        <option value="safety_training">Safety Training</option>
+        <option value="medical">Medical</option>
+        <option value="other">Other</option>
+      </select></div>
+      <div><label class="form-label tr" data-en="Expires" data-ar="تاريخ الانتهاء">Expires</label><input type="date" id="doc-modal-expires" class="form-control"></div>
+      <div><label class="form-label tr" data-en="Notes" data-ar="ملاحظات">Notes</label><input type="text" id="doc-modal-notes" class="form-control"></div>
+      <div><label class="form-label tr" data-en="File" data-ar="الملف">File</label><input type="file" id="doc-modal-file" class="form-control" accept=".pdf,image/*"></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="UI.closeModal('modal-upload-doc')">Cancel</button><button class="btn btn-primary" onclick="Admin.uploadDocument()">Upload</button></div>
+  </div>
+</div>
+
+<!-- Safety Incident Detail Modal -->
+<div id="modal-safety-detail" class="modal-overlay">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-header"><span style="font-weight:700;font-size:1.1rem;text-transform:uppercase" class="tr" data-en="Incident Details" data-ar="تفاصيل الحادث">Incident Details</span><button class="btn-ghost" onclick="UI.closeModal('modal-safety-detail')"><i class="fas fa-times"></i></button></div>
+    <div class="modal-body" id="safety-detail-body"></div>
+    <div class="modal-footer" id="safety-detail-footer"></div>
+  </div>
+</div>
+
+<!-- Leave Encashment Modal -->
+<div id="modal-encash" class="modal-overlay">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header"><span style="font-weight:700;font-size:1.1rem;text-transform:uppercase" class="tr" data-en="Leave Encashment" data-ar="صرف إجازة">Leave Encashment</span><button class="btn-ghost" onclick="UI.closeModal('modal-encash')"><i class="fas fa-times"></i></button></div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:1rem">
+      <input type="hidden" id="encash-emp-id">
+      <div><label class="form-label">Employee</label><span id="encash-emp-name" style="font-weight:600;display:block;margin-top:0.25rem"></span></div>
+      <div><label class="form-label">Available Balance</label><span id="encash-balance" style="font-weight:600;display:block;margin-top:0.25rem"></span></div>
+      <div><label class="form-label tr" data-en="Days to Encash" data-ar="أيام للصرف">Days to Encash</label><input type="number" id="encash-days" class="form-control" min="1" max="10"></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="UI.closeModal('modal-encash')">Cancel</button><button class="btn btn-primary" onclick="Admin.submitEncashment()">Submit</button></div>
   </div>
 </div>
 
@@ -1397,13 +1593,21 @@ const Admin = {
       this.populateRecordEmployeeFilter();
       this.filterRecords();
     }
-    if(panel==='dashboard') { if(!this.earlyCheckouts || !this.earlyCheckouts.length) this.loadEarlyCheckouts(); if(!this.overtimes || !this.overtimes.length) this.loadOvertimes(); this.renderDashboard(); }
+    if(panel==='dashboard') { if(!this.earlyCheckouts || !this.earlyCheckouts.length) this.loadEarlyCheckouts(); if(!this.overtimes || !this.overtimes.length) this.loadOvertimes(); if(!this.safetyIncidents || !this.safetyIncidents.length) this.loadSafetyIncidentsQuiet(); this.renderDashboard(); }
     if(panel==='hr' && typeof Admin.loadHrData === 'function') Admin.loadHrData();
     if(panel==='shifts') this.renderShifts();
     if(panel==='projects') this.renderProjects();
     if(panel==='onboarding') this.loadOnboarding();
     if(panel==='announcements') this.renderAnnouncements();
     if(panel==='audit') this.loadAuditLog();
+    if(panel==='safety') this.loadSafetyIncidents();
+    if(panel==='documents') {
+      const sel = document.getElementById('doc-emp-filter');
+      sel.innerHTML = `<option value="">${Lang.t('All Employees','جميع الموظفين')}</option>` + DB.getEmployees().filter(e=>e.active).map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
+      this.loadDocuments();
+    }
+    if(panel==='directory') { this.loadDirectory(); this.toggleDirView(this.dirView); }
+    if(panel==='accrual') this.loadAccrual();
     if(panel==='reports') {
       const sel = document.getElementById('rpt-emp');
       if (sel) { sel.innerHTML = `<option value="">All</option>` + DB.getEmployees().filter(e=>e.active).map(e=>`<option value="${e.id}">${e.name}</option>`).join(''); }
@@ -1424,7 +1628,7 @@ const Admin = {
     } catch(err) { UI.toast(err.message, 'error'); }
     UI.loader(false);
   },
-  async refresh(){ UI.loader(true); try{ await DB.sync(); await Promise.all([this.loadEarlyCheckouts(), this.loadOvertimes()]); this.updateNotifBadge(); this.showPanel(this.currentPanel); UI.toast(Lang.t('Synced','تمت المزامنة'), 'success'); } catch(e){UI.toast(e.message,'error')} UI.loader(false); },
+  async refresh(){ UI.loader(true); try{ await DB.sync(); await Promise.all([this.loadEarlyCheckouts(), this.loadOvertimes(), this.loadSafetyIncidentsQuiet()]); this.updateNotifBadge(); this.showPanel(this.currentPanel); UI.toast(Lang.t('Synced','تمت المزامنة'), 'success'); } catch(e){UI.toast(e.message,'error')} UI.loader(false); },
   updateNotifBadge(){
     const el = document.getElementById('admin-notif-badge');
     if (!el) return;
@@ -1712,6 +1916,8 @@ const Admin = {
       if (pendingRecords > 0) widgets.push(`<div class="stat-card" style="border-left:3px solid var(--info);cursor:pointer" onclick="Admin.showPanel('records')"><div style="display:flex;align-items:center;gap:0.75rem"><span style="font-size:1.5rem">🔵</span><div><div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase">${Lang.t('Pending Records','سجلات معلقة')}</div><div class="stat-value" style="font-size:1.8rem">${pendingRecords}</div></div></div></div>`);
       const pendingOT = (this.overtimes || []).filter(o => o.status === 'pending').length;
       if (pendingOT > 0) widgets.push(`<div class="stat-card" style="border-left:3px solid var(--info);cursor:pointer" onclick="Admin.showPanel('hr')"><div style="display:flex;align-items:center;gap:0.75rem"><span style="font-size:1.5rem">🟣</span><div><div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase">${Lang.t('Pending Overtime','عمل إضافي معلق')}</div><div class="stat-value" style="font-size:1.8rem">${pendingOT}</div></div></div></div>`);
+      const openIncidents = (this.safetyIncidents || []).filter(i => i.status === 'open' || i.status === 'investigating').length;
+      if (openIncidents > 0) widgets.push(`<div class="stat-card" style="border-left:3px solid var(--danger);cursor:pointer" onclick="Admin.showPanel('safety')"><div style="display:flex;align-items:center;gap:0.75rem"><span style="font-size:1.5rem"><i class="fas fa-exclamation-triangle" style="color:var(--danger)"></i></span><div><div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase">${Lang.t('Open Incidents','حوادث مفتوحة')}</div><div class="stat-value" style="font-size:1.8rem">${openIncidents}</div></div></div></div>`);
       widgets.push(`<div class="stat-card" style="border-left:3px solid var(--text-dim);cursor:pointer" onclick="Admin.closeDay()"><div style="display:flex;align-items:center;gap:0.75rem"><span style="font-size:1.5rem"><i class="fas fa-calendar-check" style="color:var(--text-muted)"></i></span><div><div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase">${Lang.t('Close Day','إغلاق اليوم')}</div><div style="font-size:0.8rem;color:var(--text-muted)">${Lang.t('Mark absentees','تسجيل الغياب')}</div></div></div></div>`);
       widgetWrap.innerHTML = widgets.join('');
       widgetWrap.style.display = widgets.length ? 'grid' : 'none';
@@ -2788,6 +2994,306 @@ const Admin = {
       this.renderDashboard();
     } catch(e) { UI.toast(e.message, 'error'); }
     UI.loader(false);
+  },
+
+  /* ── Safety Incidents ── */
+  safetyIncidents: [],
+  async loadSafetyIncidentsQuiet() {
+    try { this.safetyIncidents = await API.request('/safety', 'GET'); } catch(_) {}
+  },
+  async loadSafetyIncidents() {
+    const status = document.getElementById('safety-status-filter').value;
+    const severity = document.getElementById('safety-severity-filter').value;
+    let url = '/safety?';
+    if (status) url += `status=${status}&`;
+    if (severity) url += `severity=${severity}&`;
+    try {
+      this.safetyIncidents = await API.request(url, 'GET');
+    } catch(e) { UI.toast(e.message, 'error'); return; }
+    this.renderSafetyIncidents();
+  },
+  renderSafetyIncidents() {
+    const items = this.safetyIncidents || [];
+    const open = items.filter(i => i.status === 'open').length;
+    const investigating = items.filter(i => i.status === 'investigating').length;
+    const critical = items.filter(i => i.severity === 'critical' && i.status !== 'closed' && i.status !== 'resolved').length;
+    document.getElementById('safety-stats').innerHTML = `
+      <div class="stat-card"><div class="stat-value" style="color:var(--danger)">${open}</div><div style="font-size:0.75rem;color:var(--text-muted)">${Lang.t('Open','مفتوح')}</div></div>
+      <div class="stat-card"><div class="stat-value" style="color:var(--warning)">${investigating}</div><div style="font-size:0.75rem;color:var(--text-muted)">${Lang.t('Investigating','قيد التحقيق')}</div></div>
+      <div class="stat-card"><div class="stat-value" style="color:var(--danger)">${critical}</div><div style="font-size:0.75rem;color:var(--text-muted)">${Lang.t('Critical Active','حرج نشط')}</div></div>
+      <div class="stat-card"><div class="stat-value">${items.length}</div><div style="font-size:0.75rem;color:var(--text-muted)">${Lang.t('Total','الإجمالي')}</div></div>`;
+    const severityBadge = s => ({ low:'badge-muted', medium:'badge-warning', high:'badge-danger', critical:'badge-danger' }[s] || 'badge-muted');
+    const statusBadge = s => ({ open:'badge-danger', investigating:'badge-warning', resolved:'badge-success', closed:'badge-muted' }[s] || 'badge-muted');
+    document.getElementById('safety-table').innerHTML = items.length ? items.map(i => `<tr>
+      <td>#${(i.id||i._id).toString().slice(-6)}</td>
+      <td>${i.date}</td>
+      <td>${i.reporterId && i.reporterId.name ? i.reporterId.name : (i.reporterName || '—')}</td>
+      <td><span class="badge ${severityBadge(i.severity)}">${i.severity}</span></td>
+      <td><span class="badge ${statusBadge(i.status)}">${i.status}</span></td>
+      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${i.description}</td>
+      <td><button class="btn btn-sm btn-outline" onclick="Admin.viewSafetyIncident('${i.id||i._id}')"><i class="fas fa-eye"></i></button></td>
+    </tr>`).join('') : `<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-muted)">${Lang.t('No incidents','لا توجد حوادث')}</td></tr>`;
+  },
+  viewSafetyIncident(id) {
+    const item = (this.safetyIncidents || []).find(i => (i.id||i._id) === id);
+    if (!item) return;
+    const body = document.getElementById('safety-detail-body');
+    const footer = document.getElementById('safety-detail-footer');
+    body.innerHTML = `
+      <div style="margin-bottom:0.75rem"><strong>${Lang.t('Date','التاريخ')}:</strong> ${item.date}</div>
+      <div style="margin-bottom:0.75rem"><strong>${Lang.t('Reporter','المبلغ')}:</strong> ${item.reporterId && item.reporterId.name ? item.reporterId.name : (item.reporterName || '—')}</div>
+      <div style="margin-bottom:0.75rem"><strong>${Lang.t('Severity','الشدة')}:</strong> <span class="badge ${({low:'badge-muted',medium:'badge-warning',high:'badge-danger',critical:'badge-danger'}[item.severity])}">${item.severity}</span></div>
+      <div style="margin-bottom:0.75rem"><strong>${Lang.t('Status','الحالة')}:</strong> <span class="badge ${({open:'badge-danger',investigating:'badge-warning',resolved:'badge-success',closed:'badge-muted'}[item.status])}">${item.status}</span></div>
+      <div style="margin-bottom:0.75rem"><strong>${Lang.t('Location','الموقع')}:</strong> ${item.location || '—'}</div>
+      <div style="margin-bottom:0.75rem"><strong>${Lang.t('Project','المشروع')}:</strong> ${item.projectId && item.projectId.name ? item.projectId.name : '—'}</div>
+      <div style="margin-bottom:0.75rem"><strong>${Lang.t('Description','الوصف')}:</strong><div style="margin-top:0.25rem;padding:0.75rem;background:var(--surface2);border-radius:var(--radius);white-space:pre-wrap">${item.description}</div></div>
+      ${item.resolution ? `<div style="margin-bottom:0.75rem"><strong>${Lang.t('Resolution','الحل')}:</strong><div style="margin-top:0.25rem;padding:0.75rem;background:var(--surface2);border-radius:var(--radius)">${item.resolution}</div></div>` : ''}
+      ${item.photos && item.photos.length ? `<div style="margin-bottom:0.75rem"><strong>${Lang.t('Photos','الصور')}:</strong><div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.5rem">${item.photos.map(p=>`<img src="/api/safety/${id}/photo/${p}" style="width:100px;height:100px;object-fit:cover;border-radius:var(--radius);border:1px solid var(--border)" onerror="this.style.display='none'">`).join('')}</div></div>` : ''}
+      ${item.status !== 'resolved' && item.status !== 'closed' ? `
+        <div style="margin-top:1rem"><label class="form-label">${Lang.t('Update Status','تحديث الحالة')}</label>
+          <select id="safety-detail-status" class="form-control form-select" style="max-width:200px">
+            <option value="open" ${item.status==='open'?'selected':''}>Open</option>
+            <option value="investigating" ${item.status==='investigating'?'selected':''}>Investigating</option>
+            <option value="resolved">Resolved</option>
+            <option value="closed">Closed</option>
+          </select></div>
+        <div style="margin-top:0.75rem"><label class="form-label">${Lang.t('Resolution Notes','ملاحظات الحل')}</label><textarea id="safety-detail-resolution" class="form-control" rows="2">${item.resolution||''}</textarea></div>` : ''}`;
+    footer.innerHTML = item.status !== 'resolved' && item.status !== 'closed'
+      ? `<button class="btn btn-outline" onclick="UI.closeModal('modal-safety-detail')">Close</button><button class="btn btn-primary" onclick="Admin.updateSafetyIncident('${id}')">Save</button>`
+      : `<button class="btn btn-outline" onclick="UI.closeModal('modal-safety-detail')">Close</button>`;
+    UI.openModal('modal-safety-detail');
+  },
+  async updateSafetyIncident(id) {
+    const status = document.getElementById('safety-detail-status').value;
+    const resolution = document.getElementById('safety-detail-resolution').value;
+    try {
+      await API.request(`/safety/${id}`, 'PUT', { status, resolution });
+      UI.closeModal('modal-safety-detail');
+      UI.toast(Lang.t('Updated','تم التحديث'), 'success');
+      this.loadSafetyIncidents();
+    } catch(e) { UI.toast(e.message, 'error'); }
+  },
+
+  /* ── Document Vault ── */
+  async loadDocuments() {
+    const empId = document.getElementById('doc-emp-filter').value;
+    let url = '/self-service/documents';
+    if (empId) url += `?employeeId=${empId}`;
+    try {
+      const docs = await API.request(url, 'GET');
+      const tb = document.getElementById('documents-table');
+      const catLabel = { id_copy: 'ID Copy', contract: 'Contract', certification: 'Certification', safety_training: 'Safety Training', medical: 'Medical', other: 'Other' };
+      tb.innerHTML = docs.length ? docs.map(d => `<tr>
+        <td>${d.employeeId && d.employeeId.name ? d.employeeId.name : '—'}</td>
+        <td>${d.title}</td>
+        <td><span class="badge badge-muted">${catLabel[d.category] || d.category}</span></td>
+        <td>${DB.fmtDate(d.createdAt)}</td>
+        <td>${d.expiresAt ? `<span style="color:${new Date(d.expiresAt)<new Date()?'var(--danger)':'inherit'}">${DB.fmtDate(d.expiresAt)}</span>` : '—'}</td>
+        <td>
+          <button class="btn btn-sm btn-outline" onclick="window.open('/api/self-service/documents/${d.id||d._id}/download','_blank')"><i class="fas fa-download"></i></button>
+          <button class="btn btn-sm btn-danger" onclick="Admin.deleteDocument('${d.id||d._id}')"><i class="fas fa-trash"></i></button>
+        </td>
+      </tr>`).join('') : `<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text-muted)">${Lang.t('No documents','لا توجد وثائق')}</td></tr>`;
+    } catch(e) { UI.toast(e.message, 'error'); }
+    try {
+      const expiring = await API.request('/self-service/documents/expiring?days=30', 'GET');
+      const alert = document.getElementById('doc-expiring-alert');
+      if (expiring.length) {
+        alert.classList.remove('hidden');
+        alert.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${expiring.length} ${Lang.t('document(s) expiring within 30 days','وثيقة تنتهي خلال 30 يوماً')}: ${expiring.map(d=>`<strong>${d.title}</strong> (${d.employeeId && d.employeeId.name ? d.employeeId.name : ''})`).join(', ')}`;
+      } else { alert.classList.add('hidden'); }
+    } catch(_) {}
+  },
+  openUploadDocModal() {
+    const sel = document.getElementById('doc-modal-emp');
+    sel.innerHTML = DB.getEmployees().filter(e=>e.active).map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
+    document.getElementById('doc-modal-title').value = '';
+    document.getElementById('doc-modal-category').value = 'other';
+    document.getElementById('doc-modal-expires').value = '';
+    document.getElementById('doc-modal-notes').value = '';
+    document.getElementById('doc-modal-file').value = '';
+    UI.openModal('modal-upload-doc');
+  },
+  async uploadDocument() {
+    const file = document.getElementById('doc-modal-file').files[0];
+    if (!file) return UI.toast(Lang.t('Select a file','اختر ملفاً'), 'error');
+    const title = document.getElementById('doc-modal-title').value.trim();
+    if (!title) return UI.toast(Lang.t('Title is required','العنوان مطلوب'), 'error');
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('title', title);
+    fd.append('employeeId', document.getElementById('doc-modal-emp').value);
+    fd.append('category', document.getElementById('doc-modal-category').value);
+    const expires = document.getElementById('doc-modal-expires').value;
+    if (expires) fd.append('expiresAt', expires);
+    const notes = document.getElementById('doc-modal-notes').value.trim();
+    if (notes) fd.append('notes', notes);
+    UI.loader(true);
+    try {
+      const token = localStorage.getItem('amd_token');
+      const base = window.__AMD_API_BASE__ || '';
+      const resp = await fetch(`${base}/api/self-service/documents`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: fd });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.msg || 'Upload failed');
+      UI.closeModal('modal-upload-doc');
+      UI.toast(Lang.t('Document uploaded','تم رفع الوثيقة'), 'success');
+      this.loadDocuments();
+    } catch(e) { UI.toast(e.message, 'error'); }
+    UI.loader(false);
+  },
+  async deleteDocument(id) {
+    if (!confirm(Lang.t('Delete?','حذف؟'))) return;
+    try { await API.request(`/self-service/documents/${id}`, 'DELETE'); this.loadDocuments(); UI.toast(Lang.t('Deleted','تم الحذف'), 'success'); } catch(e) { UI.toast(e.message, 'error'); }
+  },
+
+  /* ── Profile Update Requests (Admin) ── */
+  async loadProfileUpdates() {
+    try {
+      const items = await API.request('/self-service/profile-updates?status=pending', 'GET');
+      return items;
+    } catch(_) { return []; }
+  },
+  async reviewProfileUpdate(id, status) {
+    try {
+      await API.request(`/self-service/profile-updates/${id}`, 'PUT', { status });
+      UI.toast(Lang.t(status === 'approved' ? 'Approved' : 'Rejected', status === 'approved' ? 'تمت الموافقة' : 'تم الرفض'), 'success');
+      this.renderDashboard();
+    } catch(e) { UI.toast(e.message, 'error'); }
+  },
+
+  /* ── Directory / Org Chart ── */
+  directoryData: [],
+  dirView: 'list',
+  async loadDirectory() {
+    try {
+      this.directoryData = await API.request('/directory', 'GET');
+    } catch(e) { UI.toast(e.message, 'error'); return; }
+    this.renderDirectory();
+  },
+  renderDirectory() {
+    const search = (document.getElementById('dir-search').value || '').toLowerCase();
+    const items = this.directoryData.filter(e => !search || e.name.toLowerCase().includes(search) || (e.eid||'').toLowerCase().includes(search) || (e.department||'').toLowerCase().includes(search) || (e.jobTitle||'').toLowerCase().includes(search));
+    document.getElementById('directory-table').innerHTML = items.length ? items.map(e => `<tr>
+      <td><div style="width:32px;height:32px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:0.75rem">${(e.name||'?')[0].toUpperCase()}</div></td>
+      <td style="font-weight:600">${e.name}</td>
+      <td style="color:var(--text-muted)">${e.eid || '—'}</td>
+      <td>${e.jobTitle || '—'}</td>
+      <td>${e.department || '—'}</td>
+      <td>${e.email || '—'}</td>
+      <td>${e.phone || '—'}</td>
+    </tr>`).join('') : `<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-muted)">No results</td></tr>`;
+  },
+  filterDirectory() { this.renderDirectory(); },
+  toggleDirView(view) {
+    this.dirView = view;
+    document.getElementById('dir-view-list').style.borderColor = view==='list'?'var(--accent)':'var(--border)';
+    document.getElementById('dir-view-orgchart').style.borderColor = view==='orgchart'?'var(--accent)':'var(--border)';
+    if (view === 'list') {
+      document.getElementById('directory-list-view').classList.remove('hidden');
+      document.getElementById('directory-orgchart-view').classList.add('hidden');
+    } else {
+      document.getElementById('directory-list-view').classList.add('hidden');
+      document.getElementById('directory-orgchart-view').classList.remove('hidden');
+      this.loadOrgChart();
+    }
+  },
+  async loadOrgChart() {
+    try {
+      const data = await API.request('/directory/org-chart', 'GET');
+      const wrap = document.getElementById('directory-orgchart-view');
+      const personCard = (p, role) => `<div style="display:inline-flex;align-items:center;gap:0.5rem;padding:0.5rem 0.75rem;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);margin:0.25rem">
+        <div style="width:28px;height:28px;border-radius:50%;background:${role==='manager'?'var(--accent)':'var(--border2)'};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:0.65rem">${(p.name||'?')[0].toUpperCase()}</div>
+        <div><div style="font-weight:600;font-size:0.8rem">${p.name}</div><div style="font-size:0.65rem;color:var(--text-muted)">${p.jobTitle||p.eid||''}</div></div>
+      </div>`;
+      let html = `<div style="text-align:center;margin-bottom:2rem;padding:1rem;background:var(--accent-glow);border-radius:var(--radius-lg)">
+        <div style="font-family:'Cinzel',serif;font-size:1.2rem;font-weight:700;color:var(--accent)">AMD United</div>
+        <div style="font-size:0.75rem;color:var(--text-muted)">Admin</div></div>`;
+      data.departments.forEach(dept => {
+        html += `<div class="card" style="margin-bottom:1rem"><div class="card-header" style="background:var(--accent-glow)"><div class="card-title">${dept.name}</div></div>
+          <div style="padding:1rem">`;
+        if (dept.manager) html += `<div style="margin-bottom:0.75rem"><span style="font-size:0.65rem;text-transform:uppercase;color:var(--text-muted);letter-spacing:0.1em">${Lang.t('Manager','المدير')}</span><br>${personCard(dept.manager, 'manager')}</div>`;
+        if (dept.members.length) {
+          html += `<div><span style="font-size:0.65rem;text-transform:uppercase;color:var(--text-muted);letter-spacing:0.1em">${Lang.t('Members','الأعضاء')}</span><div style="display:flex;flex-wrap:wrap;gap:0.25rem;margin-top:0.25rem">`;
+          dept.members.forEach(m => { html += personCard(m, 'member'); });
+          html += `</div></div>`;
+        }
+        html += `</div></div>`;
+      });
+      if (data.unassigned.length) {
+        html += `<div class="card"><div class="card-header"><div class="card-title">${Lang.t('Unassigned','غير محدد القسم')}</div></div>
+          <div style="padding:1rem;display:flex;flex-wrap:wrap;gap:0.25rem">${data.unassigned.map(m => personCard(m, 'member')).join('')}</div></div>`;
+      }
+      wrap.innerHTML = html;
+    } catch(e) { UI.toast(e.message, 'error'); }
+  },
+
+  /* ── Leave Accrual ── */
+  async loadAccrual() {
+    try {
+      const balances = await API.request('/leave-accrual/balances', 'GET');
+      const totalAccrued = balances.reduce((a, b) => a + (b.accrued || 0), 0);
+      const totalUsed = balances.reduce((a, b) => a + b.used, 0);
+      const totalBalance = balances.reduce((a, b) => a + b.balance, 0);
+      document.getElementById('accrual-stats').innerHTML = `
+        <div class="stat-card"><div class="stat-value">${balances.length}</div><div style="font-size:0.75rem;color:var(--text-muted)">${Lang.t('Employees','الموظفين')}</div></div>
+        <div class="stat-card"><div class="stat-value" style="color:var(--info)">${totalAccrued.toFixed(1)}</div><div style="font-size:0.75rem;color:var(--text-muted)">${Lang.t('Total Accrued','إجمالي المستحق')}</div></div>
+        <div class="stat-card"><div class="stat-value" style="color:var(--warning)">${totalUsed}</div><div style="font-size:0.75rem;color:var(--text-muted)">${Lang.t('Total Used','إجمالي المستخدم')}</div></div>
+        <div class="stat-card"><div class="stat-value" style="color:var(--success)">${totalBalance.toFixed(1)}</div><div style="font-size:0.75rem;color:var(--text-muted)">${Lang.t('Total Balance','إجمالي الرصيد')}</div></div>`;
+      document.getElementById('accrual-table').innerHTML = balances.length ? balances.map(b => `<tr>
+        <td style="color:var(--text-muted)">${b.eid || '—'}</td>
+        <td style="font-weight:600">${b.name}</td>
+        <td>${b.department || '—'}</td>
+        <td>${b.hireDate ? DB.fmtDate(b.hireDate) : '—'}</td>
+        <td>${(b.accrued || 0).toFixed(1)}</td>
+        <td>${b.used}</td>
+        <td style="font-weight:600;color:${b.balance >= 0 ? 'var(--success)' : 'var(--danger)'}">${b.balance.toFixed(1)}</td>
+        <td><button class="btn btn-sm btn-outline" onclick="Admin.openEncashModal('${b.employeeId}','${b.name}',${b.balance})"><i class="fas fa-money-bill"></i></button></td>
+      </tr>`).join('') : `<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--text-muted)">No data</td></tr>`;
+    } catch(e) { UI.toast(e.message, 'error'); }
+  },
+  async runLeaveAccrual() {
+    if (!confirm(Lang.t('Run monthly leave accrual for all eligible employees?','تشغيل الاستحقاق الشهري لجميع الموظفين المؤهلين؟'))) return;
+    UI.loader(true);
+    try {
+      const res = await API.request('/leave-accrual/run-accrual', 'POST');
+      UI.toast(res.msg, 'success');
+      this.loadAccrual();
+    } catch(e) { UI.toast(e.message, 'error'); }
+    UI.loader(false);
+  },
+  async loadCarryForwardReport() {
+    const year = prompt(Lang.t('Enter year:','أدخل السنة:'), new Date().getFullYear());
+    if (!year) return;
+    try {
+      const data = await API.request(`/leave-accrual/carry-forward-report?year=${year}`, 'GET');
+      let html = `<h4 style="margin-bottom:1rem">${Lang.t('Carry-Forward Report','تقرير الترحيل')} ${data.year} (Max: ${data.maxCarryForward} days)</h4>`;
+      html += `<table><thead><tr><th>ID</th><th>Name</th><th>Allowed</th><th>Used</th><th>Remaining</th><th>Carry Forward</th><th>Forfeited</th></tr></thead><tbody>`;
+      data.report.forEach(r => {
+        html += `<tr><td>${r.eid||'—'}</td><td>${r.name}</td><td>${r.allowed}</td><td>${r.used}</td><td>${r.remaining}</td><td style="color:var(--success);font-weight:600">${r.carryForward}</td><td style="color:var(--danger)">${r.forfeited}</td></tr>`;
+      });
+      html += `</tbody></table>`;
+      document.getElementById('accrual-table').parentElement.innerHTML = html;
+    } catch(e) { UI.toast(e.message, 'error'); }
+  },
+  openEncashModal(empId, empName, balance) {
+    document.getElementById('encash-emp-id').value = empId;
+    document.getElementById('encash-emp-name').textContent = empName;
+    document.getElementById('encash-balance').textContent = balance.toFixed(1) + ' days';
+    document.getElementById('encash-days').value = '';
+    UI.openModal('modal-encash');
+  },
+  async submitEncashment() {
+    const empId = document.getElementById('encash-emp-id').value;
+    const days = parseInt(document.getElementById('encash-days').value, 10);
+    if (!days || days <= 0) return UI.toast(Lang.t('Enter valid days','أدخل عدد أيام صحيح'), 'error');
+    UI.loader(true);
+    try {
+      const res = await API.request('/leave-accrual/encash', 'POST', { employeeId: empId, days });
+      UI.closeModal('modal-encash');
+      UI.toast(`${res.msg} — Amount: ${res.amount} SAR`, 'success');
+      this.loadAccrual();
+    } catch(e) { UI.toast(e.message, 'error'); }
+    UI.loader(false);
   }
 };
 
@@ -3158,6 +3664,7 @@ const Emp = {
           this.loadHrData(),
           this.loadRequestHistory(),
           this.loadNotificationsList(),
+          this.loadMyDocuments(),
         ]);
         const d = new Date();
         document.getElementById('hr-pay-month').value = d.getMonth() + 1;
@@ -3446,6 +3953,116 @@ const Emp = {
       } catch(e) {
           wrap.innerHTML = `<span style="color:var(--danger)">Error: ${e.message}</span>`;
       }
+  },
+
+  /* ── Safety Incident Reporting (Employee) ── */
+  async reportSafetyIncident() {
+    const desc = document.getElementById('emp-safety-desc').value.trim();
+    if (!desc) return UI.toast(Lang.t('Description is required','الوصف مطلوب'), 'error');
+    const severity = document.getElementById('emp-safety-severity').value;
+    const location = document.getElementById('emp-safety-location').value.trim();
+    const photosInput = document.getElementById('emp-safety-photos');
+    const fd = new FormData();
+    fd.append('description', desc);
+    fd.append('severity', severity);
+    fd.append('date', DB.today());
+    if (location) fd.append('location', location);
+    if (photosInput.files.length) {
+      for (let i = 0; i < Math.min(photosInput.files.length, 5); i++) {
+        fd.append('photos', photosInput.files[i]);
+      }
+    }
+    UI.loader(true);
+    try {
+      const token = localStorage.getItem('amd_token');
+      const base = window.__AMD_API_BASE__ || '';
+      const resp = await fetch(`${base}/api/safety`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: fd });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.msg || 'Failed');
+      UI.toast(Lang.t('Incident reported successfully','تم الإبلاغ عن الحادث بنجاح'), 'success');
+      document.getElementById('emp-safety-desc').value = '';
+      document.getElementById('emp-safety-location').value = '';
+      photosInput.value = '';
+    } catch(e) { UI.toast(e.message, 'error'); }
+    UI.loader(false);
+  },
+
+  /* ── Employee Documents ── */
+  async loadMyDocuments() {
+    try {
+      const docs = await API.request('/self-service/documents', 'GET');
+      const wrap = document.getElementById('emp-documents-list');
+      if (!docs.length) { wrap.innerHTML = `<p style="color:var(--text-muted);text-align:center">${Lang.t('No documents','لا توجد وثائق')}</p>`; return; }
+      wrap.innerHTML = docs.map(d => `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;border-bottom:1px solid var(--border)">
+        <div><div style="font-weight:600;font-size:0.85rem">${d.title}</div><small style="color:var(--text-muted)">${d.category} — ${DB.fmtDate(d.createdAt)}</small></div>
+        <button class="btn btn-sm btn-outline" onclick="window.open('/api/self-service/documents/${d.id||d._id}/download','_blank')"><i class="fas fa-download"></i></button>
+      </div>`).join('');
+    } catch(e) { /* silent */ }
+  },
+  openUploadDocModal() {
+    const html = `<div style="padding:1rem">
+      <div class="form-group"><label class="form-label">Title</label><input type="text" id="emp-doc-title" class="form-control"></div>
+      <div class="form-group"><label class="form-label">Category</label><select id="emp-doc-category" class="form-control form-select"><option value="id_copy">ID Copy</option><option value="contract">Contract</option><option value="certification">Certification</option><option value="safety_training">Safety Training</option><option value="medical">Medical</option><option value="other">Other</option></select></div>
+      <div class="form-group"><label class="form-label">File</label><input type="file" id="emp-doc-file" class="form-control" accept=".pdf,image/*"></div>
+      <button class="btn btn-primary" onclick="Emp.uploadMyDocument()"><i class="fas fa-upload"></i> Upload</button>
+    </div>`;
+    const wrap = document.getElementById('emp-documents-list');
+    const existing = wrap.innerHTML;
+    wrap.innerHTML = html + `<hr style="border:0;border-top:1px solid var(--border);margin:1rem 0">` + existing;
+  },
+  async uploadMyDocument() {
+    const file = document.getElementById('emp-doc-file').files[0];
+    if (!file) return UI.toast(Lang.t('Select a file','اختر ملفاً'), 'error');
+    const title = document.getElementById('emp-doc-title').value.trim();
+    if (!title) return UI.toast(Lang.t('Title is required','العنوان مطلوب'), 'error');
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('title', title);
+    fd.append('category', document.getElementById('emp-doc-category').value);
+    UI.loader(true);
+    try {
+      const token = localStorage.getItem('amd_token');
+      const base = window.__AMD_API_BASE__ || '';
+      const resp = await fetch(`${base}/api/self-service/documents`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: fd });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.msg || 'Upload failed');
+      UI.toast(Lang.t('Document uploaded','تم رفع الوثيقة'), 'success');
+      this.loadMyDocuments();
+    } catch(e) { UI.toast(e.message, 'error'); }
+    UI.loader(false);
+  },
+
+  /* ── Profile Update Request (Employee) ── */
+  async submitProfileUpdate() {
+    const phone = document.getElementById('emp-update-phone').value.trim();
+    const email = document.getElementById('emp-update-email').value.trim();
+    const address = document.getElementById('emp-update-address').value.trim();
+    const ecName = document.getElementById('emp-update-ec-name').value.trim();
+    const ecPhone = document.getElementById('emp-update-ec-phone').value.trim();
+    const ecRelation = document.getElementById('emp-update-ec-relation').value.trim();
+    const changes = {};
+    if (phone) changes.phone = phone;
+    if (email) changes.email = email;
+    if (address) changes.address = address;
+    if (ecName || ecPhone || ecRelation) {
+      changes.emergencyContact = {};
+      if (ecName) changes.emergencyContact.name = ecName;
+      if (ecPhone) changes.emergencyContact.phone = ecPhone;
+      if (ecRelation) changes.emergencyContact.relation = ecRelation;
+    }
+    if (!Object.keys(changes).length) return UI.toast(Lang.t('No changes to submit','لا توجد تغييرات للإرسال'), 'error');
+    UI.loader(true);
+    try {
+      await API.request('/self-service/profile-update', 'POST', changes);
+      UI.toast(Lang.t('Profile update submitted for approval','تم إرسال طلب تحديث الملف للموافقة'), 'success');
+      document.getElementById('emp-update-phone').value = '';
+      document.getElementById('emp-update-email').value = '';
+      document.getElementById('emp-update-address').value = '';
+      document.getElementById('emp-update-ec-name').value = '';
+      document.getElementById('emp-update-ec-phone').value = '';
+      document.getElementById('emp-update-ec-relation').value = '';
+    } catch(e) { UI.toast(e.message, 'error'); }
+    UI.loader(false);
   }
 };
 /* ── Push Notifications ── */
