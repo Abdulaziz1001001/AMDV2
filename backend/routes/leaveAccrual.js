@@ -14,9 +14,14 @@ router.get('/balances', auth.requireRole(['admin', 'manager']), async (req, res)
     const policy = await WorkPolicy.findOne({ key: 'company' });
     const annualAllowed = policy ? policy.annualLeaveDays || 30 : 30;
 
+    const year = parseInt(req.query.year, 10) || new Date().getFullYear();
+    const yearStart = new Date(`${year}-01-01`);
+    const yearEnd = new Date(`${year}-12-31`);
+
     const approvedLeaves = await LeaveRequest.find({
       status: 'approved',
       type: { $in: ['Annual Leave', 'annual'] },
+      startDate: { $gte: yearStart, $lte: yearEnd },
     });
 
     const usedMap = {};

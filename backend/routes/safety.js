@@ -38,6 +38,9 @@ function fmt(arr) {
   });
 }
 
+const severityAr = { low: 'منخفض', medium: 'متوسط', high: 'عالي', critical: 'حرج' };
+const statusAr = { open: 'مفتوح', investigating: 'قيد التحقيق', resolved: 'تم الحل', closed: 'مغلق', updated: 'تحديث' };
+
 router.post('/', upload.array('photos', 5), async (req, res) => {
   try {
     const { date, description, severity, projectId, location } = req.body;
@@ -58,7 +61,7 @@ router.post('/', upload.array('photos', 5), async (req, res) => {
     await AdminNotification.create({
       type: 'safety_incident',
       title: `Safety Incident — ${(severity || 'medium').toUpperCase()}`,
-      titleAr: `حادث سلامة — ${severity || 'medium'}`,
+      titleAr: `حادث سلامة — ${severityAr[severity] || severityAr.medium}`,
       body: `${emp ? emp.name : 'Employee'} reported: ${description.slice(0, 80)}`,
       bodyAr: `${emp ? emp.name : 'موظف'} أبلغ عن حادث: ${description.slice(0, 80)}`,
       ref: { kind: 'safety_incident', id: incident._id.toString() },
@@ -104,9 +107,9 @@ router.put('/:id', auth.requireRole(['admin', 'manager']), async (req, res) => {
     await AdminNotification.create({
       type: 'safety_incident_update',
       title: `Safety Incident ${status || 'updated'}`,
-      titleAr: `حادث سلامة ${status || 'تحديث'}`,
+      titleAr: `حادث سلامة — ${statusAr[status] || statusAr.updated}`,
       body: `Incident #${incident._id.toString().slice(-6)} status: ${incident.status}`,
-      bodyAr: `حادث #${incident._id.toString().slice(-6)} الحالة: ${incident.status}`,
+      bodyAr: `حادث #${incident._id.toString().slice(-6)} الحالة: ${statusAr[incident.status] || incident.status}`,
       ref: { kind: 'safety_incident', id: incident._id.toString() },
       recipientId: String(incident.reporterId),
     });
@@ -117,8 +120,16 @@ router.put('/:id', auth.requireRole(['admin', 'manager']), async (req, res) => {
 
 router.get('/:id/photo/:filename', async (req, res) => {
   try {
-    const filePath = path.join(photosRoot, req.params.filename);
-    if (!fs.existsSync(filePath)) return res.status(404).json({ msg: 'Photo not found' });
+    const incident = await SafetyIncident.findById(req.params.id);
+    if (!incident) return res.status(404).json({ msg: 'Incident not found' });
+
+    const requestedFile = path.basename(req.params.filename);
+    if (!incident.photos || !incident.photos.includes(requestedFile)) {
+      return res.status(404).json({ msg: 'Photo not found for this incident' });
+    }
+
+    const filePath = path.join(photosRoot, requestedFile);
+    if (!fs.existsSync(filePath)) return res.status(404).json({ msg: 'Photo file not found' });
     res.sendFile(filePath);
   } catch (err) { res.status(500).json({ msg: err.message }); }
 });
