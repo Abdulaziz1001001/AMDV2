@@ -1799,13 +1799,17 @@ const Admin = {
   },
   async viewAttachment(id) {
     try {
-      const token = localStorage.getItem('amd_token');
-      const res = await fetch(`/api/hr/leave-request/${id}/attachment`, {
-        headers: token ? { Authorization: 'Bearer ' + token } : {},
+      const res = await fetch(`${window.AMD_HTTP.base}/hr/leave-request/${id}/attachment`, {
+        headers: window.AMD_HTTP.getHeaders(),
       });
+      const contentType = (res.headers.get('content-type') || '').toLowerCase();
       if (!res.ok) {
-        const data = await res.json().catch(() => null);
+        const data = contentType.includes('application/json') ? await res.json().catch(() => null) : null;
         throw new Error((data && data.msg) || 'Failed to open attachment');
+      }
+      if (contentType.includes('application/json')) {
+        const data = await res.json().catch(() => null);
+        throw new Error((data && data.msg) || 'Attachment response was not a file');
       }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -1815,13 +1819,17 @@ const Admin = {
   },
   async downloadAttachment(id) {
     try {
-      const token = localStorage.getItem('amd_token');
-      const res = await fetch(`/api/hr/leave-request/${id}/attachment`, {
-        headers: token ? { Authorization: 'Bearer ' + token } : {},
+      const res = await fetch(`${window.AMD_HTTP.base}/hr/leave-request/${id}/attachment`, {
+        headers: window.AMD_HTTP.getHeaders(),
       });
+      const contentType = (res.headers.get('content-type') || '').toLowerCase();
       if (!res.ok) {
-        const data = await res.json().catch(() => null);
+        const data = contentType.includes('application/json') ? await res.json().catch(() => null) : null;
         throw new Error((data && data.msg) || 'Failed to download attachment');
+      }
+      if (contentType.includes('application/json')) {
+        const data = await res.json().catch(() => null);
+        throw new Error((data && data.msg) || 'Attachment response was not a file');
       }
       const blob = await res.blob();
       const disposition = res.headers.get('content-disposition') || '';
@@ -2250,7 +2258,7 @@ const Emp = {
       wrap.innerHTML = `<div style="color:var(--danger)">${e.message}</div>`;
     }
   },
-  showTab(tab) {
+  async showTab(tab) {
     document.getElementById('emp-tab-attendance-content').style.display = tab === 'attendance' ? 'block' : 'none';
     document.getElementById('emp-tab-hr-content').style.display = tab === 'hr' ? 'block' : 'none';
     
@@ -2260,9 +2268,11 @@ const Emp = {
     if (tab === 'attendance') {
         if (Maps.empMap) setTimeout(() => Maps.empMap.invalidateSize(true), 350);
     } else if (tab === 'hr') {
-        this.loadHrData();
-        this.loadRequestHistory();
-        this.loadNotificationsList();
+        await Promise.all([
+          this.loadHrData(),
+          this.loadRequestHistory(),
+          this.loadNotificationsList(),
+        ]);
         const d = new Date();
         document.getElementById('hr-pay-month').value = d.getMonth() + 1;
         document.getElementById('hr-pay-year').value = d.getFullYear();
@@ -2347,13 +2357,17 @@ const Emp = {
   },
   async viewAttachment(id) {
       try {
-        const token = localStorage.getItem('amd_token');
-        const res = await fetch(`/api/hr/leave-request/${id}/attachment`, {
-          headers: token ? { Authorization: 'Bearer ' + token } : {},
+        const res = await fetch(`${window.AMD_HTTP.base}/hr/leave-request/${id}/attachment`, {
+          headers: window.AMD_HTTP.getHeaders(),
         });
+        const contentType = (res.headers.get('content-type') || '').toLowerCase();
         if (!res.ok) {
-          const data = await res.json().catch(() => null);
+          const data = contentType.includes('application/json') ? await res.json().catch(() => null) : null;
           throw new Error((data && data.msg) || 'Failed to open attachment');
+        }
+        if (contentType.includes('application/json')) {
+          const data = await res.json().catch(() => null);
+          throw new Error((data && data.msg) || 'Attachment response was not a file');
         }
         const blob = await res.blob();
         const url = URL.createObjectURL(blob);
@@ -2363,13 +2377,17 @@ const Emp = {
   },
   async downloadAttachment(id) {
       try {
-        const token = localStorage.getItem('amd_token');
-        const res = await fetch(`/api/hr/leave-request/${id}/attachment`, {
-          headers: token ? { Authorization: 'Bearer ' + token } : {},
+        const res = await fetch(`${window.AMD_HTTP.base}/hr/leave-request/${id}/attachment`, {
+          headers: window.AMD_HTTP.getHeaders(),
         });
+        const contentType = (res.headers.get('content-type') || '').toLowerCase();
         if (!res.ok) {
-          const data = await res.json().catch(() => null);
+          const data = contentType.includes('application/json') ? await res.json().catch(() => null) : null;
           throw new Error((data && data.msg) || 'Failed to download attachment');
+        }
+        if (contentType.includes('application/json')) {
+          const data = await res.json().catch(() => null);
+          throw new Error((data && data.msg) || 'Attachment response was not a file');
         }
         const blob = await res.blob();
         const disposition = res.headers.get('content-disposition') || '';
