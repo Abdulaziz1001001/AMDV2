@@ -132,6 +132,23 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
 .drawer-field-label{font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);margin-bottom:0.35rem}
 .drawer-field-value{font-size:0.95rem;color:var(--text);line-height:1.5}
 
+.cal-nav{display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap}
+.cal-nav-title{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1.15rem;min-width:160px;text-align:center}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-top:0.75rem}
+.cal-hdr{padding:0.4rem;text-align:center;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);font-weight:600}
+.cal-cell{position:relative;aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:var(--radius);font-size:0.85rem;font-weight:500;cursor:default;transition:transform .15s}
+.cal-cell:hover{transform:scale(1.08)}
+.cal-cell.cal-empty{background:transparent;pointer-events:none}
+.cal-cell.cal-workday{background:rgba(39,174,96,0.15);color:var(--success)}
+.cal-cell.cal-weekend{background:rgba(241,196,15,0.12);color:var(--warning)}
+.cal-cell.cal-holiday{background:rgba(231,76,60,0.18);color:var(--danger)}
+.cal-cell.cal-closure{background:rgba(100,100,100,0.15);color:var(--text-muted)}
+.cal-cell.cal-today{box-shadow:inset 0 0 0 2px var(--accent);font-weight:700}
+.cal-cell[title]{cursor:help}
+.cal-legend{display:flex;gap:1rem;flex-wrap:wrap;padding:0.75rem 0;font-size:0.8rem}
+.cal-legend-item{display:flex;align-items:center;gap:0.35rem}
+.cal-legend-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+
 #public-controls { position:absolute; top:1.5rem; right:1.5rem; display:flex; gap:0.5rem; z-index:100; transition: opacity 0.3s; }
 
 @media(max-width:900px){
@@ -457,18 +474,42 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
         </div>
       </div>
       <div id="panel-calendar" class="admin-panel">
-        <p style="color:var(--text-muted);margin-bottom:1rem;max-width:720px" class="tr" data-en="Company-wide rules below. Each group can override weekends, ignore public holidays, or add site closure dates in Groups." data-ar="الإعدادات أدناه للشركة بأكملها. يمكن لكل مجموعة تعديل أيام العطلة الأسبوعية أو تجاهل العطل الرسمية أو إضافة تواريخ إغلاق الموقع من صفحة المجموعات.">Company-wide rules below. Each group can override weekends, ignore public holidays, or add site closure dates in Groups.</p>
-        <div class="card" style="margin-bottom:1rem">
-          <div class="card-header"><div class="card-title tr" data-en="Construction Calendar Legend" data-ar="دليل التقويم للمشاريع">Construction Calendar Legend</div></div>
-          <div style="padding:1rem;display:flex;gap:0.75rem;flex-wrap:wrap">
-            <span class="badge badge-success">Workday / Site Open</span>
-            <span class="badge badge-warning">Weekend / Planned Off</span>
-            <span class="badge badge-danger">Site Closure / Holiday</span>
-            <span class="badge badge-muted">Office-only Operations</span>
+
+        <!-- Visual Calendar -->
+        <div class="card" style="margin-bottom:1.5rem">
+          <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.75rem">
+            <div class="cal-nav">
+              <button class="btn-ghost btn-sm" onclick="Admin.calPrev()"><i class="fas fa-chevron-left"></i></button>
+              <div class="cal-nav-title" id="cal-month-label"></div>
+              <button class="btn-ghost btn-sm" onclick="Admin.calNext()"><i class="fas fa-chevron-right"></i></button>
+              <button class="btn btn-outline btn-sm" onclick="Admin.calToday()" style="margin-left:0.25rem"><i class="fas fa-crosshairs"></i> <span class="tr" data-en="Today" data-ar="اليوم">Today</span></button>
+            </div>
+            <div style="display:flex;align-items:center;gap:0.5rem">
+              <label class="form-label" style="margin:0;white-space:nowrap" for="cal-group-filter" class="tr" data-en="View as group" data-ar="عرض حسب المجموعة">Group</label>
+              <select id="cal-group-filter" class="form-control form-select" style="max-width:180px;font-size:0.8rem;padding:0.4rem 0.7rem" onchange="Admin.renderCalendarGrid()">
+                <option value="" class="tr" data-en="Company default" data-ar="الشركة (افتراضي)">Company default</option>
+              </select>
+            </div>
+          </div>
+          <div style="padding:1rem 1.25rem" id="cal-grid-wrap">
+            <div class="cal-grid" id="cal-grid"></div>
+          </div>
+          <div style="padding:0 1.25rem 1rem">
+            <div class="cal-legend">
+              <div class="cal-legend-item"><div class="cal-legend-dot" style="background:rgba(39,174,96,0.5)"></div><span class="tr" data-en="Workday" data-ar="يوم عمل">Workday</span></div>
+              <div class="cal-legend-item"><div class="cal-legend-dot" style="background:rgba(241,196,15,0.5)"></div><span class="tr" data-en="Weekend" data-ar="عطلة أسبوعية">Weekend</span></div>
+              <div class="cal-legend-item"><div class="cal-legend-dot" style="background:rgba(231,76,60,0.5)"></div><span class="tr" data-en="Holiday" data-ar="عطلة رسمية">Holiday</span></div>
+              <div class="cal-legend-item"><div class="cal-legend-dot" style="background:rgba(100,100,100,0.4)"></div><span class="tr" data-en="Site Closure" data-ar="إغلاق موقع">Site Closure</span></div>
+              <div class="cal-legend-item"><div class="cal-legend-dot" style="background:transparent;box-shadow:inset 0 0 0 2px var(--accent)"></div><span class="tr" data-en="Today" data-ar="اليوم">Today</span></div>
+            </div>
           </div>
         </div>
+
+        <p style="color:var(--text-muted);margin-bottom:1rem;max-width:720px;font-size:0.85rem" class="tr" data-en="Settings below apply company-wide. Each group can override weekends, ignore public holidays, or add site closure dates from the Groups page." data-ar="الإعدادات أدناه للشركة بأكملها. يمكن لكل مجموعة تعديل أيام العطلة الأسبوعية أو تجاهل العطل الرسمية أو إضافة تواريخ إغلاق الموقع من صفحة المجموعات.">Settings below apply company-wide. Each group can override weekends, ignore public holidays, or add site closure dates from the Groups page.</p>
+
+        <!-- Time zone & late grace -->
         <div class="card" style="margin-bottom:1rem">
-          <div class="card-header"><div class="card-title tr" data-en="Time zone & late grace" data-ar="المنطقة الزمنية والسماح للتأخير">Time zone & late grace</div></div>
+          <div class="card-header"><div class="card-title tr" data-en="Time Zone & Late Grace" data-ar="المنطقة الزمنية والسماح للتأخير">Time Zone & Late Grace</div></div>
           <div style="padding:1.25rem;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem">
             <div class="form-group" style="margin:0">
               <label class="form-label tr" data-en="Time zone" data-ar="المنطقة الزمنية">Time zone</label>
@@ -480,30 +521,38 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
             </div>
           </div>
         </div>
+
+        <!-- Default weekend -->
         <div class="card" style="margin-bottom:1rem">
-          <div class="card-header"><div class="card-title tr" data-en="Default weekend (company)" data-ar="عطلة نهاية الأسبوع الافتراضية">Default weekend (company)</div></div>
-          <div style="padding:1.25rem" id="wp-weekend-default" class="tr" data-en="Fri–Sat typical for KSA" data-ar="الجمعة والسبت شائع في السعودية"></div>
-          <div style="padding:0 1.25rem 1.25rem;display:flex;flex-wrap:wrap;gap:0.75rem" id="wp-weekend-checks"></div>
+          <div class="card-header"><div class="card-title tr" data-en="Default Weekend Days" data-ar="أيام العطلة الأسبوعية">Default Weekend Days</div></div>
+          <div style="padding:0.75rem 1.25rem;font-size:0.8rem;color:var(--text-muted)" class="tr" data-en="Check the days that are non-working for the entire company. Groups can override this." data-ar="حدد الأيام غير العملية للشركة بأكملها. يمكن للمجموعات تجاوز هذا.">Check the days that are non-working for the entire company. Groups can override this.</div>
+          <div style="padding:0.5rem 1.25rem 1.25rem;display:flex;flex-wrap:wrap;gap:0.75rem" id="wp-weekend-checks"></div>
         </div>
+
+        <!-- Company holidays -->
         <div class="card" style="margin-bottom:1rem">
           <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem">
-            <div class="card-title tr" data-en="Company holidays" data-ar="العطل الرسمية للشركة">Company holidays</div>
+            <div class="card-title tr" data-en="Company Holidays" data-ar="العطل الرسمية للشركة">Company Holidays</div>
             <button type="button" class="btn btn-outline btn-sm" onclick="Admin.addHolidayRow()"><i class="fas fa-plus"></i> <span class="tr" data-en="Add" data-ar="إضافة">Add</span></button>
           </div>
+          <div style="padding:0 1rem 0.5rem;font-size:0.8rem;color:var(--text-muted)" class="tr" data-en="Holidays appear in red on the calendar above." data-ar="تظهر العطل باللون الأحمر في التقويم أعلاه.">Holidays appear in red on the calendar above.</div>
           <div style="overflow-x:auto;padding:0 1rem 1rem">
             <table style="min-width:400px"><thead><tr><th class="tr" data-en="Date" data-ar="التاريخ">Date</th><th class="tr" data-en="Name (EN)" data-ar="الاسم إنجليزي">Name (EN)</th><th class="tr" data-en="Name (AR)" data-ar="الاسم عربي">Name (AR)</th><th></th></tr></thead><tbody id="wp-holidays-body"></tbody></table>
           </div>
         </div>
+
+        <!-- Excuse / leave reasons -->
         <div class="card" style="margin-bottom:1rem">
           <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem">
-            <div class="card-title tr" data-en="Excuse / leave reasons" data-ar="أسباب الاستئذان">Excuse / leave reasons</div>
+            <div class="card-title tr" data-en="Excuse / Leave Reasons" data-ar="أسباب الاستئذان">Excuse / Leave Reasons</div>
             <button type="button" class="btn btn-outline btn-sm" onclick="Admin.addExcuseRow()"><i class="fas fa-plus"></i> <span class="tr" data-en="Add" data-ar="إضافة">Add</span></button>
           </div>
           <div style="overflow-x:auto;padding:0 1rem 1rem">
             <table style="min-width:400px"><thead><tr><th class="tr" data-en="Code" data-ar="الرمز">Code</th><th class="tr" data-en="Label (EN)" data-ar="النص إنجليزي">Label (EN)</th><th class="tr" data-en="Label (AR)" data-ar="النص عربي">Label (AR)</th><th></th></tr></thead><tbody id="wp-excuses-body"></tbody></table>
           </div>
         </div>
-        <button type="button" class="btn btn-primary" onclick="Admin.saveWorkPolicy()"><i class="fas fa-save"></i> <span class="tr" data-en="Save work policy" data-ar="حفظ سياسة الدوام">Save work policy</span></button>
+
+        <button type="button" class="btn btn-primary" onclick="Admin.saveWorkPolicy()"><i class="fas fa-save"></i> <span class="tr" data-en="Save Work Policy" data-ar="حفظ سياسة الدوام">Save Work Policy</span></button>
       </div>
 
       <div id="panel-settings" class="admin-panel">
@@ -1312,6 +1361,77 @@ const Admin = {
     ex.innerHTML = '';
     (p.excuseReasons || []).forEach((r) => this.addExcuseRow(r.code, r.labelEn || '', r.labelAr || ''));
     if (!(p.excuseReasons || []).length) this.addExcuseRow();
+    this.populateCalGroupFilter();
+    this.renderCalendarGrid();
+  },
+
+  calMonth: new Date().getMonth(),
+  calYear: new Date().getFullYear(),
+
+  calPrev() { this.calMonth--; if (this.calMonth < 0) { this.calMonth = 11; this.calYear--; } this.renderCalendarGrid(); },
+  calNext() { this.calMonth++; if (this.calMonth > 11) { this.calMonth = 0; this.calYear++; } this.renderCalendarGrid(); },
+  calToday() { const d = new Date(); this.calMonth = d.getMonth(); this.calYear = d.getFullYear(); this.renderCalendarGrid(); },
+
+  populateCalGroupFilter() {
+    const sel = document.getElementById('cal-group-filter');
+    if (!sel) return;
+    const prev = sel.value;
+    const groups = DB.getGroups();
+    sel.innerHTML = `<option value="">${Lang.t('Company default','الشركة (افتراضي)')}</option>`;
+    groups.forEach(g => {
+      sel.innerHTML += `<option value="${g.id}">${g.name}</option>`;
+    });
+    if (prev && [...sel.options].some(o => o.value === prev)) sel.value = prev;
+  },
+
+  renderCalendarGrid() {
+    const grid = document.getElementById('cal-grid');
+    const label = document.getElementById('cal-month-label');
+    if (!grid || !label) return;
+
+    const year = this.calYear;
+    const month = this.calMonth;
+    const policy = DB.getWorkPolicy();
+    const groupId = (document.getElementById('cal-group-filter') || {}).value || '';
+    const group = groupId ? DB.getGroups().find(g => g.id === groupId) : null;
+
+    const monthNames = Lang.current === 'ar'
+      ? ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر']
+      : ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    label.textContent = `${monthNames[month]} ${year}`;
+
+    const dayHeaders = Lang.current === 'ar'
+      ? ['أحد','إثن','ثلا','أرب','خمي','جمع','سبت']
+      : ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    let html = dayHeaders.map(d => `<div class="cal-hdr">${d}</div>`).join('');
+
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const todayStr = new Date().toISOString().slice(0, 10);
+
+    for (let i = 0; i < firstDay; i++) html += '<div class="cal-cell cal-empty"></div>';
+
+    const holidays = policy && policy.companyHolidays ? policy.companyHolidays : [];
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const cls = Calendar.classifyDay(dateStr, group, policy);
+      const typeMap = { workday: 'cal-workday', weekend: 'cal-weekend', holiday: 'cal-holiday', group_closure: 'cal-closure' };
+      const cellCls = typeMap[cls.calendarDayType] || 'cal-workday';
+      const isToday = dateStr === todayStr ? ' cal-today' : '';
+
+      let tooltip = '';
+      if (cls.calendarDayType === 'holiday') {
+        const hol = holidays.find(h => h.date === dateStr);
+        if (hol) tooltip = ` title="${Lang.current === 'ar' && hol.nameAr ? hol.nameAr : (hol.nameEn || 'Holiday')}"`;
+      } else if (cls.calendarDayType === 'group_closure') {
+        tooltip = ` title="${Lang.t('Site Closure','إغلاق موقع')}"`;
+      }
+
+      html += `<div class="cal-cell ${cellCls}${isToday}"${tooltip}>${d}</div>`;
+    }
+
+    grid.innerHTML = html;
   },
   addHolidayRow(date, nameEn, nameAr){
     const tr = document.createElement('tr');
@@ -1367,6 +1487,7 @@ const Admin = {
       const updated = await API.request('/admin/work-policy', 'PUT', body);
       DB.data.workPolicy = updated;
       UI.toast(Lang.t('Work policy saved', 'تم حفظ سياسة الدوام'), 'success');
+      this.renderCalendarGrid();
     } catch (e) { UI.toast(e.message, 'error'); }
     UI.loader(false);
   },
