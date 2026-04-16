@@ -601,6 +601,7 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
             <div id="checkout-container" class="hidden">
                 <button id="emp-checkout-btn" class="btn btn-danger btn-block" style="padding:1rem;font-size:1.1rem;margin-bottom:0.5rem" onclick="Emp.checkOut()"><i class="fas fa-sign-out-alt"></i> <span class="tr" data-en="Check Out" data-ar="تسجيل الخروج">Check Out</span></button>
                 <button id="emp-leave-btn" class="btn btn-warning btn-block" style="padding:1rem;font-size:1.1rem" onclick="Emp.openLeaveRequest()"><i class="fas fa-file-signature"></i> <span class="tr" data-en="Request Leave" data-ar="طلب استئذان">Request Leave</span></button>
+                <button id="emp-early-checkout-btn" class="btn btn-block hidden" style="padding:1rem;font-size:1.1rem;margin-top:0.5rem;background:var(--accent);color:#fff" onclick="Emp.openEarlyCheckoutModal()"><i class="fas fa-clock"></i> <span class="tr" data-en="Request Early Checkout" data-ar="طلب انصراف مبكر">Request Early Checkout</span></button>
             </div>
           </div>
           <div class="card"><div class="card-header"><div class="card-title tr" data-en="Today's Record" data-ar="سجل اليوم">Today's Record</div></div><div style="padding:1.25rem" id="today-record-body"></div></div>
@@ -2283,6 +2284,7 @@ const Emp = {
     const checkoutContainer=document.getElementById('checkout-container');
     const checkoutBtn=document.getElementById('emp-checkout-btn');
     const leaveBtn=document.getElementById('emp-leave-btn');
+    const earlyBtn=document.getElementById('emp-early-checkout-btn');
     
     if(!rec){ 
         checkinBtn.classList.remove('hidden'); 
@@ -2297,18 +2299,22 @@ const Emp = {
             checkoutBtn.innerHTML = `<i class="fas fa-hourglass-half"></i> ${Lang.t('Pending Approval','قيد المراجعة')}`;
             checkoutBtn.style.background = 'var(--warning)'; checkoutBtn.style.color = '#000';
             leaveBtn.classList.add('hidden');
+            earlyBtn.classList.add('hidden');
         } else if (rec.approvalStatus === 'approved') {
             checkoutBtn.innerHTML = `<i class="fas fa-sign-out-alt"></i> ${Lang.t('Clock Out (Approved)','انصراف (تمت الموافقة)')}`;
             checkoutBtn.style.background = 'var(--success)'; checkoutBtn.style.color = '#fff';
             leaveBtn.classList.add('hidden');
+            earlyBtn.classList.add('hidden');
         } else if (rec.approvalStatus === 'rejected') {
             checkoutBtn.innerHTML = `<i class="fas fa-ban"></i> ${Lang.t('Leave Rejected','استئذان مرفوض')}`;
             checkoutBtn.style.background = 'var(--danger)'; checkoutBtn.style.color = '#fff';
             leaveBtn.classList.remove('hidden'); 
+            earlyBtn.classList.remove('hidden');
         } else {
             checkoutBtn.innerHTML = `<i class="fas fa-sign-out-alt"></i> ${Lang.t('Check Out','تسجيل الخروج')}`;
             checkoutBtn.style.background = 'var(--danger)'; checkoutBtn.style.color = '#fff';
             leaveBtn.classList.remove('hidden'); 
+            earlyBtn.classList.remove('hidden');
         }
     } else { 
         checkinBtn.classList.add('hidden'); 
@@ -2389,6 +2395,16 @@ const Emp = {
     this.showTab('hr');
     const target = document.getElementById('hr-leave-start');
     if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  },
+
+  openEarlyCheckoutModal() {
+    const rec = this.currentRecord;
+    if (!rec || rec.checkOut) return;
+    if (rec.approvalStatus === 'pending') {
+      UI.toast(Lang.t('Request is pending admin approval.','طلبك قيد المراجعة من الإدارة.'), 'warning');
+      return;
+    }
+    UI.openModal('modal-leave');
   },
 
   async confirmStandardCheckOut() {
