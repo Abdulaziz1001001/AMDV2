@@ -12,6 +12,7 @@ const RecordSchema = new mongoose.Schema({
   status: { type: String, default: 'present' },
   notes: { type: String },
   approvalStatus: { type: String, enum: ['pending', 'approved', 'rejected', 'none'], default: 'none' },
+  isForgiven: { type: Boolean, default: false },
   attachment: { type: String }
 }, { timestamps: true });
 

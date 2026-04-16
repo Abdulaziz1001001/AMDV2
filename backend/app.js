@@ -11,6 +11,7 @@ const authRoutes = require('./routes/auth');
 const hrRoutes = require('./routes/hr');
 const adminRoutes = require('./routes/admin');
 const employeeRoutes = require('./routes/employee');
+const earlyCheckoutRoutes = require('./routes/earlyCheckout');
 
 function assertJwtSecret() {
   const secret = process.env.JWT_SECRET;
@@ -67,6 +68,7 @@ function createApp() {
   app.use('/api/admin', adminRoutes);
   app.use('/api/employee', employeeRoutes);
   app.use('/api/hr', hrRoutes);
+  app.use('/api/checkouts', earlyCheckoutRoutes);
 
   // 5. Health check and Static File serving
   app.get('/health', (req, res) => res.type('text').send('ok'));

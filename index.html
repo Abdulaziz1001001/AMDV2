@@ -370,6 +370,29 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
           </div>
         </div>
 
+        <!-- Early Checkouts Section -->
+        <div class="card" style="margin-bottom:1.5rem">
+          <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+            <div class="card-title tr" data-en="Early Checkouts" data-ar="طلبات الانصراف المبكر">Early Checkouts</div>
+            <select id="ec-filter" class="form-control form-select" style="max-width:150px" onchange="Admin.renderEarlyCheckouts()">
+              <option value="all" class="tr" data-en="All" data-ar="الكل">All</option>
+              <option value="pending" class="tr" data-en="Pending" data-ar="معلقة">Pending</option>
+              <option value="approved" class="tr" data-en="Approved" data-ar="مقبولة">Approved</option>
+              <option value="declined" class="tr" data-en="Declined" data-ar="مرفوضة">Declined</option>
+            </select>
+          </div>
+          <div style="overflow-x:auto">
+            <table><thead><tr>
+              <th class="tr" data-en="Employee" data-ar="الموظف">Employee</th>
+              <th class="tr" data-en="Date" data-ar="التاريخ">Date</th>
+              <th class="tr" data-en="Checkout Time" data-ar="وقت الخروج">Checkout Time</th>
+              <th class="tr" data-en="Reason" data-ar="السبب">Reason</th>
+              <th class="tr" data-en="Status" data-ar="الحالة">Status</th>
+              <th><i class="fas fa-cogs"></i></th>
+            </tr></thead><tbody id="ec-table"></tbody></table>
+          </div>
+        </div>
+
         <!-- Payroll Overview Section -->
         <div class="card">
           <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
@@ -1138,13 +1161,13 @@ const Admin = {
         const unread = !n.readAt;
         const title = Lang.current === 'ar' && n.titleAr ? n.titleAr : n.title;
         const body = Lang.current === 'ar' && n.bodyAr ? n.bodyAr : n.body;
-        return `<div class="notif-item${unread ? ' unread' : ''}" data-nid="${n.id}" data-rid="${n.ref && n.ref.id ? n.ref.id : ''}">
+        return `<div class="notif-item${unread ? ' unread' : ''}" data-nid="${n.id}" data-rid="${n.ref && n.ref.id ? n.ref.id : ''}" data-kind="${n.ref && n.ref.kind ? n.ref.kind : ''}">
           <div style="font-weight:600;font-size:0.85rem">${title}</div>
           <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.25rem">${body || ''}</div>
         </div>`;
       }).join('');
       dd.querySelectorAll('.notif-item').forEach((row) => {
-        row.onclick = () => this.onNotificationClick(row.getAttribute('data-nid'), row.getAttribute('data-rid'));
+        row.onclick = () => this.onNotificationClick(row.getAttribute('data-nid'), row.getAttribute('data-rid'), row.getAttribute('data-kind'));
       });
       const foot = document.createElement('div');
       foot.style.cssText = 'padding:0.5rem;border-top:1px solid var(--border);text-align:center';
@@ -1154,7 +1177,7 @@ const Admin = {
       dd.innerHTML = `<div style="padding:1rem;color:var(--danger)">${e.message}</div>`;
     }
   },
-  async onNotificationClick(nid, rid){
+  async onNotificationClick(nid, rid, kind){
     if (nid) {
       try {
         const r = await API.request('/admin/notifications/' + nid + '/read', 'PATCH');
@@ -1164,6 +1187,11 @@ const Admin = {
     this.updateNotifBadge();
     const dd = document.getElementById('admin-notif-dropdown');
     if (dd) { dd.classList.remove('open'); this.notifDropdownOpen = false; }
+    if (kind === 'early_checkout') {
+      this.showPanel('hr');
+      UI.toast(Lang.t('See "Early Checkouts" section below.','انظر قسم "الانصراف المبكر" أدناه.'), 'info');
+      return;
+    }
     let recEl = null;
     document.querySelectorAll('#admin-sidebar .nav-link').forEach((n) => {
       const oc = n.getAttribute('onclick') || '';
@@ -1714,9 +1742,62 @@ const Admin = {
     this.renderHrDepts();
     this.renderHrLeaves();
     this.renderLeaveBalances();
+    this.loadEarlyCheckouts();
     const d = new Date();
     document.getElementById('hr-payroll-month').value = d.getMonth() + 1;
     document.getElementById('hr-payroll-year').value = d.getFullYear();
+  },
+
+  earlyCheckouts: [],
+
+  async loadEarlyCheckouts() {
+    try {
+      this.earlyCheckouts = await API.request('/checkouts/early', 'GET');
+    } catch(e) { this.earlyCheckouts = []; }
+    this.renderEarlyCheckouts();
+  },
+
+  renderEarlyCheckouts() {
+    const filter = (document.getElementById('ec-filter') || {}).value || 'all';
+    let items = this.earlyCheckouts || [];
+    if (filter !== 'all') items = items.filter(i => i.status === filter);
+    const tbody = document.getElementById('ec-table');
+    if (!items.length) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text-muted)">${Lang.t('No early checkout requests','لا يوجد طلبات انصراف مبكر')}</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = items.map(ec => {
+      const empName = ec.employeeId && ec.employeeId.name ? ec.employeeId.name : '—';
+      const date = ec.attendanceId && ec.attendanceId.date ? ec.attendanceId.date : '—';
+      const time = ec.checkoutTime ? new Date(ec.checkoutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—';
+      const badgeCls = ec.status === 'pending' ? 'badge-warning' : ec.status === 'approved' ? 'badge-success' : 'badge-danger';
+      const actions = ec.status === 'pending' ? `
+        <button class="btn btn-sm" style="background:var(--success);color:#fff;margin-right:4px" onclick="Admin.actionEarlyCheckout('${ec.id || ec._id}','approved')"><i class="fas fa-check"></i></button>
+        <button class="btn btn-sm" style="background:var(--danger);color:#fff" onclick="Admin.actionEarlyCheckout('${ec.id || ec._id}','declined')"><i class="fas fa-times"></i></button>
+      ` : (ec.approvedBy && ec.approvedBy.name ? ec.approvedBy.name : '—');
+      return `<tr>
+        <td>${empName}</td>
+        <td>${date}</td>
+        <td dir="ltr">${time}</td>
+        <td style="max-width:200px;word-wrap:break-word">${ec.reason}</td>
+        <td><span class="badge ${badgeCls}">${ec.status}</span></td>
+        <td>${actions}</td>
+      </tr>`;
+    }).join('');
+  },
+
+  async actionEarlyCheckout(id, status) {
+    const label = status === 'approved' ? Lang.t('approve','الموافقة على') : Lang.t('decline','رفض');
+    if (!confirm(Lang.t(`Are you sure you want to ${label} this early checkout?`, `هل تريد ${label} هذا الطلب؟`))) return;
+    UI.loader(true);
+    try {
+      await API.request(`/checkouts/early/${id}/approve`, 'PUT', { status });
+      UI.toast(Lang.t(`Early checkout ${status}`, `تم تحديث طلب الانصراف المبكر`), 'success');
+      await this.loadEarlyCheckouts();
+      await DB.sync();
+      this.showPanel(this.currentPanel);
+    } catch(e) { UI.toast(e.message, 'error'); }
+    UI.loader(false);
   },
 
   renderHrDepts() {
@@ -2139,49 +2220,23 @@ const Emp = {
     const code = sel.value;
     const label = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].textContent : '';
     const notes = document.getElementById('leave-notes').value.trim();
-    const fileInput = document.getElementById('leave-attachment');
 
     if (!code) return UI.toast(Lang.t('Please select a reason','الرجاء اختيار السبب'), 'error');
 
+    const reason = notes ? `[${label || code}] ${notes}` : (label || code);
+
     UI.loader(true);
-    let attachmentData = null;
-
-    if (fileInput.files.length > 0) {
-        const file = fileInput.files[0];
-        if (file.size > 2 * 1024 * 1024) { 
-            UI.loader(false);
-            return UI.toast(Lang.t('File too large. Max size is 2MB.','حجم الملف كبير جداً. الحد الأقصى 2MB'), 'error');
-        }
-        try {
-            attachmentData = await getBase64(file);
-        } catch (error) {
-            UI.loader(false);
-            return UI.toast(Lang.t('Error reading file.','خطأ في قراءة الملف'), 'error');
-        }
-    }
-
-    const rec = {
-      employeeId: Auth.empSession.id,
-      date: DB.today(),
-      status: 'early_leave',
-      approvalStatus: 'pending',
-      notes: `[${label || code}] ${notes}`,
-      excuseCode: code,
-      attachment: attachmentData,
-    };
-
     try {
-        await API.request('/employee/record', 'POST', rec); 
-        await DB.sync(); 
+        await API.request('/checkouts/early', 'POST', { reason });
+        await DB.sync();
         UI.closeModal('modal-leave');
         this.currentRecord = DB.getRecords().find(r => r.employeeId === Auth.empSession.id && r.date === DB.today());
-        this.renderTodayRecord(); 
-        this.updateButtons(true); 
-        UI.toast(Lang.t('Request sent to admin','تم إرسال الطلب للإدارة'), 'success');
-        
+        this.renderTodayRecord();
+        this.updateButtons(true);
+        UI.toast(Lang.t('Early checkout request sent','تم إرسال طلب الانصراف المبكر'), 'success');
+
         document.getElementById('leave-reason').selectedIndex = 0;
         document.getElementById('leave-notes').value = '';
-        document.getElementById('leave-attachment').value = '';
     } catch(e) { UI.toast(e.message, 'error'); }
     UI.loader(false);
   },
@@ -2232,8 +2287,38 @@ const Emp = {
   async loadNotificationsList(){
     const dd = document.getElementById('emp-notif-dropdown');
     if (!dd) return;
-    this.updateNotifBadge(0);
-    dd.innerHTML = `<div style="padding:1rem;color:var(--text-muted)">${Lang.t('Notifications are available in admin panel','الإشعارات متاحة في لوحة الإدارة')}</div>`;
+    dd.innerHTML = '<div style="padding:1rem;color:var(--text-muted)">…</div>';
+    try {
+      const data = await API.request('/hr/me/notifications', 'GET');
+      this.updateNotifBadge(data.unreadCount || 0);
+      if (!data.items || !data.items.length) {
+        dd.innerHTML = `<div style="padding:1.25rem;color:var(--text-muted);text-align:center">${Lang.t('No notifications','لا إشعارات')}</div>`;
+        return;
+      }
+      dd.innerHTML = data.items.map(n => {
+        const unread = !n.readAt;
+        const title = Lang.current === 'ar' && n.titleAr ? n.titleAr : n.title;
+        const body = Lang.current === 'ar' && n.bodyAr ? n.bodyAr : n.body;
+        return `<div class="notif-item${unread ? ' unread' : ''}" data-nid="${n.id}" style="padding:0.75rem 1rem;border-bottom:1px solid var(--border);cursor:pointer">
+          <div style="font-weight:600;font-size:0.85rem">${title}</div>
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.25rem">${body || ''}</div>
+        </div>`;
+      }).join('');
+      dd.querySelectorAll('.notif-item').forEach(row => {
+        row.onclick = async () => {
+          const nid = row.getAttribute('data-nid');
+          if (nid) {
+            try {
+              const r = await API.request(`/hr/me/notifications/${nid}/read`, 'PATCH');
+              if (r.unreadCount != null) this.updateNotifBadge(r.unreadCount);
+              row.classList.remove('unread');
+            } catch(_) {}
+          }
+        };
+      });
+    } catch(e) {
+      dd.innerHTML = `<div style="padding:1rem;color:var(--danger)">${e.message}</div>`;
+    }
   },
   async loadRequestHistory() {
     const wrap = document.getElementById('emp-request-history');
@@ -2296,6 +2381,7 @@ const Emp = {
 
         if (Auth.empSession && Auth.empSession.role === 'manager') {
             await this.loadManagerLeaves();
+            await this.loadManagerEarlyCheckouts();
         }
     } catch(e) {
         document.getElementById('emp-hr-profile').innerHTML = `<div style="color:var(--danger)">Error loading profile</div>`;
@@ -2352,6 +2438,55 @@ const Emp = {
           await API.request(`/hr/department/leaves/${id}`, 'PATCH', { status });
           UI.toast(`Leave ${status}`, 'success');
           await this.loadManagerLeaves();
+      } catch(e) { UI.toast(e.message, 'error'); }
+      UI.loader(false);
+  },
+
+  async loadManagerEarlyCheckouts() {
+      let div = document.getElementById('emp-manager-ec');
+      if (!div) {
+          const col = document.querySelector('#emp-tab-hr-content > div > div:first-child');
+          if (!col) return;
+          div = document.createElement('div');
+          div.id = 'emp-manager-ec';
+          div.className = 'card';
+          div.style.marginTop = '1.5rem';
+          div.innerHTML = `<div class="card-header"><div class="card-title tr" data-en="Early Checkouts (Manager)" data-ar="طلبات الانصراف المبكر (مدير)">Early Checkouts (Manager)</div></div><div style="padding:1rem" id="manager-ec-body"></div>`;
+          col.appendChild(div);
+      }
+      const body = document.getElementById('manager-ec-body');
+      body.innerHTML = 'Loading...';
+      try {
+          const items = await API.request('/checkouts/early', 'GET');
+          if (!items.length) { body.innerHTML = `<span style="color:var(--text-muted)">${Lang.t('No early checkout requests','لا يوجد طلبات')}</span>`; return; }
+          body.innerHTML = items.map(ec => {
+            const empName = ec.employeeId && ec.employeeId.name ? ec.employeeId.name : '—';
+            const date = ec.attendanceId && ec.attendanceId.date ? ec.attendanceId.date : '—';
+            const time = ec.checkoutTime ? new Date(ec.checkoutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—';
+            const badgeCls = ec.status === 'pending' ? 'badge-warning' : ec.status === 'approved' ? 'badge-success' : 'badge-danger';
+            return `<div style="border-bottom:1px solid var(--border);padding-bottom:0.5rem;margin-bottom:0.5rem;">
+              <div style="display:flex;justify-content:space-between"><strong>${empName}</strong><span class="badge ${badgeCls}">${ec.status}</span></div>
+              <div style="font-size:0.8rem;color:var(--text-muted)">${date} | ${Lang.t('Out','خروج')}: ${time}</div>
+              <div style="font-size:0.85rem;margin-top:0.25rem">${ec.reason}</div>
+              ${ec.status === 'pending' ? `<div style="margin-top:0.5rem">
+                <button class="btn btn-sm btn-success" onclick="Emp.actionEarlyCheckout('${ec.id || ec._id}','approved')">${Lang.t('Approve','موافقة')}</button>
+                <button class="btn btn-sm btn-danger" onclick="Emp.actionEarlyCheckout('${ec.id || ec._id}','declined')">${Lang.t('Decline','رفض')}</button>
+              </div>` : ''}
+            </div>`;
+          }).join('');
+          Lang.apply();
+      } catch(e) { body.innerHTML = `<span style="color:var(--danger)">${Lang.t('Failed to load','فشل التحميل')}</span>`; }
+  },
+
+  async actionEarlyCheckout(id, status) {
+      const label = status === 'approved' ? Lang.t('approve','الموافقة على') : Lang.t('decline','رفض');
+      if (!confirm(Lang.t(`Are you sure you want to ${label} this?`, `هل تريد ${label} هذا الطلب؟`))) return;
+      UI.loader(true);
+      try {
+          await API.request(`/checkouts/early/${id}/approve`, 'PUT', { status });
+          UI.toast(Lang.t(`Early checkout ${status}`, 'تم تحديث طلب الانصراف المبكر'), 'success');
+          await this.loadManagerEarlyCheckouts();
+          await DB.sync();
       } catch(e) { UI.toast(e.message, 'error'); }
       UI.loader(false);
   },

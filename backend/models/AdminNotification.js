@@ -11,6 +11,7 @@ const AdminNotificationSchema = new mongoose.Schema(
       kind: { type: String, default: 'record' },
       id: { type: String, required: true },
     },
+    recipientId: { type: String, default: null },
     readAt: { type: Date, default: null },
   },
   { timestamps: true },

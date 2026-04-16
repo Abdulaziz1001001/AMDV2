@@ -64,8 +64,9 @@ router.put('/work-policy', async (req, res) => {
 
 router.get('/notifications', async (req, res) => {
   try {
-    const items = await AdminNotification.find().sort({ createdAt: -1 }).limit(50).lean();
-    const unreadCount = await AdminNotification.countDocuments({ readAt: null });
+    const filter = { $or: [{ recipientId: null }, { recipientId: { $exists: false } }] };
+    const items = await AdminNotification.find(filter).sort({ createdAt: -1 }).limit(50).lean();
+    const unreadCount = await AdminNotification.countDocuments({ ...filter, readAt: null });
     const safe = items.map(n => {
       try {
         return {
@@ -101,7 +102,10 @@ router.patch('/notifications/:id/read', async (req, res) => {
 
 router.post('/notifications/read-all', async (req, res) => {
   try {
-    await AdminNotification.updateMany({ readAt: null }, { readAt: new Date() });
+    await AdminNotification.updateMany(
+      { readAt: null, $or: [{ recipientId: null }, { recipientId: { $exists: false } }] },
+      { readAt: new Date() }
+    );
     res.json({ msg: 'Success' });
   } catch (err) {
     res.status(500).json({ msg: err.message });

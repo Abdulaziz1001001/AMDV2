@@ -300,6 +300,43 @@ router.get('/leave-request/:id/attachment', auth.requireRole(['employee', 'manag
     res.status(500).json({ msg: err.message });
   }
 });
+router.get('/me/notifications', async (req, res) => {
+  try {
+    const items = await AdminNotification.find({ recipientId: String(req.user.id) })
+      .sort({ createdAt: -1 }).limit(30).lean();
+    const unreadCount = await AdminNotification.countDocuments({ recipientId: String(req.user.id), readAt: null });
+    const safe = items.map(n => ({
+      id: n._id.toString(),
+      type: n.type || '',
+      title: n.title || '',
+      body: n.body || '',
+      titleAr: n.titleAr || '',
+      bodyAr: n.bodyAr || '',
+      ref: n.ref || {},
+      readAt: n.readAt || null,
+      createdAt: n.createdAt,
+    }));
+    res.json({ items: safe, unreadCount });
+  } catch (err) {
+    res.status(500).json({ msg: err.message });
+  }
+});
+
+router.patch('/me/notifications/:id/read', async (req, res) => {
+  try {
+    const notif = await AdminNotification.findById(req.params.id);
+    if (!notif || String(notif.recipientId) !== String(req.user.id)) {
+      return res.status(404).json({ msg: 'Not found' });
+    }
+    notif.readAt = new Date();
+    await notif.save();
+    const unreadCount = await AdminNotification.countDocuments({ recipientId: String(req.user.id), readAt: null });
+    res.json({ msg: 'Success', unreadCount });
+  } catch (err) {
+    res.status(500).json({ msg: err.message });
+  }
+});
+
 router.use((err, req, res, next) => {
   if (!err) return next();
   if (err.code === 'LIMIT_FILE_SIZE') {
