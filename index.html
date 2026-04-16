@@ -600,8 +600,7 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
             
             <div id="checkout-container" class="hidden">
                 <button id="emp-checkout-btn" class="btn btn-danger btn-block" style="padding:1rem;font-size:1.1rem;margin-bottom:0.5rem" onclick="Emp.checkOut()"><i class="fas fa-sign-out-alt"></i> <span class="tr" data-en="Check Out" data-ar="تسجيل الخروج">Check Out</span></button>
-                <button id="emp-leave-btn" class="btn btn-warning btn-block" style="padding:1rem;font-size:1.1rem" onclick="Emp.openLeaveRequest()"><i class="fas fa-file-signature"></i> <span class="tr" data-en="Request Leave" data-ar="طلب استئذان">Request Leave</span></button>
-                <button id="emp-early-checkout-btn" class="btn btn-block hidden" style="padding:1rem;font-size:1.1rem;margin-top:0.5rem;background:var(--accent);color:#fff" onclick="Emp.openEarlyCheckoutModal()"><i class="fas fa-clock"></i> <span class="tr" data-en="Request Early Checkout" data-ar="طلب انصراف مبكر">Request Early Checkout</span></button>
+                <button id="emp-early-checkout-btn" class="btn btn-block hidden" style="padding:1rem;font-size:1.1rem;background:var(--accent);color:#fff" onclick="Emp.openEarlyCheckoutModal()"><i class="fas fa-clock"></i> <span class="tr" data-en="Request Early Checkout" data-ar="طلب انصراف مبكر">Request Early Checkout</span></button>
             </div>
           </div>
           <div class="card"><div class="card-header"><div class="card-title tr" data-en="Today's Record" data-ar="سجل اليوم">Today's Record</div></div><div style="padding:1.25rem" id="today-record-body"></div></div>
@@ -714,6 +713,16 @@ table{width:100%;border-collapse:collapse} th{background:var(--surface2);padding
         <label class="form-label tr" data-en="Reason Category" data-ar="فئة السبب">Reason Category</label>
         <select id="leave-reason" class="form-control form-select" onchange="Emp.validateEarlyCheckoutForm()">
           <option value="" disabled selected>-- Select / اختر --</option>
+          <option value="medical">Medical Emergency / طوارئ طبية</option>
+          <option value="family">Family Emergency / طوارئ عائلية</option>
+          <option value="site_hazard">Site Safety Hazard / خطر في الموقع</option>
+          <option value="equipment_failure">Equipment Breakdown / عطل معدات</option>
+          <option value="weather">Severe Weather Conditions / ظروف جوية قاسية</option>
+          <option value="injury">Work-Related Injury / إصابة عمل</option>
+          <option value="transport">Transportation Issue / مشكلة نقل</option>
+          <option value="personal">Urgent Personal Matter / أمر شخصي طارئ</option>
+          <option value="govt_appt">Government Appointment / موعد حكومي</option>
+          <option value="other">Other / أخرى</option>
         </select>
       </div>
       <div class="form-group" style="margin-bottom:0">
@@ -2216,18 +2225,6 @@ const Emp = {
     'Work Injury',
   ],
   fillLeaveReasons() {
-    const sel = document.getElementById('leave-reason');
-    if (!sel) return;
-    const policyReasons = (DB.getWorkPolicy() && DB.getWorkPolicy().excuseReasons) || [];
-    const prev = sel.value;
-    sel.innerHTML = '<option value="" disabled selected>-- Select / اختر --</option>';
-    policyReasons.forEach((r) => {
-      const opt = document.createElement('option');
-      opt.value = r.code;
-      opt.textContent = Lang.current === 'ar' && r.labelAr ? r.labelAr : (r.labelEn || r.code);
-      sel.appendChild(opt);
-    });
-    if (prev && [...sel.options].some((o) => o.value === prev)) sel.value = prev;
     const hrType = document.getElementById('hr-leave-type');
     if (hrType) {
       const hrPrev = hrType.value;
@@ -2283,7 +2280,6 @@ const Emp = {
     const checkinBtn=document.getElementById('emp-checkin-btn'); 
     const checkoutContainer=document.getElementById('checkout-container');
     const checkoutBtn=document.getElementById('emp-checkout-btn');
-    const leaveBtn=document.getElementById('emp-leave-btn');
     const earlyBtn=document.getElementById('emp-early-checkout-btn');
     
     if(!rec){ 
@@ -2298,22 +2294,18 @@ const Emp = {
         if (rec.approvalStatus === 'pending') {
             checkoutBtn.innerHTML = `<i class="fas fa-hourglass-half"></i> ${Lang.t('Pending Approval','قيد المراجعة')}`;
             checkoutBtn.style.background = 'var(--warning)'; checkoutBtn.style.color = '#000';
-            leaveBtn.classList.add('hidden');
             earlyBtn.classList.add('hidden');
         } else if (rec.approvalStatus === 'approved') {
             checkoutBtn.innerHTML = `<i class="fas fa-sign-out-alt"></i> ${Lang.t('Clock Out (Approved)','انصراف (تمت الموافقة)')}`;
             checkoutBtn.style.background = 'var(--success)'; checkoutBtn.style.color = '#fff';
-            leaveBtn.classList.add('hidden');
             earlyBtn.classList.add('hidden');
         } else if (rec.approvalStatus === 'rejected') {
             checkoutBtn.innerHTML = `<i class="fas fa-ban"></i> ${Lang.t('Leave Rejected','استئذان مرفوض')}`;
             checkoutBtn.style.background = 'var(--danger)'; checkoutBtn.style.color = '#fff';
-            leaveBtn.classList.remove('hidden'); 
             earlyBtn.classList.remove('hidden');
         } else {
             checkoutBtn.innerHTML = `<i class="fas fa-sign-out-alt"></i> ${Lang.t('Check Out','تسجيل الخروج')}`;
             checkoutBtn.style.background = 'var(--danger)'; checkoutBtn.style.color = '#fff';
-            leaveBtn.classList.remove('hidden'); 
             earlyBtn.classList.remove('hidden');
         }
     } else { 
