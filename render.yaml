@@ -1,0 +1,18 @@
+# Render Blueprint — link to an existing Web Service or create from repo; avoid duplicate service names.
+# Set secret values in the Render Dashboard or when prompted (sync: false).
+# Expects Web Service Root Directory = repo root (default). If Root Directory is `backend/`, use inline
+# build/start commands from the plan instead of `npm run build` / `npm start`.
+services:
+  - type: web
+    runtime: node
+    name: amdv2
+    buildCommand: npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: FRONTEND_ORIGIN
+        sync: false

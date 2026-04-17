@@ -1,4 +1,5 @@
 require('dotenv').config();
+const fs = require('fs');
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -90,12 +91,23 @@ function createApp() {
 
   const frontendDist = path.join(__dirname, '..', 'frontend', 'dist');
   const frontendIndex = path.join(frontendDist, 'index.html');
-  app.use(express.static(frontendDist));
+  const frontendReady = fs.existsSync(frontendIndex);
 
-  app.get('*', (req, res) => {
-    if (req.path.startsWith('/api')) return res.status(404).json({ msg: 'Not found' });
-    return res.sendFile(frontendIndex);
-  });
+  if (frontendReady) {
+    app.use(express.static(frontendDist));
+    app.get('*', (req, res) => {
+      if (req.path.startsWith('/api')) return res.status(404).json({ msg: 'Not found' });
+      return res.sendFile(frontendIndex);
+    });
+  } else {
+    app.get('*', (req, res) => {
+      if (req.path.startsWith('/api')) return res.status(404).json({ msg: 'Not found' });
+      return res
+        .status(503)
+        .type('text')
+        .send('Frontend build missing: run npm run build in frontend/ before starting the server.');
+    });
+  }
 
   return app;
 }
