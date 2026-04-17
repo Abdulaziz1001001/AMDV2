@@ -1,11 +1,13 @@
 # Render Blueprint — link to an existing Web Service or create from repo; avoid duplicate service names.
 # Set secret values in the Render Dashboard or when prompted (sync: false).
-# Expects Web Service Root Directory = repo root (default). If Root Directory is `backend/`, use inline
-# build/start commands from the plan instead of `npm run build` / `npm start`.
+#
+# rootDir: backend — matches Render when the Web Service is rooted at backend/ (npm start shows backend@...).
+# Build runs: frontend npm ci + vite build, then backend npm ci (creates ../frontend/dist for Express).
 services:
   - type: web
     runtime: node
     name: amdv2
+    rootDir: backend
     buildCommand: npm run build
     startCommand: npm start
     healthCheckPath: /health
