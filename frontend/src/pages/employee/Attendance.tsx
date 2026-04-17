@@ -1,26 +1,71 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { MapPin, Clock, Play, Square, Coffee, LogIn, LogOut } from 'lucide-react'
+import { MapPin, Clock, Coffee, LogIn, LogOut } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
-import { useAuth } from '@/stores/AuthContext'
 import { useToast } from '@/components/ui/Toast'
 import { request } from '@/api/client'
 import { fmtTime, todayStr } from '@/lib/formatters'
+import { LocationMap, type MapPoint } from '@/components/map/LocationMap'
 
 interface TodayRecord { id?: string; date: string; checkIn?: string; checkOut?: string; status?: string; breaks?: { start?: string; end?: string }[] }
 
+interface MeDataResponse {
+  locations?: Array<{
+    id?: string
+    _id?: string
+    name?: string
+    lat?: number
+    lng?: number
+    radius?: number
+  }>
+}
+
 export default function Attendance() {
-  const { session } = useAuth()
   const { toast } = useToast()
   const [record, setRecord] = useState<TodayRecord | null>(null)
   const [pos, setPos] = useState<{ lat: number; lng: number } | null>(null)
+  const [siteLocations, setSiteLocations] = useState<MapPoint[]>([])
   const [loading, setLoading] = useState(false)
   const [onBreak, setOnBreak] = useState(false)
   const [now, setNow] = useState(new Date())
 
   useEffect(() => { const iv = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(iv) }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const data = await request<MeDataResponse>('/employee/me-data')
+        if (cancelled) return
+        const raw = data.locations ?? []
+        const mapped: MapPoint[] = raw
+          .map((l) => {
+            const id = String(l.id ?? l._id ?? '')
+            const lat = Number(l.lat)
+            const lng = Number(l.lng)
+            const r = Number(l.radius)
+            const radius = Number.isFinite(r) && r > 0 ? r : 200
+            if (!id || !Number.isFinite(lat) || !Number.isFinite(lng)) return null
+            return {
+              id,
+              name: l.name?.trim() || 'Work site',
+              lat,
+              lng,
+              radius,
+            }
+          })
+          .filter((x): x is MapPoint => x !== null)
+        setSiteLocations(mapped)
+      } catch {
+        /* optional: me-data may fail if not yet synced */
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const getPos = (): Promise<{ lat: number; lng: number }> =>
     new Promise((resolve, reject) => {
@@ -129,12 +174,25 @@ export default function Attendance() {
         </CardContent>
       </Card>
 
-      {pos && (
-        <div className="flex items-center gap-2 text-xs text-text-tertiary">
-          <MapPin className="h-3.5 w-3.5" />
-          <span>{pos.lat.toFixed(5)}, {pos.lng.toFixed(5)}</span>
-        </div>
-      )}
+      <Card>
+        <CardContent className="pt-5 space-y-3">
+          <p className="text-sm font-medium text-text-primary">Allowed sites & your position</p>
+          <p className="text-xs text-text-tertiary">
+            {siteLocations.length === 0
+              ? 'No geofenced sites configured for your group. Allow location when you check in to see your position on the map.'
+              : 'Blue circles are allowed check-in areas. Green dot is your last known GPS position after check-in.'}
+          </p>
+          <LocationMap locations={siteLocations} userPosition={pos} />
+          {pos && (
+            <div className="flex items-center gap-2 text-xs text-text-tertiary">
+              <MapPin className="h-3.5 w-3.5 shrink-0" />
+              <span>
+                {pos.lat.toFixed(5)}, {pos.lng.toFixed(5)}
+              </span>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }
