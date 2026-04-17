@@ -1,12 +1,16 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { MapPin, Clock, Coffee, LogIn, LogOut } from 'lucide-react'
+import { MapPin, Clock, Coffee, LogIn, LogOut, DoorOpen } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
+import { Modal } from '@/components/ui/Modal'
+import { Select } from '@/components/ui/Select'
 import { useToast } from '@/components/ui/Toast'
+import { useAuth } from '@/stores/AuthContext'
 import { request } from '@/api/client'
 import { fmtTime, todayStr } from '@/lib/formatters'
+import { EARLY_LEAVE_REASONS } from '@/lib/constants'
 import { LocationMap, type MapPoint } from '@/components/map/LocationMap'
 
 interface TodayRecord { id?: string; date: string; checkIn?: string; checkOut?: string; status?: string; breaks?: { start?: string; end?: string }[] }
@@ -23,6 +27,7 @@ interface MeDataResponse {
 }
 
 export default function Attendance() {
+  const { session } = useAuth()
   const { toast } = useToast()
   const [record, setRecord] = useState<TodayRecord | null>(null)
   const [pos, setPos] = useState<{ lat: number; lng: number } | null>(null)
@@ -30,6 +35,9 @@ export default function Attendance() {
   const [loading, setLoading] = useState(false)
   const [onBreak, setOnBreak] = useState(false)
   const [now, setNow] = useState(new Date())
+  const [earlyOpen, setEarlyOpen] = useState(false)
+  const [earlyReason, setEarlyReason] = useState('')
+  const [earlyNotes, setEarlyNotes] = useState('')
 
   useEffect(() => { const iv = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(iv) }, [])
 
@@ -79,22 +87,36 @@ export default function Attendance() {
   const loadToday = useCallback(async () => {
     try {
       const recs: TodayRecord[] = await request(`/employee/records?date=${todayStr()}`)
-      const today = recs.find((r) => r.date === todayStr())
-      setRecord(today || null)
+      const today = recs.find((r) => r.date === todayStr()) ?? recs[0] ?? null
+      setRecord(today)
       if (today?.breaks?.length) {
         const last = today.breaks[today.breaks.length - 1]
         setOnBreak(!!last.start && !last.end)
+      } else {
+        setOnBreak(false)
       }
     } catch {}
   }, [])
 
   useEffect(() => { loadToday() }, [loadToday])
 
+  const employeeId = session?.id
+
   const checkin = async () => {
+    if (!employeeId) {
+      toast('Session expired — please sign in again', 'error')
+      return
+    }
     setLoading(true)
     try {
       const loc = await getPos()
-      await request('/employee/checkin', 'POST', { checkInLat: loc.lat, checkInLng: loc.lng })
+      await request('/employee/record', 'POST', {
+        employeeId,
+        date: todayStr(),
+        checkIn: new Date().toISOString(),
+        checkInLat: loc.lat,
+        checkInLng: loc.lng,
+      })
       await loadToday()
       toast('Checked in!', 'success')
     } catch (e: unknown) { toast((e as Error).message, 'error') }
@@ -102,10 +124,20 @@ export default function Attendance() {
   }
 
   const checkout = async () => {
+    if (!employeeId) {
+      toast('Session expired — please sign in again', 'error')
+      return
+    }
     setLoading(true)
     try {
       const loc = await getPos()
-      await request('/employee/checkout', 'POST', { checkOutLat: loc.lat, checkOutLng: loc.lng })
+      await request('/employee/record', 'POST', {
+        employeeId,
+        date: todayStr(),
+        checkOut: new Date().toISOString(),
+        checkOutLat: loc.lat,
+        checkOutLng: loc.lng,
+      })
       await loadToday()
       toast('Checked out!', 'success')
     } catch (e: unknown) { toast((e as Error).message, 'error') }
@@ -115,9 +147,28 @@ export default function Attendance() {
   const toggleBreak = async () => {
     setLoading(true)
     try {
-      await request('/employee/break', 'POST', { action: onBreak ? 'end' : 'start' })
+      await request(onBreak ? '/attendance/break-end' : '/attendance/break-start', 'POST')
       await loadToday()
       toast(onBreak ? 'Break ended' : 'Break started', 'info')
+    } catch (e: unknown) { toast((e as Error).message, 'error') }
+    setLoading(false)
+  }
+
+  const submitEarlyLeave = async () => {
+    const preset = earlyReason.trim()
+    if (!preset) {
+      toast('Please select a reason', 'error')
+      return
+    }
+    const reason = earlyNotes.trim() ? `${preset} — ${earlyNotes.trim()}` : preset
+    setLoading(true)
+    try {
+      await request('/checkouts/early', 'POST', { reason })
+      setEarlyOpen(false)
+      setEarlyReason('')
+      setEarlyNotes('')
+      await loadToday()
+      toast('Early leave request submitted', 'success')
     } catch (e: unknown) { toast((e as Error).message, 'error') }
     setLoading(false)
   }
@@ -159,6 +210,15 @@ export default function Attendance() {
                   <LogOut className="h-4 w-4" /> Check Out
                 </Button>
               </div>
+              <Button
+                onClick={() => setEarlyOpen(true)}
+                disabled={loading || onBreak}
+                variant="secondary"
+                className="w-full gap-2"
+              >
+                <DoorOpen className="h-4 w-4" /> Early leave request
+              </Button>
+              {onBreak && <p className="text-xs text-text-tertiary text-center">End your break before requesting early leave.</p>}
             </div>
           ) : (
             <div className="text-center py-4">
@@ -173,6 +233,34 @@ export default function Attendance() {
           )}
         </CardContent>
       </Card>
+
+      <Modal open={earlyOpen} onOpenChange={setEarlyOpen} title="Early leave request">
+        <p className="text-xs text-text-tertiary mb-3">You must be checked in and not on break. This records an early checkout for approval.</p>
+        <div className="space-y-4">
+          <div>
+            <label className="text-xs font-medium text-text-secondary block mb-1">Reason *</label>
+            <Select value={earlyReason} onChange={(e) => setEarlyReason(e.target.value)}>
+              <option value="">Select a reason…</option>
+              {EARLY_LEAVE_REASONS.map((r) => (
+                <option key={r} value={r}>{r}</option>
+              ))}
+            </Select>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-text-secondary block mb-1">Additional details (optional)</label>
+            <textarea
+              value={earlyNotes}
+              onChange={(e) => setEarlyNotes(e.target.value)}
+              className="flex w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm min-h-16 focus:outline-none focus:ring-2 focus:ring-accent/30"
+              placeholder="Brief context for HR / manager"
+            />
+          </div>
+        </div>
+        <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-border-subtle">
+          <Button variant="secondary" onClick={() => setEarlyOpen(false)}>Cancel</Button>
+          <Button onClick={submitEarlyLeave} disabled={loading}>Submit</Button>
+        </div>
+      </Modal>
 
       <Card>
         <CardContent className="pt-5 space-y-3">

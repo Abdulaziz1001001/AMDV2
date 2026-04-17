@@ -16,6 +16,21 @@ function formatDocs(arr) {
 }
 
 /** Same shape as /api/admin/all-data, scoped to the logged-in employee (for DB.sync on the portal). */
+/** List attendance records for the logged-in employee; optional ?date=YYYY-MM-DD */
+router.get('/records', async (req, res) => {
+  try {
+    const q = { employeeId: String(req.user.id) };
+    if (req.query.date) {
+      q.date = String(req.query.date);
+    }
+    const records = await Record.find(q).sort({ date: -1 });
+    res.json(formatDocs(records));
+  } catch (err) {
+    console.error('employee /records error:', err);
+    res.status(500).json({ msg: err.message });
+  }
+});
+
 router.get('/me-data', async (req, res) => {
   try {
     const emp = await Employee.findById(req.user.id);

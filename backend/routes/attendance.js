@@ -9,7 +9,7 @@ const router = express.Router();
 router.use(auth);
 
 function todayStr() {
-  return new Date().toISOString().slice(0, 10);
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Riyadh' });
 }
 
 router.post('/close-day', auth.requireRole('admin'), validateBody(closeDaySchema), closeDay);

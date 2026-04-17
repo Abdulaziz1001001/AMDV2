@@ -9,9 +9,9 @@ const AdminNotification = require('../models/AdminNotification');
 const router = express.Router();
 router.use(auth);
 
+/** Calendar date in Asia/Riyadh — must match employee portal `todayStr()` and Record.date */
 function todayStr() {
-  const d = new Date();
-  return d.toISOString().slice(0, 10);
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Riyadh' });
 }
 
 router.post('/early', auth.requireRole(['employee', 'manager']), async (req, res) => {

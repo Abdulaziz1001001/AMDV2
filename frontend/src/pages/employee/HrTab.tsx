@@ -23,12 +23,12 @@ export default function HrTab() {
   const [safetyOpen, setSafetyOpen] = useState(false)
   const [safetyForm, setSafetyForm] = useState({ description: '', severity: 'medium', date: new Date().toISOString().split('T')[0] })
 
-  const loadLeaves = async () => { try { setLeaves(await request('/hr/leave-requests')) } catch {} }
+  const loadLeaves = async () => { try { setLeaves(await request('/hr/me/leave-requests')) } catch {} }
   useEffect(() => { loadLeaves() }, [])
 
   const submitLeave = async () => {
     try {
-      await request('/hr/leave-request', 'POST', form)
+      await request('/hr/me/leave-request', 'POST', form)
       toast('Leave requested', 'success'); setLeaveOpen(false); loadLeaves()
     } catch (e: unknown) { toast((e as Error).message, 'error') }
   }
