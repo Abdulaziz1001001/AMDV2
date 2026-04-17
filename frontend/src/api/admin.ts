@@ -277,7 +277,7 @@ export function deleteLocation(id: string) {
   return request(`/admin/location/${id}`, 'DELETE')
 }
 
-export function createDepartment(data: { name: string; managerId?: string }) {
+export function upsertDepartment(data: { id?: string; name: string; managerId?: string }) {
   return request('/admin/department', 'POST', data)
 }
 
@@ -297,8 +297,8 @@ export function actionEarlyCheckout(id: string, status: string) {
   return request(`/checkouts/early/${id}/approve`, 'PUT', { status })
 }
 
-export function actionOvertime(id: string, action: string) {
-  return request(`/overtime/${id}/action`, 'PUT', { action })
+export function actionOvertime(id: string, status: 'approved' | 'declined') {
+  return request(`/overtime/${id}/action`, 'PUT', { status })
 }
 
 export function fetchPayrollOverview(month: number, year: number) {

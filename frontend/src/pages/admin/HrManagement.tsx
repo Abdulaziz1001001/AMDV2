@@ -101,7 +101,7 @@ export default function HrManagement() {
     }
   }
 
-  const handleOT = async (id: string, action: string) => {
+  const handleOT = async (id: string, action: 'approved' | 'declined') => {
     try {
       await actionOvertime(id, action)
       setOT(await fetchOvertimes())

@@ -27,12 +27,14 @@ const Audit = lazy(() => import('@/pages/admin/Audit'))
 const Reports = lazy(() => import('@/pages/admin/Reports'))
 const SettingsPage = lazy(() => import('@/pages/admin/Settings'))
 const Analytics = lazy(() => import('@/pages/admin/Analytics'))
+const Departments = lazy(() => import('@/pages/admin/Departments'))
 
 const panels: Record<string, () => ReactNode> = {
   dashboard: () => <Dashboard />,
   analytics: () => <Analytics />,
   employees: () => <Employees />,
   groups: () => <Groups />,
+  departments: () => <Departments />,
   locations: () => <Locations />,
   calendar: () => <WorkCalendar />,
   records: () => <Records />,
@@ -53,6 +55,7 @@ const panelTitleKeys: Record<string, string> = {
   analytics: 'analytics',
   employees: 'employees',
   groups: 'groups',
+  departments: 'departments',
   locations: 'locations',
   calendar: 'workCalendar',
   records: 'records',

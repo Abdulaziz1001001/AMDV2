@@ -8,6 +8,7 @@ const en = {
   analytics: 'Analytics',
   employees: 'Employees',
   groups: 'Groups',
+  departments: 'Departments',
   locations: 'Locations',
   workCalendar: 'Work Calendar',
   records: 'Records',

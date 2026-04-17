@@ -8,6 +8,7 @@ const ar: Record<string, string> = {
   analytics: 'التحليلات',
   employees: 'الموظفين',
   groups: 'المجموعات',
+  departments: 'الأقسام',
   locations: 'المواقع',
   workCalendar: 'التقويم والدوام',
   records: 'السجلات',
