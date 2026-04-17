@@ -1,7 +1,7 @@
-import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { cn } from '@/lib/cn'
 import { useLang } from '@/stores/LangContext'
+import { useAuth } from '@/stores/AuthContext'
 import {
   LayoutDashboard,
   PieChart,
@@ -22,8 +22,7 @@ import {
   History,
   FileBarChart,
   Settings,
-  ChevronsLeft,
-  ChevronsRight,
+  LogOut,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -33,7 +32,7 @@ interface NavItem {
   labelKey: string
 }
 
-const navItems: NavItem[] = [
+const menuItems: NavItem[] = [
   { key: 'dashboard', icon: LayoutDashboard, labelKey: 'dashboard' },
   { key: 'analytics', icon: PieChart, labelKey: 'analytics' },
   { key: 'employees', icon: Users, labelKey: 'employees' },
@@ -48,12 +47,22 @@ const navItems: NavItem[] = [
   { key: 'announcements', icon: Megaphone, labelKey: 'announcements' },
   { key: 'safety', icon: AlertTriangle, labelKey: 'safetyIncidents' },
   { key: 'documents', icon: FolderOpen, labelKey: 'documentVault' },
-  { key: 'directory', icon: BookUser, labelKey: 'directory' },
+  { key: 'directory', icon: BookUser, labelKey: 'directoryOrgChart' },
   { key: 'accrual', icon: Calculator, labelKey: 'leaveAccrual' },
+]
+
+const systemItems: NavItem[] = [
   { key: 'audit', icon: History, labelKey: 'auditLog' },
   { key: 'reports', icon: FileBarChart, labelKey: 'reports' },
   { key: 'settings', icon: Settings, labelKey: 'settings' },
 ]
+
+const navGroups: { id: string; labelKey: string; items: NavItem[] }[] = [
+  { id: 'menu', labelKey: 'navMenu', items: menuItems },
+  { id: 'system', labelKey: 'navSystem', items: systemItems },
+]
+
+const navItems: NavItem[] = [...menuItems, ...systemItems]
 
 interface SidebarProps {
   activePanel: string
@@ -61,99 +70,100 @@ interface SidebarProps {
 }
 
 export function Sidebar({ activePanel, onNavigate }: SidebarProps) {
-  const [collapsed, setCollapsed] = useState(false)
   const { t, lang } = useLang()
+  const { session, logout } = useAuth()
   const isRtl = lang === 'ar'
 
+  const displayName = session?.name?.trim() || session?.username || 'AMD'
+  const initial = (displayName[0] || 'A').toUpperCase()
+
   return (
-    <motion.aside
-      animate={{ width: collapsed ? 72 : 260 }}
-      transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+    <aside
       className={cn(
-        'fixed top-0 h-screen bg-surface z-40 flex flex-col overflow-hidden',
-        isRtl ? 'right-0 border-l border-border-subtle' : 'left-0 border-r border-border-subtle',
+        'fixed top-0 z-40 flex h-screen w-[var(--sidebar-width)] flex-col border-[#1f1f1f] bg-[#121212]',
+        isRtl ? 'right-0 border-l' : 'left-0 border-r',
       )}
     >
-      {/* Logo area */}
-      <div className="flex items-center gap-3 px-5 h-16 border-b border-border-subtle shrink-0">
-        <img src="/assets/logo-amd.png" alt="AMD" className="h-8 w-8 rounded-lg object-cover shrink-0" />
-        <AnimatePresence>
-          {!collapsed && (
-            <motion.span
-              initial={{ opacity: 0, width: 0 }}
-              animate={{ opacity: 1, width: 'auto' }}
-              exit={{ opacity: 0, width: 0 }}
-              className="text-sm font-semibold tracking-tight text-text-primary whitespace-nowrap overflow-hidden"
-            >
-              AMD United
-            </motion.span>
-          )}
-        </AnimatePresence>
+      <div className="shrink-0 border-b border-[#1f1f1f] px-4 py-5">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#E05A2C] text-sm font-bold text-white shadow-sm">
+            A
+          </div>
+          <div className="min-w-0 pt-0.5">
+            <p className="text-[13px] font-bold uppercase tracking-[0.12em] text-white">AMD United</p>
+            <p className="mt-0.5 text-xs text-zinc-500">{t('adminPanel')}</p>
+          </div>
+        </div>
       </div>
 
-      {/* Nav items */}
-      <nav className="flex-1 overflow-y-auto py-2 px-2 space-y-0.5">
-        {navItems.map((item) => {
-          const isActive = activePanel === item.key
-          return (
-            <button
-              key={item.key}
-              onClick={() => onNavigate(item.key)}
+      <nav className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-2 py-3">
+        {navGroups.map((group) => (
+          <div key={group.id} className="mb-1">
+            <p
               className={cn(
-                'relative flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                isActive
-                  ? 'text-accent'
-                  : 'text-text-secondary hover:text-text-primary hover:bg-surface-raised',
+                'mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500',
+                group.id === 'menu' ? 'mt-0' : 'mt-5',
               )}
             >
-              {isActive && (
-                <motion.div
-                  layoutId="sidebar-active"
-                  className="absolute inset-0 rounded-lg bg-accent-soft"
-                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                />
-              )}
-              <item.icon className="relative h-[18px] w-[18px] shrink-0" />
-              <AnimatePresence>
-                {!collapsed && (
-                  <motion.span
-                    initial={{ opacity: 0, width: 0 }}
-                    animate={{ opacity: 1, width: 'auto' }}
-                    exit={{ opacity: 0, width: 0 }}
-                    className="relative whitespace-nowrap overflow-hidden"
+              {t(group.labelKey)}
+            </p>
+            <div className="space-y-0.5">
+              {group.items.map((item) => {
+                const isActive = activePanel === item.key
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => onNavigate(item.key)}
+                    className={cn(
+                      'relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-[13px] font-medium transition-colors',
+                      isActive
+                        ? 'text-[#E05A2C]'
+                        : 'text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-100',
+                    )}
                   >
-                    {t(item.labelKey)}
-                  </motion.span>
-                )}
-              </AnimatePresence>
-            </button>
-          )
-        })}
+                    {isActive && (
+                      <motion.div
+                        layoutId="sidebar-active"
+                        className="absolute inset-0 rounded-lg bg-[#E05A2C]/15"
+                        transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+                      />
+                    )}
+                    <item.icon className="relative h-[18px] w-[18px] shrink-0" strokeWidth={1.75} />
+                    <span className="relative truncate">{t(item.labelKey)}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
 
-      {/* Collapse toggle */}
-      <div className="border-t border-border-subtle p-2 shrink-0">
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm text-text-tertiary hover:text-text-primary hover:bg-surface-raised transition-colors"
-        >
-          {collapsed ? <ChevronsRight className="h-4 w-4" /> : <ChevronsLeft className="h-4 w-4" />}
-          <AnimatePresence>
-            {!collapsed && (
-              <motion.span
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="whitespace-nowrap"
-              >
-                Collapse
-              </motion.span>
-            )}
-          </AnimatePresence>
-        </button>
+      <div className="shrink-0 border-t border-[#1f1f1f] p-3">
+        <div className="flex items-center gap-3 rounded-lg px-1 py-1">
+          <div
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#E05A2C] text-xs font-semibold text-white"
+            aria-hidden
+          >
+            {initial}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium text-zinc-100">{displayName}</p>
+            <p className="text-xs text-zinc-500">{t('adminRole')}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => logout()}
+            className="shrink-0 rounded-lg p-2 text-zinc-500 transition-colors hover:bg-white/[0.06] hover:text-[#E05A2C]"
+            title={t('logout')}
+            aria-label={t('logout')}
+          >
+            <LogOut className="h-4 w-4" />
+          </button>
+        </div>
       </div>
-    </motion.aside>
+    </aside>
   )
 }
 
-export { navItems }
+export { navItems, navGroups }

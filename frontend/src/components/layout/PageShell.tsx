@@ -96,7 +96,7 @@ export function PageShell() {
   const renderPanel = panels[activePanel]
 
   return (
-    <div className="flex h-screen overflow-hidden bg-surface-sunken">
+    <div className="admin-shell flex h-screen overflow-hidden bg-surface-sunken">
       <div className="hidden lg:block">
         <Sidebar activePanel={activePanel} onNavigate={setActivePanel} />
       </div>

@@ -8,6 +8,7 @@ const ProfileUpdateRequest = require('../models/ProfileUpdateRequest');
 const EmployeeDocument = require('../models/EmployeeDocument');
 const AdminNotification = require('../models/AdminNotification');
 const { logAudit } = require('../lib/auditHelper');
+const { resolveContentType } = require('../lib/mimeFromExt');
 
 const router = express.Router();
 router.use(auth);
@@ -170,7 +171,16 @@ router.get('/documents/:id/download', async (req, res) => {
     }
     const filePath = path.join(docUploadsRoot, doc.filename);
     if (!fs.existsSync(filePath)) return res.status(404).json({ msg: 'File not found on disk' });
-    res.download(filePath, doc.originalName || doc.filename);
+    const mode = String(req.query.mode || 'download').toLowerCase();
+    const safeName = JSON.stringify(doc.originalName || doc.filename);
+    const contentType = resolveContentType(doc.mimeType, doc.originalName || doc.filename);
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader(
+      'Content-Disposition',
+      mode === 'view' ? `inline; filename=${safeName}` : `attachment; filename=${safeName}`
+    );
+    res.sendFile(filePath);
   } catch (err) { res.status(500).json({ msg: err.message }); }
 });
 

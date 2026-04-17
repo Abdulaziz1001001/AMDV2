@@ -60,6 +60,21 @@ export default function Reports() {
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `attendance-report-${year}-${month}.json`; a.click()
   }
 
+  const viewJSON = () => {
+    if (!data.length && !depts.length) return
+    const payload = {
+      generatedAt: new Date().toISOString(),
+      month,
+      year,
+      employeeReport: data,
+      departmentRollup: depts,
+    }
+    const jsonText = JSON.stringify(payload, null, 2)
+    const blob = new Blob([jsonText], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    window.open(url, '_blank', 'noopener,noreferrer')
+  }
+
   const empCols: ColumnDef<ReportRow, unknown>[] = [
     { accessorKey: 'eid', header: 'ID', size: 60 },
     { accessorKey: 'name', header: 'Name', cell: ({ row }) => <div><p className="font-medium">{row.original.name}</p>{row.original.department && <p className="text-xs text-text-tertiary">{row.original.department}</p>}</div> },
@@ -89,7 +104,8 @@ export default function Reports() {
         <Button onClick={generate}>Generate</Button>
         {data.length > 0 && <Button variant="secondary" onClick={exportCSV}><Download className="h-4 w-4" /> Employee CSV</Button>}
         {depts.length > 0 && <Button variant="secondary" onClick={exportDeptCSV}><Download className="h-4 w-4" /> Dept CSV</Button>}
-        {(data.length > 0 || depts.length > 0) && <Button variant="secondary" onClick={exportJSON}><Eye className="h-4 w-4" /> JSON</Button>}
+        {(data.length > 0 || depts.length > 0) && <Button variant="secondary" onClick={viewJSON}><Eye className="h-4 w-4" /> View JSON</Button>}
+        {(data.length > 0 || depts.length > 0) && <Button variant="secondary" onClick={exportJSON}><Download className="h-4 w-4" /> Download JSON</Button>}
       </div>
 
       {data.length > 0 && <DataTable columns={empCols} data={data} searchColumn="name" pageSize={15} />}

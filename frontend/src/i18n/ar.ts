@@ -1,4 +1,9 @@
 const ar: Record<string, string> = {
+  navMenu: 'القائمة',
+  navSystem: 'النظام',
+  adminPanel: 'لوحة الإدارة',
+  adminRole: 'مدير',
+  directoryOrgChart: 'الدليل / الهيكل التنظيمي',
   dashboard: 'الرئيسية',
   analytics: 'التحليلات',
   employees: 'الموظفين',

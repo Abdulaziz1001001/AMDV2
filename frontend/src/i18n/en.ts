@@ -1,4 +1,9 @@
 const en = {
+  navMenu: 'MENU',
+  navSystem: 'SYSTEM',
+  adminPanel: 'Admin Panel',
+  adminRole: 'Admin',
+  directoryOrgChart: 'Directory / Org Chart',
   dashboard: 'Dashboard',
   analytics: 'Analytics',
   employees: 'Employees',

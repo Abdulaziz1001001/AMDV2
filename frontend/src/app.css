@@ -102,3 +102,25 @@ body {
     --sidebar-width: 0px;
   }
 }
+
+/* Admin portal: industrial dark shell + orange accent (sidebar + main chrome) */
+.admin-shell {
+  --sidebar-width: 280px;
+  --color-accent: #e05a2c;
+  --color-accent-hover: #c94a24;
+  --color-accent-soft: rgba(224, 90, 44, 0.12);
+  --color-surface: #121212;
+  --color-surface-raised: #1a1a1a;
+  --color-surface-sunken: #0c0c0c;
+  --color-border: #2a2a2a;
+  --color-border-subtle: #1f1f1f;
+  --color-text-primary: #fafafa;
+  --color-text-secondary: #a1a1aa;
+  --color-text-tertiary: #71717a;
+}
+
+@media (max-width: 1023px) {
+  .admin-shell {
+    --sidebar-width: 0px;
+  }
+}
