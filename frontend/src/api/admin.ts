@@ -220,16 +220,21 @@ export function fetchAllData() {
   return request<AllDataResponse>('/admin/all-data')
 }
 
+export interface AdminNotificationsResponse {
+  items: Notification[]
+  unreadCount: number
+}
+
 export function fetchNotifications() {
-  return request<Notification[]>('/admin/notifications')
+  return request<AdminNotificationsResponse>('/admin/notifications')
 }
 
 export function markNotificationRead(id: string) {
-  return request(`/admin/notifications/${id}/read`, 'PATCH')
+  return request<{ msg?: string; unreadCount?: number }>(`/admin/notifications/${id}/read`, 'PATCH')
 }
 
 export function markAllNotificationsRead() {
-  return request('/admin/notifications/read-all', 'POST')
+  return request<{ msg?: string }>('/admin/notifications/read-all', 'POST')
 }
 
 export function fetchEarlyCheckouts() {

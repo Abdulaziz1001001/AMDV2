@@ -26,7 +26,7 @@ export function SlideOver({ open, onOpenChange, title, children, side = 'right',
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-50 bg-black/30 backdrop-blur-[2px]"
+                className="fixed inset-0 z-[100000] bg-black/30 backdrop-blur-[2px]"
               />
             </Dialog.Overlay>
             <Dialog.Content asChild>
@@ -36,7 +36,7 @@ export function SlideOver({ open, onOpenChange, title, children, side = 'right',
                 exit={{ x: isRight ? '100%' : '-100%' }}
                 transition={{ type: 'spring', stiffness: 400, damping: 35 }}
                 className={cn(
-                  'fixed top-0 z-50 h-screen w-full max-w-md bg-surface border-border-subtle shadow-lg focus:outline-none flex flex-col',
+                  'fixed top-0 z-[100001] h-screen w-full max-w-md bg-surface border-border-subtle shadow-lg focus:outline-none flex flex-col',
                   isRight ? 'right-0 border-l' : 'left-0 border-r',
                   className,
                 )}

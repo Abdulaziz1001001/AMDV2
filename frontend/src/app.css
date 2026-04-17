@@ -109,8 +109,23 @@ body {
   }
 }
 
-/* Admin portal: industrial dark shell + orange accent (sidebar + main chrome) */
-.admin-shell {
+/* Admin portal: orange accent; surfaces follow global light/dark (ThemeContext toggles .dark on html) */
+html:not(.dark) .admin-shell {
+  --sidebar-width: 280px;
+  --color-accent: #e05a2c;
+  --color-accent-hover: #c94a24;
+  --color-accent-soft: rgba(224, 90, 44, 0.14);
+  --color-surface: #ffffff;
+  --color-surface-raised: #fafafa;
+  --color-surface-sunken: #f5f5f7;
+  --color-border: #e5e7eb;
+  --color-border-subtle: #f0f0f0;
+  --color-text-primary: #111827;
+  --color-text-secondary: #6b7280;
+  --color-text-tertiary: #9ca3af;
+}
+
+html.dark .admin-shell {
   --sidebar-width: 280px;
   --color-accent: #e05a2c;
   --color-accent-hover: #c94a24;
@@ -126,7 +141,8 @@ body {
 }
 
 @media (max-width: 1023px) {
-  .admin-shell {
+  html:not(.dark) .admin-shell,
+  html.dark .admin-shell {
     --sidebar-width: 0px;
   }
 }

@@ -6,18 +6,39 @@ import { Button } from '@/components/ui/Button'
 import { Select } from '@/components/ui/Select'
 import { SlideOver } from '@/components/ui/SlideOver'
 import { useToast } from '@/components/ui/Toast'
+import { useAdminNav } from '@/stores/AdminNavContext'
 import { fetchSafetyIncidents, type SafetyIncident } from '@/api/admin'
 import { request } from '@/api/client'
 import { fmtDate } from '@/lib/formatters'
 
 export default function Safety() {
   const { toast } = useToast()
+  const { pendingSafetyIncidentId, clearPendingSafetyFocus } = useAdminNav()
   const [incidents, setIncidents] = useState<SafetyIncident[]>([])
   const [selected, setSelected] = useState<SafetyIncident | null>(null)
   const [statusFilter, setStatusFilter] = useState('')
 
   const load = async () => { try { setIncidents(await fetchSafetyIncidents()) } catch {} }
   useEffect(() => { load() }, [])
+
+  useEffect(() => {
+    if (pendingSafetyIncidentId) setStatusFilter('')
+  }, [pendingSafetyIncidentId])
+
+  useEffect(() => {
+    if (!pendingSafetyIncidentId || incidents.length === 0) return
+    const inc = incidents.find((i) => i.id === pendingSafetyIncidentId)
+    if (!inc) {
+      clearPendingSafetyFocus()
+      return
+    }
+    setSelected(inc)
+    const t = window.setTimeout(() => {
+      document.getElementById(`dt-row-${pendingSafetyIncidentId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      clearPendingSafetyFocus()
+    }, 200)
+    return () => window.clearTimeout(t)
+  }, [pendingSafetyIncidentId, incidents, clearPendingSafetyFocus])
 
   const filtered = statusFilter ? incidents.filter(i => i.status === statusFilter) : incidents
 
@@ -39,7 +60,13 @@ export default function Safety() {
       <div className="flex gap-3">
         <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="max-w-44"><option value="">All Statuses</option><option value="open">Open</option><option value="investigating">Investigating</option><option value="resolved">Resolved</option><option value="closed">Closed</option></Select>
       </div>
-      <DataTable columns={columns} data={filtered} searchColumn="reporterName" />
+      <DataTable
+        columns={columns}
+        data={filtered}
+        searchColumn="reporterName"
+        getRowId={(row) => row.id}
+        highlightRowId={pendingSafetyIncidentId}
+      />
 
       <SlideOver open={!!selected} onOpenChange={() => setSelected(null)} title="Incident Details">
         {selected && (

@@ -21,6 +21,9 @@ interface DataTableProps<T> {
   searchColumn?: string
   pageSize?: number
   className?: string
+  /** Stable row id for DOM `id="dt-row-{id}"` and optional highlight */
+  getRowId?: (row: T) => string
+  highlightRowId?: string | null
 }
 
 export function DataTable<T>({
@@ -30,6 +33,8 @@ export function DataTable<T>({
   searchColumn,
   pageSize = 10,
   className,
+  getRowId,
+  highlightRowId,
 }: DataTableProps<T>) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [globalFilter, setGlobalFilter] = useState('')
@@ -45,6 +50,7 @@ export function DataTable<T>({
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     initialState: { pagination: { pageSize } },
+    getRowId: getRowId ? (originalRow: T) => getRowId(originalRow) : undefined,
   })
 
   return (
@@ -94,10 +100,17 @@ export function DataTable<T>({
                   </td>
                 </tr>
               ) : (
-                table.getRowModel().rows.map((row) => (
+                table.getRowModel().rows.map((row) => {
+                  const rid = getRowId ? getRowId(row.original) : undefined
+                  const isHl = Boolean(highlightRowId && rid && highlightRowId === rid)
+                  return (
                   <tr
                     key={row.id}
-                    className="border-b border-border-subtle last:border-0 bg-surface hover:bg-surface-raised transition-colors"
+                    id={rid ? `dt-row-${rid}` : undefined}
+                    className={cn(
+                      'border-b border-border-subtle last:border-0 bg-surface hover:bg-surface-raised transition-colors',
+                      isHl && 'bg-accent-soft/40 ring-1 ring-inset ring-accent/50',
+                    )}
                   >
                     {row.getVisibleCells().map((cell) => (
                       <td key={cell.id} className="px-4 py-3 text-text-primary">
@@ -105,7 +118,8 @@ export function DataTable<T>({
                       </td>
                     ))}
                   </tr>
-                ))
+                  )
+                })
               )}
             </tbody>
           </table>

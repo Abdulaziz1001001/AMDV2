@@ -1,5 +1,6 @@
 import { useAuth } from '@/stores/AuthContext'
 import { DataProvider } from '@/stores/DataContext'
+import { AdminNavProvider } from '@/stores/AdminNavContext'
 import { PageShell } from '@/components/layout/PageShell'
 import Home from '@/pages/Home'
 import AdminLogin from '@/pages/auth/AdminLogin'
@@ -17,7 +18,9 @@ export default function App() {
   if (role === 'admin') {
     return (
       <DataProvider>
-        <PageShell />
+        <AdminNavProvider>
+          <PageShell />
+        </AdminNavProvider>
       </DataProvider>
     )
   }

@@ -3,14 +3,22 @@ import { type ColumnDef } from '@tanstack/react-table'
 import { DataTable } from '@/components/ui/DataTable'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
+import { Card, CardContent } from '@/components/ui/Card'
 import { useData } from '@/stores/DataContext'
+import { useAdminNav } from '@/stores/AdminNavContext'
 import { useToast } from '@/components/ui/Toast'
 import { updateLeaveRequest, actionEarlyCheckout, actionOvertime, fetchEarlyCheckouts, fetchOvertimes, type EarlyCheckout, type OvertimeEntry, type LeaveRequest } from '@/api/admin'
 import { fmtDate } from '@/lib/formatters'
 
 export default function HrManagement() {
   const { leaveRequests, employees, departments, sync } = useData()
+  const {
+    pendingHrTab,
+    pendingLeaveId,
+    pendingEarlyCheckoutId,
+    pendingOvertimeId,
+    clearPendingHrFocus,
+  } = useAdminNav()
   const { toast } = useToast()
   const [earlyCheckouts, setEC] = useState<EarlyCheckout[]>([])
   const [overtimes, setOT] = useState<OvertimeEntry[]>([])
@@ -20,6 +28,37 @@ export default function HrManagement() {
     fetchEarlyCheckouts().then(setEC).catch(() => {})
     fetchOvertimes().then(setOT).catch(() => {})
   }, [])
+
+  useEffect(() => {
+    if (pendingHrTab) setTab(pendingHrTab)
+  }, [pendingHrTab])
+
+  useEffect(() => {
+    if (!pendingLeaveId || tab !== 'leaves') return
+    const t = window.setTimeout(() => {
+      document.getElementById(`dt-row-${pendingLeaveId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      clearPendingHrFocus()
+    }, 250)
+    return () => window.clearTimeout(t)
+  }, [pendingLeaveId, tab, clearPendingHrFocus])
+
+  useEffect(() => {
+    if (!pendingEarlyCheckoutId || tab !== 'ec') return
+    const t = window.setTimeout(() => {
+      document.getElementById(`ec-row-${pendingEarlyCheckoutId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      clearPendingHrFocus()
+    }, 250)
+    return () => window.clearTimeout(t)
+  }, [pendingEarlyCheckoutId, tab, clearPendingHrFocus])
+
+  useEffect(() => {
+    if (!pendingOvertimeId || tab !== 'ot') return
+    const t = window.setTimeout(() => {
+      document.getElementById(`ot-row-${pendingOvertimeId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      clearPendingHrFocus()
+    }, 250)
+    return () => window.clearTimeout(t)
+  }, [pendingOvertimeId, tab, clearPendingHrFocus])
 
   const pendingLeaves = useMemo(() => leaveRequests.filter((l) => l.status === 'pending'), [leaveRequests])
 
@@ -60,13 +99,22 @@ export default function HrManagement() {
         ))}
       </div>
 
-      {tab === 'leaves' && <DataTable columns={leaveCols} data={leaveRequests} searchColumn="type" pageSize={10} />}
+      {tab === 'leaves' && (
+        <DataTable
+          columns={leaveCols}
+          data={leaveRequests}
+          searchColumn="type"
+          pageSize={10}
+          getRowId={(r) => r.id}
+          highlightRowId={pendingLeaveId}
+        />
+      )}
       {tab === 'ec' && (
         <div className="space-y-3">
           {earlyCheckouts.filter(e => e.status === 'pending').map((ec) => {
             const empName = typeof ec.employeeId === 'string' ? employees.find(e => e.id === ec.employeeId)?.name : (ec.employeeId as { name?: string })?.name
             return (
-              <Card key={ec.id}>
+              <Card key={ec.id} id={`ec-row-${ec.id}`} className={pendingEarlyCheckoutId === ec.id ? 'ring-1 ring-accent/50 bg-accent-soft/30' : ''}>
                 <CardContent className="pt-4 flex items-center justify-between">
                   <div>
                     <p className="font-medium text-text-primary">{empName || 'Employee'}</p>
@@ -87,7 +135,7 @@ export default function HrManagement() {
           {overtimes.filter(o => o.status === 'pending').map((ot) => {
             const empName = typeof ot.employeeId === 'string' ? employees.find(e => e.id === ot.employeeId)?.name : (ot.employeeId as { name?: string })?.name
             return (
-              <Card key={ot.id}>
+              <Card key={ot.id} id={`ot-row-${ot.id}`} className={pendingOvertimeId === ot.id ? 'ring-1 ring-accent/50 bg-accent-soft/30' : ''}>
                 <CardContent className="pt-4 flex items-center justify-between">
                   <div>
                     <p className="font-medium text-text-primary">{empName || 'Employee'}</p>

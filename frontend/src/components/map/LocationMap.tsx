@@ -44,7 +44,7 @@ const userIcon = L.divIcon({
 /** Map pin (drop shape) — anchor at bottom tip */
 const pickerIcon = L.divIcon({
   className: 'leaflet-div-icon !border-0 !bg-transparent',
-  html: `<div style="width:36px;height:42px;margin-left:-18px;margin-top:-42px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.4))">
+  html: `<div style="width:36px;height:42px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.4))">
     <svg width="36" height="42" viewBox="0 0 24 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <path d="M12 2C7.58 2 4 5.58 4 10c0 6.5 8 14 8 14s8-7.5 8-14c0-4.42-3.58-8-8-8z" fill="#2563eb" stroke="#fff" stroke-width="1.25"/>
       <circle cx="12" cy="10" r="3" fill="#fff"/>

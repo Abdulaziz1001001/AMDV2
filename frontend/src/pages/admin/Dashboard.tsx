@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react'
-import { Users, UserCheck, Clock, UserX, ArrowRightLeft, Timer, AlertTriangle, CalendarCheck2 } from 'lucide-react'
+import { Users, UserCheck, Clock, UserX, ArrowRightLeft, Timer, AlertTriangle, CalendarCheck2, ChevronRight } from 'lucide-react'
 import { type ColumnDef } from '@tanstack/react-table'
 import { StatCard } from '@/components/ui/StatCard'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
@@ -10,7 +10,8 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { AttendanceChart } from '@/components/charts/AttendanceChart'
 import { useData } from '@/stores/DataContext'
 import { useLang } from '@/stores/LangContext'
-import { closeDay, fetchEarlyCheckouts, fetchOvertimes, fetchSafetyIncidents, type EarlyCheckout, type OvertimeEntry, type SafetyIncident } from '@/api/admin'
+import { closeDay, fetchEarlyCheckouts, fetchOvertimes, fetchSafetyIncidents, type EarlyCheckout, type OvertimeEntry, type SafetyIncident, type LeaveRequest } from '@/api/admin'
+import { useAdminNav } from '@/stores/AdminNavContext'
 import { isWorkingDay } from '@/lib/calendar'
 import { todayStr, fmtTime } from '@/lib/formatters'
 import { useToast } from '@/components/ui/Toast'
@@ -24,8 +25,20 @@ interface TodayRow {
   status: string
 }
 
+function leaveEmployeeName(l: LeaveRequest, employees: { id: string; name?: string }[]) {
+  const ref = l.employeeId
+  if (typeof ref === 'string') return employees.find((e) => e.id === ref)?.name || '—'
+  return ref?.name || '—'
+}
+
 export default function Dashboard() {
-  const { employees, records, groups, workPolicy, sync } = useData()
+  const { employees, records, groups, workPolicy, sync, leaveRequests } = useData()
+  const {
+    goToLeaveRequest,
+    goToEarlyCheckout,
+    goToOvertime,
+    goToSafetyIncident,
+  } = useAdminNav()
   const { t } = useLang()
   const { toast } = useToast()
   const [earlyCheckouts, setEarlyCheckouts] = useState<EarlyCheckout[]>([])
@@ -52,6 +65,14 @@ export default function Dashboard() {
   const pendingOT = overtimes.filter((o) => o.status === 'pending').length
   const openInc = incidents.filter((i) => i.status === 'open' || i.status === 'investigating').length
   const alreadyClosedToday = lastCloseRunDate === today
+
+  const pendingLeavesList = useMemo(() => leaveRequests.filter((l) => l.status === 'pending').slice(0, 6), [leaveRequests])
+  const pendingEcList = useMemo(() => earlyCheckouts.filter((e) => e.status === 'pending').slice(0, 4), [earlyCheckouts])
+  const pendingOtList = useMemo(() => overtimes.filter((o) => o.status === 'pending').slice(0, 4), [overtimes])
+
+  const firstPendingEcId = earlyCheckouts.find((e) => e.status === 'pending')?.id
+  const firstPendingOtId = overtimes.find((o) => o.status === 'pending')?.id
+  const firstOpenIncidentId = incidents.find((i) => i.status === 'open' || i.status === 'investigating')?.id
 
   const runCloseDay = async () => {
     if (closeDayBusy || alreadyClosedToday) return
@@ -127,15 +148,97 @@ export default function Dashboard() {
       {(pendingEC > 0 || pendingOT > 0 || openInc > 0) && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {pendingEC > 0 && (
-            <StatCard label={t('earlyCheckouts')} value={pendingEC} icon={ArrowRightLeft} color="warning" />
+            <StatCard
+              label={t('earlyCheckouts')}
+              value={pendingEC}
+              icon={ArrowRightLeft}
+              color="warning"
+              onClick={() => { if (firstPendingEcId) goToEarlyCheckout(firstPendingEcId) }}
+            />
           )}
           {pendingOT > 0 && (
-            <StatCard label={t('pendingOvertime')} value={pendingOT} icon={Timer} color="accent" />
+            <StatCard
+              label={t('pendingOvertime')}
+              value={pendingOT}
+              icon={Timer}
+              color="accent"
+              onClick={() => { if (firstPendingOtId) goToOvertime(firstPendingOtId) }}
+            />
           )}
           {openInc > 0 && (
-            <StatCard label={t('openIncidents')} value={openInc} icon={AlertTriangle} color="danger" />
+            <StatCard
+              label={t('openIncidents')}
+              value={openInc}
+              icon={AlertTriangle}
+              color="danger"
+              onClick={() => { if (firstOpenIncidentId) goToSafetyIncident(firstOpenIncidentId) }}
+            />
           )}
         </div>
+      )}
+
+      {(pendingLeavesList.length > 0 || pendingEcList.length > 0 || pendingOtList.length > 0) && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Pending approvals</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-1">
+            {pendingLeavesList.map((l) => (
+              <button
+                key={l.id}
+                type="button"
+                onClick={() => goToLeaveRequest(l.id)}
+                className="flex w-full items-center justify-between gap-3 rounded-lg border border-border-subtle bg-surface px-3 py-2.5 text-left transition-colors hover:bg-surface-raised"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-text-primary">Leave · {l.type}</p>
+                  <p className="text-xs text-text-tertiary truncate">{leaveEmployeeName(l, employees)} · {l.requestedDays} day(s)</p>
+                </div>
+                <ChevronRight className="h-4 w-4 shrink-0 text-text-tertiary" />
+              </button>
+            ))}
+            {pendingEcList.map((ec) => {
+              const name =
+                typeof ec.employeeId === 'string'
+                  ? employees.find((e) => e.id === ec.employeeId)?.name
+                  : (ec.employeeId as { name?: string })?.name
+              return (
+                <button
+                  key={ec.id}
+                  type="button"
+                  onClick={() => goToEarlyCheckout(ec.id)}
+                  className="flex w-full items-center justify-between gap-3 rounded-lg border border-border-subtle bg-surface px-3 py-2.5 text-left transition-colors hover:bg-surface-raised"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-text-primary">Early checkout</p>
+                    <p className="text-xs text-text-tertiary truncate">{name || 'Employee'} — {ec.reason?.slice(0, 80) || '—'}</p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-text-tertiary" />
+                </button>
+              )
+            })}
+            {pendingOtList.map((ot) => {
+              const name =
+                typeof ot.employeeId === 'string'
+                  ? employees.find((e) => e.id === ot.employeeId)?.name
+                  : (ot.employeeId as { name?: string })?.name
+              return (
+                <button
+                  key={ot.id}
+                  type="button"
+                  onClick={() => goToOvertime(ot.id)}
+                  className="flex w-full items-center justify-between gap-3 rounded-lg border border-border-subtle bg-surface px-3 py-2.5 text-left transition-colors hover:bg-surface-raised"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-text-primary">Overtime request</p>
+                    <p className="text-xs text-text-tertiary truncate">{name || 'Employee'} — {ot.extraMinutes} min · {ot.date}</p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-text-tertiary" />
+                </button>
+              )
+            })}
+          </CardContent>
+        </Card>
       )}
 
       {/* Chart + Table */}

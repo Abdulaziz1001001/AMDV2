@@ -3,6 +3,7 @@ import { Sidebar } from './Sidebar'
 import { Topbar } from './Topbar'
 import { MobileNav } from './MobileNav'
 import { useData } from '@/stores/DataContext'
+import { useAdminNav } from '@/stores/AdminNavContext'
 import { useLang } from '@/stores/LangContext'
 import { useToast } from '@/components/ui/Toast'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -74,7 +75,7 @@ const panelTitleKeys: Record<string, string> = {
 }
 
 export function PageShell() {
-  const [activePanel, setActivePanel] = useState('dashboard')
+  const { activePanel, setActivePanel } = useAdminNav()
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const { sync, loading, notificationUnreadCount } = useData()
   const { t, lang } = useLang()
