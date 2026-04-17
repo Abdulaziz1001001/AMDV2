@@ -4,7 +4,7 @@ import { DataTable } from '@/components/ui/DataTable'
 import { Button } from '@/components/ui/Button'
 import { useToast } from '@/components/ui/Toast'
 import { request } from '@/api/client'
-import { Trash2, Download } from 'lucide-react'
+import { Trash2, Download, Eye } from 'lucide-react'
 import { fmtDate } from '@/lib/formatters'
 
 interface Doc { id: string; title: string; category: string; employeeId: string; originalName?: string; expiresAt?: string; createdAt?: string; uploadedByRole?: string }
@@ -21,14 +21,40 @@ export default function Documents() {
     try { await request(`/self-service/documents/${id}`, 'DELETE'); load(); toast('Deleted', 'warning') } catch (e: unknown) { toast((e as Error).message, 'error') }
   }
 
+  const viewDoc = (id: string) => {
+    window.open(`/api/self-service/documents/${id}/download`, '_blank', 'noopener,noreferrer')
+  }
+
+  const downloadDoc = async (doc: Doc) => {
+    try {
+      const token = localStorage.getItem('amd_token')
+      const res = await fetch(`/api/self-service/documents/${doc.id}/download`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
+      if (!res.ok) throw new Error('Unable to download document')
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = doc.originalName || `${doc.title || 'document'}-${doc.id}`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } catch (e: unknown) {
+      toast((e as Error).message, 'error')
+    }
+  }
+
   const columns: ColumnDef<Doc, unknown>[] = [
     { accessorKey: 'title', header: 'Title' },
     { accessorKey: 'category', header: 'Category', cell: ({ getValue }) => <span className="text-xs px-2 py-0.5 rounded bg-surface-sunken text-text-secondary">{(getValue() as string).replace(/_/g, ' ')}</span> },
     { accessorKey: 'originalName', header: 'File', cell: ({ getValue }) => <span className="text-xs text-text-tertiary truncate max-w-32 block">{(getValue() as string) || '—'}</span> },
     { accessorKey: 'expiresAt', header: 'Expires', cell: ({ getValue }) => fmtDate(getValue() as string) },
-    { id: 'actions', header: '', size: 80, cell: ({ row }) => (
+    { id: 'actions', header: '', size: 120, cell: ({ row }) => (
       <div className="flex gap-1">
-        <Button variant="ghost" size="icon" onClick={() => window.open(`/api/self-service/documents/${row.original.id}/download`)}><Download className="h-3.5 w-3.5" /></Button>
+        <Button variant="ghost" size="icon" title="View" onClick={() => viewDoc(row.original.id)}><Eye className="h-3.5 w-3.5" /></Button>
+        <Button variant="ghost" size="icon" title="Download" onClick={() => downloadDoc(row.original)}><Download className="h-3.5 w-3.5" /></Button>
         <Button variant="ghost" size="icon" onClick={() => handleDelete(row.original.id)}><Trash2 className="h-3.5 w-3.5 text-danger" /></Button>
       </div>
     )},

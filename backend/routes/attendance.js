@@ -2,8 +2,8 @@ const express = require('express');
 const auth = require('../middleware/authMiddleware');
 const Record = require('../models/Record');
 const Employee = require('../models/Employee');
-const Group = require('../models/Group');
-const WorkPolicy = require('../models/WorkPolicy');
+const { closeDaySchema, validateBody } = require('../middleware/validation');
+const { closeDay } = require('../controllers/attendanceController');
 
 const router = express.Router();
 router.use(auth);
@@ -12,62 +12,7 @@ function todayStr() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function isWorkingDay(dateStr, empGroupId, policy, groups) {
-  const d = new Date(dateStr);
-  const dow = d.getUTCDay();
-  const group = groups.find((g) => String(g._id) === String(empGroupId));
-
-  const weekendDays = group && group.weekendDays && group.weekendDays.length
-    ? group.weekendDays
-    : (policy && policy.defaultWeekendDays ? policy.defaultWeekendDays : [5, 6]);
-
-  if (weekendDays.includes(dow)) return false;
-
-  const holidays = policy && policy.companyHolidays ? policy.companyHolidays : [];
-  if (!(group && group.ignoreCompanyHolidays)) {
-    if (holidays.some((h) => h.date === dateStr)) return false;
-  }
-
-  if (group && group.extraNonWorkDates && group.extraNonWorkDates.includes(dateStr)) return false;
-
-  return true;
-}
-
-router.post('/close-day', auth.requireRole('admin'), async (req, res) => {
-  try {
-    const date = req.body.date || todayStr();
-
-    const [employees, groups, policy, existingRecords] = await Promise.all([
-      Employee.find({ active: true }),
-      Group.find(),
-      WorkPolicy.findOne({ key: 'company' }),
-      Record.find({ date }),
-    ]);
-
-    const checkedInIds = new Set(existingRecords.map((r) => r.employeeId));
-    const absentees = [];
-
-    for (const emp of employees) {
-      if (checkedInIds.has(String(emp._id))) continue;
-      if (!isWorkingDay(date, emp.groupId, policy, groups)) continue;
-
-      absentees.push({
-        employeeId: String(emp._id),
-        date,
-        status: 'absent',
-        approvalStatus: 'none',
-      });
-    }
-
-    if (absentees.length) {
-      await Record.insertMany(absentees);
-    }
-
-    res.json({ msg: `${absentees.length} absent record(s) created for ${date}`, count: absentees.length });
-  } catch (err) {
-    res.status(500).json({ msg: err.message });
-  }
-});
+router.post('/close-day', auth.requireRole('admin'), validateBody(closeDaySchema), closeDay);
 
 router.post('/break-start', auth.requireRole(['employee', 'manager']), async (req, res) => {
   try {

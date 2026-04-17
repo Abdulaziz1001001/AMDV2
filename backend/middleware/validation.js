@@ -5,6 +5,32 @@ const loginSchema = z.object({
   password: z.string().min(1, 'Password is required').max(500),
 });
 
+const isoDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'date must be YYYY-MM-DD');
+const isoDateTimeSchema = z.string().datetime({ offset: true });
+
+const attendanceStatusSchema = z.enum(['present', 'late', 'absent', 'early_leave']);
+const approvalStatusSchema = z.enum(['none', 'pending', 'approved', 'rejected']);
+
+const attendanceUpsertSchema = z.object({
+  employeeId: z.string().trim().min(1, 'employeeId is required'),
+  date: isoDateSchema,
+  checkIn: isoDateTimeSchema.optional(),
+  checkOut: isoDateTimeSchema.optional(),
+  checkInLat: z.number().finite().optional(),
+  checkInLng: z.number().finite().optional(),
+  checkOutLat: z.number().finite().optional(),
+  checkOutLng: z.number().finite().optional(),
+  status: attendanceStatusSchema.optional(),
+  notes: z.string().trim().max(4000).optional(),
+  approvalStatus: approvalStatusSchema.optional(),
+  attachment: z.string().trim().max(4000).optional(),
+  projectId: z.string().trim().min(1).optional(),
+});
+
+const closeDaySchema = z.object({
+  date: isoDateSchema.optional(),
+});
+
 const employeeWriteSchema = z
   .object({
     id: z.string().trim().optional().or(z.literal('')),
@@ -47,8 +73,24 @@ function validateBody(schema) {
   };
 }
 
+function validateQuery(schema) {
+  return (req, res, next) => {
+    const parsed = schema.safeParse(req.query);
+    if (!parsed.success) {
+      const first = parsed.error.flatten().fieldErrors;
+      const msg = Object.values(first).flat()[0] || 'Invalid query';
+      return res.status(400).json({ msg });
+    }
+    req.query = parsed.data;
+    next();
+  };
+}
+
 module.exports = {
   loginSchema,
+  attendanceUpsertSchema,
+  closeDaySchema,
   employeeWriteSchema,
   validateBody,
+  validateQuery,
 };
