@@ -106,7 +106,7 @@ export function Topbar({ title, unreadCount = 0, onRefresh, refreshing, onMenuCl
               side="bottom"
               align="end"
               sideOffset={8}
-              className="z-[10020] w-[min(calc(100vw-2rem),22rem)] rounded-xl border border-border-subtle bg-surface shadow-lg outline-none"
+              className="z-[10020] w-[min(calc(100vw-2rem),22rem)] rounded-xl border border-border-subtle bg-popover text-popover-foreground shadow-lg outline-none"
               onOpenAutoFocus={(e) => e.preventDefault()}
             >
               <div className="flex items-center justify-between gap-2 border-b border-border-subtle px-3 py-2">
