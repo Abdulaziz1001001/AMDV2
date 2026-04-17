@@ -51,7 +51,8 @@ const pickerIcon = L.divIcon({
     </svg>
   </div>`,
   iconSize: [36, 42],
-  iconAnchor: [18, 42],
+  /* Bottom-center of div: tip of pin aligns with geofence circle center at [lat,lng] */
+  iconAnchor: [18, 41],
 })
 
 function FitBounds({ points }: { points: [number, number][] }) {

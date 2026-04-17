@@ -75,6 +75,12 @@ export function PageShell() {
   const { t, lang } = useLang()
   const { toast } = useToast()
 
+  /** Portaled Radix surfaces inherit tokens from documentElement, not .admin-shell — align palette on html. */
+  useEffect(() => {
+    document.documentElement.setAttribute('data-admin', 'true')
+    return () => document.documentElement.removeAttribute('data-admin')
+  }, [])
+
   useEffect(() => {
     sync().then(() => toast('Synced', 'success')).catch(() => toast('Sync failed', 'error'))
   // eslint-disable-next-line react-hooks/exhaustive-deps -- initial bootstrap only

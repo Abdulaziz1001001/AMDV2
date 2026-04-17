@@ -136,6 +136,7 @@ body {
     margin-left: 0.5rem;
     margin-right: 0;
   }
+
 }
 
 @media (max-width: 1023px) {
@@ -178,6 +179,57 @@ html.dark .admin-shell {
 @media (max-width: 1023px) {
   html:not(.dark) .admin-shell,
   html.dark .admin-shell {
+    --sidebar-width: 0px;
+  }
+}
+
+/*
+ * Admin app: portal roots (Radix) render under body, outside .admin-shell.
+ * Mirror the same surface/text/accent tokens onto documentElement so --card/--popover match the shell.
+ */
+html[data-admin="true"]:not(.dark) {
+  --sidebar-width: 280px;
+  --color-accent: #e05a2c;
+  --color-accent-hover: #c94a24;
+  --color-accent-soft: rgba(224, 90, 44, 0.14);
+  --color-surface: #ffffff;
+  --color-surface-raised: #fafafa;
+  --color-surface-sunken: #f5f5f7;
+  --color-border: #e5e7eb;
+  --color-border-subtle: #f0f0f0;
+  --color-text-primary: #111827;
+  --color-text-secondary: #6b7280;
+  --color-text-tertiary: #9ca3af;
+}
+
+html[data-admin="true"].dark {
+  --sidebar-width: 280px;
+  --color-accent: #e05a2c;
+  --color-accent-hover: #c94a24;
+  --color-accent-soft: rgba(224, 90, 44, 0.12);
+  --color-surface: #121212;
+  --color-surface-raised: #1a1a1a;
+  --color-surface-sunken: #0c0c0c;
+  --color-border: #2a2a2a;
+  --color-border-subtle: #1f1f1f;
+  --color-text-primary: #fafafa;
+  --color-text-secondary: #a1a1aa;
+  --color-text-tertiary: #71717a;
+}
+
+html[data-admin="true"]:not(.dark),
+html[data-admin="true"].dark {
+  --background: var(--color-surface-sunken);
+  --foreground: var(--color-text-primary);
+  --card: var(--color-surface);
+  --card-foreground: var(--color-text-primary);
+  --popover: var(--color-surface);
+  --popover-foreground: var(--color-text-primary);
+}
+
+@media (max-width: 1023px) {
+  html[data-admin="true"]:not(.dark),
+  html[data-admin="true"].dark {
     --sidebar-width: 0px;
   }
 }

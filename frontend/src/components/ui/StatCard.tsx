@@ -1,3 +1,4 @@
+import type { KeyboardEvent } from 'react'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/cn'
 import type { LucideIcon } from 'lucide-react'
@@ -18,15 +19,30 @@ const bgMap = {
 }
 
 export function StatCard({ label, value, icon: Icon, color = 'accent', onClick }: StatCardProps) {
+  const interactive = Boolean(onClick)
+
+  const onKeyDown = interactive
+    ? (e: KeyboardEvent) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onClick?.()
+        }
+      }
+    : undefined
+
   return (
     <motion.div
+      role={interactive ? 'button' : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      aria-label={interactive ? `${label}: ${value}. Press Enter to open.` : undefined}
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
       onClick={onClick}
+      onKeyDown={onKeyDown}
       className={cn(
         'group rounded-xl bg-surface border border-border-subtle p-5 shadow-xs transition-shadow hover:shadow-sm',
-        onClick && 'cursor-pointer',
+        interactive && 'cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:ring-offset-2',
       )}
     >
       <div className="flex items-center gap-4">

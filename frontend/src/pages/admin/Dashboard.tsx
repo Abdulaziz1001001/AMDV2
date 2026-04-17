@@ -34,6 +34,7 @@ function leaveEmployeeName(l: LeaveRequest, employees: { id: string; name?: stri
 export default function Dashboard() {
   const { employees, records, groups, workPolicy, sync, leaveRequests } = useData()
   const {
+    setActivePanel,
     goToLeaveRequest,
     goToEarlyCheckout,
     goToOvertime,
@@ -136,12 +137,36 @@ export default function Dashboard() {
         </CardContent>
       </Card>
 
-      {/* Stat cards */}
+      {/* Stat cards — deep-link into admin panels (no React Router) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label={t('totalEmployees')} value={active.length} icon={Users} color="accent" />
-        <StatCard label={t('presentToday')} value={present} icon={UserCheck} color="success" />
-        <StatCard label={t('lateToday')} value={late} icon={Clock} color="warning" />
-        <StatCard label={t('absentToday')} value={absent < 0 ? 0 : absent} icon={UserX} color="danger" />
+        <StatCard
+          label={t('totalEmployees')}
+          value={active.length}
+          icon={Users}
+          color="accent"
+          onClick={() => setActivePanel('employees')}
+        />
+        <StatCard
+          label={t('presentToday')}
+          value={present}
+          icon={UserCheck}
+          color="success"
+          onClick={() => setActivePanel('records')}
+        />
+        <StatCard
+          label={t('lateToday')}
+          value={late}
+          icon={Clock}
+          color="warning"
+          onClick={() => setActivePanel('records')}
+        />
+        <StatCard
+          label={t('absentToday')}
+          value={absent < 0 ? 0 : absent}
+          icon={UserX}
+          color="danger"
+          onClick={() => setActivePanel('records')}
+        />
       </div>
 
       {/* Action widgets */}
@@ -178,17 +203,15 @@ export default function Dashboard() {
       )}
 
       {(pendingLeavesList.length > 0 || pendingEcList.length > 0 || pendingOtList.length > 0) && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Pending approvals</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-1">
+        <section className="rounded-xl px-1 py-2">
+          <h2 className="text-sm font-semibold text-text-primary mb-3 px-1">Pending approvals</h2>
+          <div className="divide-y divide-border-subtle rounded-xl overflow-hidden bg-surface-raised/40">
             {pendingLeavesList.map((l) => (
               <button
                 key={l.id}
                 type="button"
                 onClick={() => goToLeaveRequest(l.id)}
-                className="flex w-full items-center justify-between gap-3 rounded-lg border border-border-subtle bg-surface px-3 py-2.5 text-left transition-colors hover:bg-surface-raised"
+                className="flex w-full items-center justify-between gap-3 px-3 py-3 text-left transition-colors hover:bg-surface-raised/80"
               >
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-text-primary">Leave · {l.type}</p>
@@ -207,7 +230,7 @@ export default function Dashboard() {
                   key={ec.id}
                   type="button"
                   onClick={() => goToEarlyCheckout(ec.id)}
-                  className="flex w-full items-center justify-between gap-3 rounded-lg border border-border-subtle bg-surface px-3 py-2.5 text-left transition-colors hover:bg-surface-raised"
+                  className="flex w-full items-center justify-between gap-3 px-3 py-3 text-left transition-colors hover:bg-surface-raised/80"
                 >
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-text-primary">Early checkout</p>
@@ -227,7 +250,7 @@ export default function Dashboard() {
                   key={ot.id}
                   type="button"
                   onClick={() => goToOvertime(ot.id)}
-                  className="flex w-full items-center justify-between gap-3 rounded-lg border border-border-subtle bg-surface px-3 py-2.5 text-left transition-colors hover:bg-surface-raised"
+                  className="flex w-full items-center justify-between gap-3 px-3 py-3 text-left transition-colors hover:bg-surface-raised/80"
                 >
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-text-primary">Overtime request</p>
@@ -237,8 +260,8 @@ export default function Dashboard() {
                 </button>
               )
             })}
-          </CardContent>
-        </Card>
+          </div>
+        </section>
       )}
 
       {/* Chart + Table */}

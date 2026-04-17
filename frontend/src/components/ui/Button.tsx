@@ -13,9 +13,9 @@ const buttonVariants = cva(
         danger: 'bg-danger text-white hover:bg-danger/90 active:scale-[0.98]',
         success: 'bg-success text-white hover:bg-success/90 active:scale-[0.98]',
         approval:
-          'bg-emerald-100 text-emerald-900 hover:bg-emerald-200/90 dark:bg-emerald-950/60 dark:text-emerald-100 dark:hover:bg-emerald-900/50 active:scale-[0.98]',
+          'border border-emerald-200/70 bg-transparent text-emerald-900 hover:bg-emerald-50/90 dark:border-emerald-900/60 dark:bg-emerald-950/25 dark:text-emerald-100 dark:hover:bg-emerald-950/45 active:scale-[0.98]',
         decline:
-          'bg-red-100 text-red-900 hover:bg-red-200/90 dark:bg-red-950/60 dark:text-red-100 dark:hover:bg-red-900/50 active:scale-[0.98]',
+          'border border-red-200/70 bg-transparent text-red-900 hover:bg-red-50/90 dark:border-red-900/60 dark:bg-red-950/25 dark:text-red-100 dark:hover:bg-red-950/45 active:scale-[0.98]',
       },
       size: {
         sm: 'h-8 px-3 text-xs',

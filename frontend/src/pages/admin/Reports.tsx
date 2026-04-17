@@ -120,6 +120,9 @@ export default function Reports() {
 
   return (
     <div className="space-y-6">
+      <p className="text-xs text-text-tertiary">
+        Exports use PDF and Microsoft Excel formats only (no CSV/JSON).
+      </p>
       <div className="flex gap-3 flex-wrap items-end">
         <div>
           <label className="text-xs font-medium text-text-secondary block mb-1">Employee</label>
