@@ -136,7 +136,7 @@ export default function Locations() {
           <Plus className="h-4 w-4" /> Create location
         </Button>
       </div>
-      <LocationMap locations={mapPoints} />
+      <LocationMap locations={mapPoints} className={open ? 'invisible pointer-events-none' : ''} />
       <DataTable columns={columns} data={locations} searchColumn="name" />
       <Modal open={open} onOpenChange={setOpen} title="New location" size="xl">
         <div className="space-y-5">

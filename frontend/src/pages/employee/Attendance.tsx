@@ -11,6 +11,7 @@ import { useAuth } from '@/stores/AuthContext'
 import { request } from '@/api/client'
 import { fmtTime, todayStr } from '@/lib/formatters'
 import { EARLY_LEAVE_REASONS } from '@/lib/constants'
+import { cn } from '@/lib/cn'
 import { LocationMap, type MapPoint } from '@/components/map/LocationMap'
 
 interface TodayRecord { id?: string; date: string; checkIn?: string; checkOut?: string; status?: string; breaks?: { start?: string; end?: string }[] }
@@ -262,7 +263,7 @@ export default function Attendance() {
         </div>
       </Modal>
 
-      <Card>
+      <Card className={cn(earlyOpen && 'invisible pointer-events-none')}>
         <CardContent className="pt-5 space-y-3">
           <p className="text-sm font-medium text-text-primary">Sites & GPS</p>
           <p className="text-xs text-text-tertiary leading-snug">

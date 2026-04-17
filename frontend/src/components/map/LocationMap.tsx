@@ -138,7 +138,7 @@ export function LocationMap({
   return (
     <div
       className={cn(
-        'w-full overflow-hidden rounded-lg border border-border-subtle z-0',
+        'amd-leaflet-host relative isolate z-0 w-full overflow-hidden rounded-lg border border-border-subtle',
         variant === 'compact'
           ? 'h-[min(220px,32vh)] min-h-[160px]'
           : 'h-[min(420px,50vh)]',
@@ -227,7 +227,7 @@ export function MapPicker({
   return (
     <div className="space-y-2">
       <div
-        className={`relative isolate z-0 w-full overflow-hidden rounded-xl border border-border-subtle bg-surface-sunken shadow-inner ${className || 'min-h-[280px] h-[min(380px,42vh)]'}`}
+        className={`amd-leaflet-host relative isolate z-0 w-full overflow-hidden rounded-xl border border-border-subtle bg-surface-sunken shadow-inner ${className || 'min-h-[280px] h-[min(380px,42vh)]'}`}
       >
         <MapContainer
           center={center}

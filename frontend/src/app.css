@@ -82,6 +82,12 @@ body {
   background: var(--color-text-tertiary);
 }
 
+/* Leaflet uses high z-index on internal panes; keep maps contained so fixed dialogs (Modal z-[100000]+) always stack above. */
+.leaflet-container {
+  z-index: 0 !important;
+  isolation: isolate;
+}
+
 @layer base {
   * {
     border-color: var(--color-border);
