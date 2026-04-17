@@ -1,27 +1,40 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/stores/AuthContext'
 import { useLang } from '@/stores/LangContext'
 import { useTheme } from '@/stores/ThemeContext'
 import { Button } from '@/components/ui/Button'
-import { Clock, Briefcase, Bell, Globe, Moon, Sun, LogOut } from 'lucide-react'
+import { Clock, Briefcase, Bell, Globe, Moon, Sun, LogOut, Users } from 'lucide-react'
 import Attendance from './Attendance'
 import HrTab from './HrTab'
 import Notifications from './Notifications'
+import TeamPanel from './TeamPanel'
 
-const tabs = [
+const baseTabs = [
   { key: 'attendance', icon: Clock, label: 'Attendance' },
   { key: 'hr', icon: Briefcase, label: 'HR' },
   { key: 'notifications', icon: Bell, label: 'Notifications' },
 ] as const
 
-type Tab = typeof tabs[number]['key']
+const teamTabDef = { key: 'team' as const, icon: Users, label: 'Team' }
+
+type BaseTabKey = (typeof baseTabs)[number]['key']
+type TabKey = BaseTabKey | typeof teamTabDef.key
 
 export default function Portal() {
-  const { session, logout } = useAuth()
+  const { session, logout, role } = useAuth()
   const { toggle: toggleLang } = useLang()
   const { toggle: toggleTheme, theme } = useTheme()
-  const [tab, setTab] = useState<Tab>('attendance')
+  const [tab, setTab] = useState<TabKey>('attendance')
+
+  const visibleTabs = useMemo(() => {
+    if (role === 'manager') return [...baseTabs, teamTabDef]
+    return [...baseTabs]
+  }, [role])
+
+  useEffect(() => {
+    if (tab === 'team' && role !== 'manager') setTab('attendance')
+  }, [tab, role])
 
   return (
     <div className="min-h-screen bg-surface-sunken">
@@ -31,13 +44,21 @@ export default function Portal() {
           <span className="text-sm font-semibold text-text-primary hidden sm:block">AMD United</span>
         </div>
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" onClick={toggleLang}><Globe className="h-4 w-4" /></Button>
-          <Button variant="ghost" size="icon" onClick={toggleTheme}>{theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}</Button>
+          <Button variant="ghost" size="icon" onClick={toggleLang}>
+            <Globe className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={toggleTheme}>
+            {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </Button>
           <div className="flex items-center gap-2 ml-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-white">{session?.name?.charAt(0)?.toUpperCase()}</div>
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-white">
+              {session?.name?.charAt(0)?.toUpperCase()}
+            </div>
             <span className="text-sm font-medium text-text-primary hidden sm:block">{session?.name}</span>
           </div>
-          <Button variant="ghost" size="icon" onClick={logout}><LogOut className="h-4 w-4" /></Button>
+          <Button variant="ghost" size="icon" onClick={logout}>
+            <LogOut className="h-4 w-4" />
+          </Button>
         </div>
       </header>
 
@@ -53,20 +74,22 @@ export default function Portal() {
             {tab === 'attendance' && <Attendance />}
             {tab === 'hr' && <HrTab />}
             {tab === 'notifications' && <Notifications />}
+            {tab === 'team' && <TeamPanel />}
           </motion.div>
         </AnimatePresence>
       </main>
 
       <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-border-subtle bg-surface/90 backdrop-blur-xl">
-        <div className="flex items-center justify-around h-14 max-w-lg mx-auto">
-          {tabs.map((t) => (
+        <div className="flex items-center justify-around h-14 max-w-lg mx-auto px-1">
+          {visibleTabs.map((t) => (
             <button
               key={t.key}
+              type="button"
               onClick={() => setTab(t.key)}
-              className={`flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-lg transition-colors ${tab === t.key ? 'text-accent' : 'text-text-tertiary'}`}
+              className={`flex flex-col items-center gap-0.5 min-w-0 flex-1 px-2 py-1.5 rounded-lg transition-colors ${tab === t.key ? 'text-accent' : 'text-text-tertiary'}`}
             >
-              <t.icon className="h-5 w-5" />
-              <span className="text-[10px] font-medium">{t.label}</span>
+              <t.icon className="h-5 w-5 shrink-0" />
+              <span className="text-[10px] font-medium truncate max-w-full">{t.label}</span>
             </button>
           ))}
         </div>
