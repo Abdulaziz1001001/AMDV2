@@ -49,7 +49,9 @@ export function Topbar({ title, unreadCount = 0, onRefresh, refreshing, onMenuCl
       await markNotificationRead(id)
       await sync()
       setNotifItems((prev) => prev.map((n) => (n.id === id ? { ...n, readAt: new Date().toISOString() } : n)))
-    } catch {}
+    } catch {
+      /* ignore mark-read errors */
+    }
   }
 
   const handleReadAll = async () => {
@@ -57,7 +59,9 @@ export function Topbar({ title, unreadCount = 0, onRefresh, refreshing, onMenuCl
       await markAllNotificationsRead()
       await sync()
       setNotifItems((prev) => prev.map((n) => ({ ...n, readAt: n.readAt || new Date().toISOString() })))
-    } catch {}
+    } catch {
+      /* ignore mark-all-read errors */
+    }
   }
 
   return (

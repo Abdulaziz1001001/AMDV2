@@ -18,7 +18,13 @@ export default function Onboarding() {
   const [empId, setEmpId] = useState('')
   const [type, setType] = useState('onboarding')
 
-  const load = async () => { try { setChecklists(await request('/onboarding')) } catch {} }
+  const load = async () => {
+    try {
+      setChecklists(await request('/onboarding'))
+    } catch {
+      /* ignore load errors */
+    }
+  }
   useEffect(() => { load() }, [])
 
   const generate = async () => {
@@ -32,7 +38,13 @@ export default function Onboarding() {
 
   const remove = async (id: string) => {
     if (!confirm('Delete?')) return
-    try { await request(`/onboarding/${id}`, 'DELETE'); load(); toast('Deleted', 'warning') } catch {}
+    try {
+      await request(`/onboarding/${id}`, 'DELETE')
+      load()
+      toast('Deleted', 'warning')
+    } catch {
+      /* ignore delete errors */
+    }
   }
 
   return (

@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { Card, CardContent } from '@/components/ui/Card'
-import { Badge } from '@/components/ui/Badge'
 import { request } from '@/api/client'
 import { useLang } from '@/stores/LangContext'
 import { Bell, Megaphone } from 'lucide-react'

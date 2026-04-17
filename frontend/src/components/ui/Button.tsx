@@ -12,6 +12,10 @@ const buttonVariants = cva(
         ghost: 'text-text-secondary hover:text-text-primary hover:bg-surface-raised',
         danger: 'bg-danger text-white hover:bg-danger/90 active:scale-[0.98]',
         success: 'bg-success text-white hover:bg-success/90 active:scale-[0.98]',
+        approval:
+          'bg-emerald-100 text-emerald-900 hover:bg-emerald-200/90 dark:bg-emerald-950/60 dark:text-emerald-100 dark:hover:bg-emerald-900/50 active:scale-[0.98]',
+        decline:
+          'bg-red-100 text-red-900 hover:bg-red-200/90 dark:bg-red-950/60 dark:text-red-100 dark:hover:bg-red-900/50 active:scale-[0.98]',
       },
       size: {
         sm: 'h-8 px-3 text-xs',
@@ -45,4 +49,4 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 
 Button.displayName = 'Button'
 
-export { Button, buttonVariants }
+export { Button }

@@ -5,17 +5,15 @@ import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { Badge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
-import { useAuth } from '@/stores/AuthContext'
 import { useToast } from '@/components/ui/Toast'
-import { request, upload } from '@/api/client'
+import { request } from '@/api/client'
 import { fmtDate } from '@/lib/formatters'
 import { LEAVE_TYPES } from '@/lib/constants'
-import { Plus, FileText, AlertTriangle, Calendar } from 'lucide-react'
+import { AlertTriangle, Calendar } from 'lucide-react'
 
 interface Leave { id: string; startDate: string; endDate: string; type: string; status: string; requestedDays: number; reason?: string }
 
 export default function HrTab() {
-  const { session } = useAuth()
   const { toast } = useToast()
   const [leaves, setLeaves] = useState<Leave[]>([])
   const [leaveOpen, setLeaveOpen] = useState(false)
@@ -23,7 +21,13 @@ export default function HrTab() {
   const [safetyOpen, setSafetyOpen] = useState(false)
   const [safetyForm, setSafetyForm] = useState({ description: '', severity: 'medium', date: new Date().toISOString().split('T')[0] })
 
-  const loadLeaves = async () => { try { setLeaves(await request('/hr/me/leave-requests')) } catch {} }
+  const loadLeaves = async () => {
+    try {
+      setLeaves(await request('/hr/me/leave-requests'))
+    } catch {
+      /* ignore load errors */
+    }
+  }
   useEffect(() => { loadLeaves() }, [])
 
   const submitLeave = async () => {

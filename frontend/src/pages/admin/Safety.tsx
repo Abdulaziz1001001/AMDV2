@@ -18,7 +18,13 @@ export default function Safety() {
   const [selected, setSelected] = useState<SafetyIncident | null>(null)
   const [statusFilter, setStatusFilter] = useState('')
 
-  const load = async () => { try { setIncidents(await fetchSafetyIncidents()) } catch {} }
+  const load = async () => {
+    try {
+      setIncidents(await fetchSafetyIncidents())
+    } catch {
+      /* ignore load errors */
+    }
+  }
   useEffect(() => { load() }, [])
 
   useEffect(() => {

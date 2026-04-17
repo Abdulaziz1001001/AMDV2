@@ -19,5 +19,12 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      // Data fetch on mount and context→UI sync are valid; this rule is too strict for common patterns.
+      'react-hooks/set-state-in-effect': 'off',
+      'react-hooks/incompatible-library': 'off',
+      // Allow exporting hooks / cva / constants next to components (providers, UI lib).
+      'react-refresh/only-export-components': 'off',
+    },
   },
 ])

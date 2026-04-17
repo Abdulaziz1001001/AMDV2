@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { type ColumnDef } from '@tanstack/react-table'
 import { DataTable } from '@/components/ui/DataTable'
 import { Button } from '@/components/ui/Button'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { useToast } from '@/components/ui/Toast'
 import { request } from '@/api/client'
 
@@ -13,7 +12,13 @@ export default function LeaveAccrual() {
   const [balances, setBalances] = useState<Balance[]>([])
   const [running, setRunning] = useState(false)
 
-  const load = async () => { try { setBalances(await request('/leave-accrual/balances')) } catch {} }
+  const load = async () => {
+    try {
+      setBalances(await request('/leave-accrual/balances'))
+    } catch {
+      /* ignore load errors */
+    }
+  }
   useEffect(() => { load() }, [])
 
   const runAccrual = async () => {

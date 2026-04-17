@@ -1,12 +1,10 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/stores/AuthContext'
 import { useLang } from '@/stores/LangContext'
 import { useTheme } from '@/stores/ThemeContext'
-import { useToast } from '@/components/ui/Toast'
-import { request } from '@/api/client'
 import { Button } from '@/components/ui/Button'
-import { LayoutDashboard, Clock, Briefcase, Bell, Globe, Moon, Sun, LogOut } from 'lucide-react'
+import { Clock, Briefcase, Bell, Globe, Moon, Sun, LogOut } from 'lucide-react'
 import Attendance from './Attendance'
 import HrTab from './HrTab'
 import Notifications from './Notifications'
@@ -21,9 +19,8 @@ type Tab = typeof tabs[number]['key']
 
 export default function Portal() {
   const { session, logout } = useAuth()
-  const { toggle: toggleLang, lang } = useLang()
+  const { toggle: toggleLang } = useLang()
   const { toggle: toggleTheme, theme } = useTheme()
-  const { toast } = useToast()
   const [tab, setTab] = useState<Tab>('attendance')
 
   return (

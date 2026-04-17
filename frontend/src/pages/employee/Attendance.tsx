@@ -96,7 +96,9 @@ export default function Attendance() {
       } else {
         setOnBreak(false)
       }
-    } catch {}
+    } catch {
+      /* ignore load errors */
+    }
   }, [])
 
   useEffect(() => { loadToday() }, [loadToday])

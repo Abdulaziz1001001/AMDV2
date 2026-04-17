@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { type ColumnDef } from '@tanstack/react-table'
 import { DataTable } from '@/components/ui/DataTable'
 import { Input } from '@/components/ui/Input'
@@ -12,16 +12,22 @@ export default function Audit() {
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
 
-  const load = async () => {
+  const load = useCallback(async () => {
     const q = new URLSearchParams()
     if (actionFilter) q.set('action', actionFilter)
     if (from) q.set('from', from)
     if (to) q.set('to', to)
     q.set('limit', '200')
-    try { setLogs(await request(`/audit?${q.toString()}`)) } catch {}
-  }
+    try {
+      setLogs(await request(`/audit?${q.toString()}`))
+    } catch {
+      /* ignore load errors */
+    }
+  }, [actionFilter, from, to])
 
-  useEffect(() => { load() }, [actionFilter, from, to])
+  useEffect(() => {
+    void load()
+  }, [load])
 
   const columns: ColumnDef<AuditEntry, unknown>[] = [
     { accessorKey: 'createdAt', header: 'Time', cell: ({ getValue }) => <span className="text-xs text-text-tertiary font-mono">{new Date(getValue() as string).toLocaleString()}</span> },

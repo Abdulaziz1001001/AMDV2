@@ -20,7 +20,13 @@ export default function Announcements() {
 
   const remove = async (id: string) => {
     if (!confirm('Delete?')) return
-    try { await request(`/announcements/${id}`, 'DELETE'); await sync(); toast('Deleted', 'warning') } catch {}
+    try {
+      await request(`/announcements/${id}`, 'DELETE')
+      await sync()
+      toast('Deleted', 'warning')
+    } catch {
+      /* ignore delete errors */
+    }
   }
 
   return (

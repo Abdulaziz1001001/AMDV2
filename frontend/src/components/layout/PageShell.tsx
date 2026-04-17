@@ -17,12 +17,10 @@ const Locations = lazy(() => import('@/pages/admin/Locations'))
 const Records = lazy(() => import('@/pages/admin/Records'))
 const HrManagement = lazy(() => import('@/pages/admin/HrManagement'))
 const WorkCalendar = lazy(() => import('@/pages/admin/Calendar'))
-const Shifts = lazy(() => import('@/pages/admin/Shifts'))
 const Projects = lazy(() => import('@/pages/admin/Projects'))
 const Onboarding = lazy(() => import('@/pages/admin/Onboarding'))
 const Announcements = lazy(() => import('@/pages/admin/Announcements'))
 const Safety = lazy(() => import('@/pages/admin/Safety'))
-const Documents = lazy(() => import('@/pages/admin/Documents'))
 const Directory = lazy(() => import('@/pages/admin/Directory'))
 const LeaveAccrual = lazy(() => import('@/pages/admin/LeaveAccrual'))
 const Audit = lazy(() => import('@/pages/admin/Audit'))
@@ -39,12 +37,10 @@ const panels: Record<string, () => ReactNode> = {
   calendar: () => <WorkCalendar />,
   records: () => <Records />,
   hr: () => <HrManagement />,
-  shifts: () => <Shifts />,
   projects: () => <Projects />,
   onboarding: () => <Onboarding />,
   announcements: () => <Announcements />,
   safety: () => <Safety />,
-  documents: () => <Documents />,
   directory: () => <Directory />,
   accrual: () => <LeaveAccrual />,
   audit: () => <Audit />,
@@ -61,12 +57,10 @@ const panelTitleKeys: Record<string, string> = {
   calendar: 'workCalendar',
   records: 'records',
   hr: 'hrManagement',
-  shifts: 'shiftsRoster',
   projects: 'projectsSites',
   onboarding: 'onboarding',
   announcements: 'announcements',
   safety: 'safetyIncidents',
-  documents: 'documentVault',
   directory: 'directory',
   accrual: 'leaveAccrual',
   audit: 'auditLog',
@@ -83,6 +77,7 @@ export function PageShell() {
 
   useEffect(() => {
     sync().then(() => toast('Synced', 'success')).catch(() => toast('Sync failed', 'error'))
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- initial bootstrap only
   }, [])
 
   const handleRefresh = useCallback(async () => {
