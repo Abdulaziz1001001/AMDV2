@@ -46,7 +46,13 @@ async function employeeLogin(req, res) {
       user: {
         id: emp._id,
         name: emp.name,
+        username: emp.username,
+        eid: emp.eid,
         groupId: emp.groupId,
+        departmentId: emp.departmentId,
+        workStart: emp.workStart,
+        workEnd: emp.workEnd,
+        salary: emp.salary,
         role: userRole,
       },
     });
