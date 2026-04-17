@@ -176,13 +176,13 @@ export default function Attendance() {
 
       <Card>
         <CardContent className="pt-5 space-y-3">
-          <p className="text-sm font-medium text-text-primary">Allowed sites & your position</p>
-          <p className="text-xs text-text-tertiary">
+          <p className="text-sm font-medium text-text-primary">Sites & GPS</p>
+          <p className="text-xs text-text-tertiary leading-snug">
             {siteLocations.length === 0
-              ? 'No geofenced sites configured for your group. Allow location when you check in to see your position on the map.'
-              : 'Blue circles are allowed check-in areas. Green dot is your last known GPS position after check-in.'}
+              ? 'No sites for your group yet. After check-in, your position appears as a green dot.'
+              : 'Blue: allowed areas. Green: your position after check-in.'}
           </p>
-          <LocationMap locations={siteLocations} userPosition={pos} />
+          <LocationMap variant="compact" locations={siteLocations} userPosition={pos} />
           {pos && (
             <div className="flex items-center gap-2 text-xs text-text-tertiary">
               <MapPin className="h-3.5 w-3.5 shrink-0" />

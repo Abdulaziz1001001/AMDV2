@@ -11,6 +11,7 @@ import {
 } from 'react-leaflet'
 import L from 'leaflet'
 import type { LatLngExpression } from 'leaflet'
+import { cn } from '@/lib/cn'
 
 /** Riyadh — default when no coordinates */
 export const DEFAULT_MAP_CENTER: LatLngExpression = [24.7136, 46.6753]
@@ -110,10 +111,13 @@ function RecenterFirstValid({
 export function LocationMap({
   locations,
   userPosition,
+  variant = 'default',
   className = '',
 }: {
   locations: MapPoint[]
   userPosition?: { lat: number; lng: number } | null
+  /** `compact` — shorter map for mobile employee portal */
+  variant?: 'default' | 'compact'
   className?: string
 }) {
   const pointsForFit = useMemo(() => {
@@ -133,12 +137,23 @@ export function LocationMap({
 
   return (
     <div
-      className={`h-[min(420px,50vh)] w-full overflow-hidden rounded-lg border border-border-subtle z-0 ${className}`}
+      className={cn(
+        'w-full overflow-hidden rounded-lg border border-border-subtle z-0',
+        variant === 'compact'
+          ? 'h-[min(220px,32vh)] min-h-[160px]'
+          : 'h-[min(420px,50vh)]',
+        className,
+      )}
     >
       <MapContainer
         center={initialCenter}
         zoom={initialZoom}
-        className="h-full w-full [&_.leaflet-container]:h-full [&_.leaflet-container]:min-h-[280px]"
+        className={cn(
+          'h-full w-full [&_.leaflet-container]:h-full',
+          variant === 'compact'
+            ? '[&_.leaflet-container]:min-h-[160px]'
+            : '[&_.leaflet-container]:min-h-[280px]',
+        )}
         scrollWheelZoom
       >
         <TileLayer
