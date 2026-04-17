@@ -96,13 +96,17 @@ export function PageShell() {
   const renderPanel = panels[activePanel]
 
   return (
-    <div className="admin-shell flex h-screen overflow-hidden bg-surface-sunken">
-      <div className="hidden lg:block">
+    <div
+      className={`admin-shell flex h-screen overflow-hidden bg-surface-sunken ${
+        lang === 'ar' ? 'lg:flex-row-reverse' : 'lg:flex-row'
+      }`}
+    >
+      <div className="hidden lg:block lg:h-dvh lg:shrink-0">
         <Sidebar activePanel={activePanel} onNavigate={setActivePanel} />
       </div>
       <MobileNav open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} activePanel={activePanel} onNavigate={setActivePanel} />
 
-      <div className={`flex-1 flex flex-col overflow-hidden transition-[margin] duration-300 ${lang === 'ar' ? 'lg:mr-[var(--sidebar-width)]' : 'lg:ml-[var(--sidebar-width)]'}`}>
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <Topbar
           title={t(panelTitleKeys[activePanel] || activePanel)}
           unreadCount={notificationUnreadCount}

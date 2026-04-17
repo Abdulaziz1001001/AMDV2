@@ -35,7 +35,7 @@ export function MobileNav({ open, onClose, activePanel, onNavigate }: MobileNavP
             exit={{ x: lang === 'ar' ? '100%' : '-100%' }}
             transition={{ type: 'spring', stiffness: 400, damping: 35 }}
             className={cn(
-              'fixed top-0 z-50 flex h-screen w-[min(20rem,100vw)] flex-col border-[#1f1f1f] bg-[#121212] lg:hidden',
+              'fixed top-0 z-50 flex h-dvh w-[min(20rem,100vw)] flex-col border-[#1f1f1f] bg-[#121212] lg:hidden',
               lang === 'ar' ? 'right-0 border-l' : 'left-0 border-r',
             )}
           >

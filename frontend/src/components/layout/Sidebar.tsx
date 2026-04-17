@@ -80,8 +80,8 @@ export function Sidebar({ activePanel, onNavigate }: SidebarProps) {
   return (
     <aside
       className={cn(
-        'fixed top-0 z-40 flex h-screen w-[var(--sidebar-width)] flex-col border-[#1f1f1f] bg-[#121212]',
-        isRtl ? 'right-0 border-l' : 'left-0 border-r',
+        'z-40 grid h-dvh w-[var(--sidebar-width)] grid-rows-[auto,minmax(0,1fr),auto] border-[#1f1f1f] bg-[#121212]',
+        isRtl ? 'border-l' : 'border-r',
       )}
     >
       <div className="shrink-0 border-b border-[#1f1f1f] px-4 py-5">
@@ -96,7 +96,7 @@ export function Sidebar({ activePanel, onNavigate }: SidebarProps) {
         </div>
       </div>
 
-      <nav className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-2 py-3">
+      <nav className="min-h-0 overflow-y-auto overflow-x-hidden px-2 py-3">
         {navGroups.map((group) => (
           <div key={group.id} className="mb-1">
             <p
