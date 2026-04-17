@@ -15,6 +15,9 @@ import type { LatLngExpression } from 'leaflet'
 /** Riyadh — default when no coordinates */
 export const DEFAULT_MAP_CENTER: LatLngExpression = [24.7136, 46.6753]
 
+/** Default pin when creating a location (admin clicks or drags to the real site) */
+export const DEFAULT_PIN = { lat: 24.7136, lng: 46.6753 } as const
+
 export type MapPoint = {
   id: string
   name: string
@@ -37,11 +40,17 @@ const userIcon = L.divIcon({
   iconAnchor: [7, 7],
 })
 
+/** Map pin (drop shape) — anchor at bottom tip */
 const pickerIcon = L.divIcon({
-  className: 'leaflet-div-icon',
-  html: '<div style="width:16px;height:16px;background:#2563eb;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);cursor:grab"></div>',
-  iconSize: [16, 16],
-  iconAnchor: [8, 8],
+  className: 'leaflet-div-icon !border-0 !bg-transparent',
+  html: `<div style="width:36px;height:42px;margin-left:-18px;margin-top:-42px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.4))">
+    <svg width="36" height="42" viewBox="0 0 24 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M12 2C7.58 2 4 5.58 4 10c0 6.5 8 14 8 14s8-7.5 8-14c0-4.42-3.58-8-8-8z" fill="#2563eb" stroke="#fff" stroke-width="1.25"/>
+      <circle cx="12" cy="10" r="3" fill="#fff"/>
+    </svg>
+  </div>`,
+  iconSize: [36, 42],
+  iconAnchor: [18, 42],
 })
 
 function FitBounds({ points }: { points: [number, number][] }) {
@@ -91,7 +100,7 @@ function RecenterFirstValid({
     }
     if (lat === undefined || lng === undefined) return
     if (!didFirst.current) {
-      map.setView([lat, lng], 15)
+      map.setView([lat, lng], 16)
       didFirst.current = true
     }
   }, [valid, lat, lng, map])
@@ -198,51 +207,58 @@ export function MapPicker({
     Number.isFinite(lng)
 
   const center: LatLngExpression = valid ? [lat!, lng!] : DEFAULT_MAP_CENTER
-  const zoom = valid ? 15 : 11
+  const zoom = valid ? 16 : 11
 
   return (
-    <div
-      className={`h-56 w-full overflow-hidden rounded-lg border border-border-subtle ${className}`}
-    >
-      <MapContainer
-        center={center}
-        zoom={zoom}
-        className="h-full w-full [&_.leaflet-container]:h-full [&_.leaflet-container]:min-h-[200px]"
-        scrollWheelZoom
+    <div className="space-y-2">
+      <div
+        className={`relative w-full overflow-hidden rounded-xl border border-border-subtle bg-surface-sunken shadow-inner ${className || 'min-h-[280px] h-[min(380px,42vh)]'}`}
       >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        <MapSizeFix />
-        <MapClickHandler onPosition={onChange} />
-        <RecenterFirstValid lat={lat} lng={lng} valid={valid} />
-        {valid && (
-          <>
-            <Circle
-              center={[lat!, lng!]}
-              radius={radius}
-              pathOptions={{
-                color: '#2563eb',
-                fillColor: '#2563eb',
-                fillOpacity: 0.15,
-                weight: 2,
-              }}
-            />
-            <Marker
-              position={[lat!, lng!]}
-              draggable
-              icon={pickerIcon}
-              eventHandlers={{
-                dragend: (e) => {
-                  const p = e.target.getLatLng()
-                  onChange(p.lat, p.lng)
-                },
-              }}
-            />
-          </>
-        )}
-      </MapContainer>
+        <MapContainer
+          center={center}
+          zoom={zoom}
+          className="h-full min-h-[260px] w-full [&_.leaflet-container]:h-full [&_.leaflet-container]:min-h-[260px] [&_.leaflet-container]:cursor-crosshair [&_.leaflet-grab]:cursor-grab"
+          scrollWheelZoom
+        >
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+          <MapSizeFix />
+          <MapClickHandler onPosition={onChange} />
+          <RecenterFirstValid lat={lat} lng={lng} valid={valid} />
+          {valid && (
+            <>
+              <Circle
+                center={[lat!, lng!]}
+                radius={radius}
+                pathOptions={{
+                  color: '#2563eb',
+                  fillColor: '#2563eb',
+                  fillOpacity: 0.18,
+                  weight: 2,
+                }}
+              />
+              <Marker
+                position={[lat!, lng!]}
+                draggable
+                icon={pickerIcon}
+                eventHandlers={{
+                  dragend: (e) => {
+                    const p = e.target.getLatLng()
+                    onChange(p.lat, p.lng)
+                  },
+                }}
+              />
+            </>
+          )}
+        </MapContainer>
+      </div>
+      <p className="text-xs text-text-tertiary leading-relaxed">
+        <span className="font-medium text-text-secondary">Click</span> the map to move the pin, or{' '}
+        <span className="font-medium text-text-secondary">drag</span> the pin. Scroll to zoom. The blue circle is
+        your geofence — set radius below.
+      </p>
     </div>
   )
 }
