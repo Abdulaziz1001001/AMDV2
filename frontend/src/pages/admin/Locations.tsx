@@ -29,6 +29,8 @@ export default function Locations() {
   const { locations, groups, sync } = useData()
   const { toast } = useToast()
   const [open, setOpen] = useState(false)
+  /** Remount MapPicker when opening so Leaflet does not stack duplicate canvases */
+  const [pickerKey, setPickerKey] = useState(0)
   const [form, setForm] = useState(emptyForm)
 
   const mapPoints: MapPoint[] = locations.map((l) => ({
@@ -126,6 +128,7 @@ export default function Locations() {
         <Button
           onClick={() => {
             setForm(emptyForm())
+            setPickerKey((k) => k + 1)
             setOpen(true)
           }}
           size="sm"
@@ -144,6 +147,7 @@ export default function Locations() {
               check-in area.
             </p>
             <MapPicker
+              key={pickerKey}
               lat={latOk ? latNum : undefined}
               lng={lngOk ? lngNum : undefined}
               radius={radiusOk ? radiusNum : 200}

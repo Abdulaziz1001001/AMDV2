@@ -227,12 +227,12 @@ export function MapPicker({
   return (
     <div className="space-y-2">
       <div
-        className={`relative w-full overflow-hidden rounded-xl border border-border-subtle bg-surface-sunken shadow-inner ${className || 'min-h-[280px] h-[min(380px,42vh)]'}`}
+        className={`relative isolate z-0 w-full overflow-hidden rounded-xl border border-border-subtle bg-surface-sunken shadow-inner ${className || 'min-h-[280px] h-[min(380px,42vh)]'}`}
       >
         <MapContainer
           center={center}
           zoom={zoom}
-          className="h-full min-h-[260px] w-full [&_.leaflet-container]:h-full [&_.leaflet-container]:min-h-[260px] [&_.leaflet-container]:cursor-crosshair [&_.leaflet-grab]:cursor-grab"
+          className="relative z-0 h-full min-h-[260px] w-full [&_.leaflet-container]:h-full [&_.leaflet-container]:min-h-[260px] [&_.leaflet-container]:cursor-crosshair [&_.leaflet-grab]:cursor-grab"
           scrollWheelZoom
         >
           <TileLayer

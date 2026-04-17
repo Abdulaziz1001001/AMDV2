@@ -32,7 +32,7 @@ export function Modal({ open, onOpenChange, title, description, children, classN
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px]"
+                className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm"
               />
             </Dialog.Overlay>
             <Dialog.Content asChild>
@@ -42,7 +42,7 @@ export function Modal({ open, onOpenChange, title, description, children, classN
                 exit={{ opacity: 0, scale: 0.96, y: 8 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                 className={cn(
-                  'fixed left-1/2 top-1/2 z-50 w-[calc(100vw-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-surface border border-border-subtle shadow-lg focus:outline-none',
+                  'fixed left-1/2 top-1/2 z-[60] isolate w-[calc(100vw-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-surface border border-border-subtle shadow-lg focus:outline-none',
                   sizes[size],
                   className,
                 )}
