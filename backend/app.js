@@ -60,13 +60,6 @@ function createApp() {
     })
   );
 
-  app.get('/app-config.js', (req, res) => {
-    res.type('application/javascript');
-    const base = process.env.PUBLIC_API_BASE || '';
-    res.setHeader('Cache-Control', 'no-store');
-    res.send(`window.__AMD_API_BASE__=${JSON.stringify(base)};`);
-  });
-
   const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: Number(process.env.AUTH_RATE_LIMIT_MAX || 50),
@@ -96,17 +89,12 @@ function createApp() {
   app.get('/health', (req, res) => res.type('text').send('ok'));
 
   const frontendDist = path.join(__dirname, '..', 'frontend', 'dist');
-  const legacyRoot = path.join(__dirname, '..');
-
+  const frontendIndex = path.join(frontendDist, 'index.html');
   app.use(express.static(frontendDist));
-  app.use('/assets', express.static(path.join(legacyRoot, 'assets')));
 
   app.get('*', (req, res) => {
     if (req.path.startsWith('/api')) return res.status(404).json({ msg: 'Not found' });
-    const distIndex = path.join(frontendDist, 'index.html');
-    const fs = require('fs');
-    if (fs.existsSync(distIndex)) return res.sendFile(distIndex);
-    res.sendFile(path.join(legacyRoot, 'index.html'));
+    return res.sendFile(frontendIndex);
   });
 
   return app;

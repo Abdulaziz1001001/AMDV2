@@ -1,6 +1,6 @@
 # AMD Attendance
 
-Attendance management app: Express + MongoDB API under `backend/`, static web UI (`index.html` + `assets/`).
+Attendance management app: Express + MongoDB API under `backend/` and React + Vite frontend under `frontend/`.
 
 ## Requirements
 
@@ -18,34 +18,38 @@ Edit `.env`:
 
 - Set `MONGO_URI` to your MongoDB connection string.
 - Set `JWT_SECRET` to a random string **at least 32 characters** long.
-- Set `FRONTEND_ORIGIN` to the origins that will load the UI (comma-separated). Example: `http://127.0.0.1:5500,http://localhost:5500`.
+- Set `FRONTEND_ORIGIN` to allowed browser origins (comma-separated). Example: `http://127.0.0.1:5173,http://localhost:5173`.
 - For the first run with an empty database, set `ADMIN_BOOTSTRAP_PASSWORD` (minimum 8 characters) so a bootstrap admin account is created. Remove or rotate after onboarding.
+- Optional: `ENABLE_KEEPALIVE=true` and `SELF_URL=https://your-host/health` if you need self-pings.
 
-Optional:
-
-- `PUBLIC_API_BASE` — full API base URL ending in `/api` when the UI is hosted on a **different** origin than the API. Leave empty if you serve the UI from the same server (recommended).
-- `ENABLE_KEEPALIVE=true` and `SELF_URL=https://your-host/health` — only if you need self-pings (e.g. free-tier sleep).
-
-Install and run:
+Install and run backend:
 
 ```bash
+cd backend
 npm install
 npm run dev
 ```
 
-Production:
+The server listens on `PORT` (default `5000`), serves built frontend from `frontend/dist`, and exposes `/health`.
+
+## Frontend (React + Vite)
+
+Development UI:
 
 ```bash
-npm start
+cd frontend
+npm install
+npm run dev
 ```
 
-The server listens on `PORT` (default `5000`), serves `index.html` at `/`, static files from the repo root, and exposes `/health` for uptime checks.
+Production build:
 
-## Frontend
+```bash
+cd frontend
+npm run build
+```
 
-**Recommended:** open the app through the backend (e.g. `http://127.0.0.1:5000/`) so `/api`, `/app-config.js`, and `/assets/js/http.js` share one origin.
-
-**Alternative:** open `index.html` via a local static server (e.g. Live Server). You must list that server’s origin in `FRONTEND_ORIGIN`, and set `PUBLIC_API_BASE` in `.env` to your API URL (e.g. `http://127.0.0.1:5000/api`) so the browser can reach the API.
+Then start backend (`cd backend && npm start`) and open `http://127.0.0.1:5000/`.
 
 ## Tests
 
