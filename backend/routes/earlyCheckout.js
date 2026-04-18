@@ -117,15 +117,20 @@ router.put('/early/:id/approve', auth.requireRole(['admin', 'manager']), async (
     ec.approvedAt = new Date();
     await ec.save();
 
-    const approver = await Employee.findById(req.user.id);
-    const approverName = approver ? approver.name : 'Admin';
+    const att = await Record.findById(ec.attendanceId).select('date').lean();
+    const dateLabel = att && att.date ? att.date : 'today';
+    const isApproved = status === 'approved';
 
     await AdminNotification.create({
-      type: status === 'approved' ? 'early_checkout_approved' : 'early_checkout_declined',
-      title: status === 'approved' ? 'Early checkout approved' : 'Early checkout declined',
-      titleAr: status === 'approved' ? 'تمت الموافقة على الانصراف المبكر' : 'تم رفض الانصراف المبكر',
-      body: `${approverName} ${status} your early checkout request.`,
-      bodyAr: `${approverName} ${status === 'approved' ? 'وافق على' : 'رفض'} طلب الانصراف المبكر.`,
+      type: isApproved ? 'early_checkout_approved' : 'early_checkout_declined',
+      title: isApproved ? 'Early leave approved' : 'Early leave declined',
+      titleAr: isApproved ? 'تمت الموافقة على الاستئذان المبكر' : 'تم رفض الاستئذان المبكر',
+      body: isApproved
+        ? `Your early leave request for ${dateLabel} has been approved.`
+        : `Your early leave request for ${dateLabel} has been declined.`,
+      bodyAr: isApproved
+        ? `تمت الموافقة على طلب الاستئذان المبكر لتاريخ ${dateLabel}.`
+        : `تم رفض طلب الاستئذان المبكر لتاريخ ${dateLabel}.`,
       ref: { kind: 'early_checkout', id: ec._id.toString() },
       recipientId: String(ec.employeeId),
     });

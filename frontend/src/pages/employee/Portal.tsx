@@ -9,6 +9,7 @@ import Attendance from './Attendance'
 import HrTab from './HrTab'
 import Notifications from './Notifications'
 import TeamPanel from './TeamPanel'
+import { EmployeeNotificationPopover } from './EmployeeNotificationPopover'
 
 const baseTabs = [
   { key: 'attendance', icon: Clock, label: 'Attendance' },
@@ -44,6 +45,7 @@ export default function Portal() {
           <span className="text-sm font-semibold text-text-primary hidden sm:block">AMD United</span>
         </div>
         <div className="flex items-center gap-1">
+          <EmployeeNotificationPopover />
           <Button variant="ghost" size="icon" onClick={toggleLang}>
             <Globe className="h-4 w-4" />
           </Button>

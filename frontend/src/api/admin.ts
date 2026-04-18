@@ -239,7 +239,11 @@ export function markNotificationRead(id: string) {
 }
 
 export function markAllNotificationsRead() {
-  return request<{ msg?: string }>('/admin/notifications/read-all', 'POST')
+  return request<{ msg?: string; unreadCount?: number }>('/admin/notifications/read-all', 'PUT')
+}
+
+export function deleteAllAdminNotifications() {
+  return request<{ msg?: string; deletedCount?: number }>('/admin/notifications/all', 'DELETE')
 }
 
 export function fetchEarlyCheckouts() {

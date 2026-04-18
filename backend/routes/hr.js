@@ -361,6 +361,30 @@ router.patch('/me/notifications/:id/read', async (req, res) => {
   }
 });
 
+router.put('/me/notifications/read-all', async (req, res) => {
+  try {
+    const rid = String(req.user.id);
+    await AdminNotification.updateMany(
+      { recipientId: rid, readAt: null },
+      { readAt: new Date() },
+    );
+    const unreadCount = await AdminNotification.countDocuments({ recipientId: rid, readAt: null });
+    res.json({ msg: 'Success', unreadCount });
+  } catch (err) {
+    res.status(500).json({ msg: err.message });
+  }
+});
+
+router.delete('/me/notifications/all', async (req, res) => {
+  try {
+    const rid = String(req.user.id);
+    const r = await AdminNotification.deleteMany({ recipientId: rid });
+    res.json({ msg: 'Success', deletedCount: r.deletedCount });
+  } catch (err) {
+    res.status(500).json({ msg: err.message });
+  }
+});
+
 router.use((err, req, res, next) => {
   if (!err) return next();
   if (err.code === 'LIMIT_FILE_SIZE') {

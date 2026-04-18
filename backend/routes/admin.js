@@ -13,6 +13,15 @@ const auth = require('../middleware/authMiddleware');
 const { employeeWriteSchema, validateBody } = require('../middleware/validation');
 const { logAudit } = require('../lib/auditHelper');
 
+/** Admin dashboard inbox only (not employee-targeted notifications). */
+const ADMIN_NOTIFICATION_INBOX = {
+  $or: [{ recipientId: null }, { recipientId: { $exists: false } }],
+};
+
+async function countAdminInboxUnread() {
+  return AdminNotification.countDocuments({ ...ADMIN_NOTIFICATION_INBOX, readAt: null });
+}
+
 const router = express.Router();
 
 router.use(auth);
@@ -32,7 +41,7 @@ router.get('/all-data', async (req, res) => {
       Department.find().populate('managerId', 'name eid'),
       LeaveRequest.find().populate('employeeId', 'name eid'),
       WorkPolicy.findOne({ key: 'company' }),
-      AdminNotification.countDocuments({ readAt: null }),
+      countAdminInboxUnread(),
       Project.find().sort({ name: 1 }).populate('managerId', 'name eid'),
       Shift.find().sort({ name: 1 }),
       Announcement.find({ $or: [{ expiresAt: null }, { expiresAt: { $exists: false } }, { expiresAt: { $gte: new Date() } }] }).sort({ pinned: -1, createdAt: -1 }).limit(20),
@@ -77,9 +86,9 @@ router.put('/work-policy', async (req, res) => {
 
 router.get('/notifications', async (req, res) => {
   try {
-    const filter = { $or: [{ recipientId: null }, { recipientId: { $exists: false } }] };
+    const filter = ADMIN_NOTIFICATION_INBOX;
     const items = await AdminNotification.find(filter).sort({ createdAt: -1 }).limit(50).lean();
-    const unreadCount = await AdminNotification.countDocuments({ ...filter, readAt: null });
+    const unreadCount = await countAdminInboxUnread();
     const safe = items.map(n => {
       try {
         return {
@@ -106,20 +115,33 @@ router.get('/notifications', async (req, res) => {
 router.patch('/notifications/:id/read', async (req, res) => {
   try {
     await AdminNotification.findByIdAndUpdate(req.params.id, { readAt: new Date() });
-    const unreadCount = await AdminNotification.countDocuments({ readAt: null });
+    const unreadCount = await countAdminInboxUnread();
     res.json({ msg: 'Success', unreadCount });
   } catch (err) {
     res.status(500).json({ msg: err.message });
   }
 });
 
-router.post('/notifications/read-all', async (req, res) => {
+async function adminNotificationsReadAll(req, res) {
   try {
     await AdminNotification.updateMany(
-      { readAt: null, $or: [{ recipientId: null }, { recipientId: { $exists: false } }] },
-      { readAt: new Date() }
+      { readAt: null, ...ADMIN_NOTIFICATION_INBOX },
+      { readAt: new Date() },
     );
-    res.json({ msg: 'Success' });
+    const unreadCount = await countAdminInboxUnread();
+    res.json({ msg: 'Success', unreadCount });
+  } catch (err) {
+    res.status(500).json({ msg: err.message });
+  }
+}
+
+router.post('/notifications/read-all', adminNotificationsReadAll);
+router.put('/notifications/read-all', adminNotificationsReadAll);
+
+router.delete('/notifications/all', async (req, res) => {
+  try {
+    const r = await AdminNotification.deleteMany(ADMIN_NOTIFICATION_INBOX);
+    res.json({ msg: 'Success', deletedCount: r.deletedCount });
   } catch (err) {
     res.status(500).json({ msg: err.message });
   }

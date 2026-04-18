@@ -8,7 +8,13 @@ import { useData } from '@/stores/DataContext'
 import { Button } from '@/components/ui/Button'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/cn'
-import { fetchNotifications, markNotificationRead, markAllNotificationsRead, type Notification } from '@/api/admin'
+import {
+  fetchNotifications,
+  markNotificationRead,
+  markAllNotificationsRead,
+  deleteAllAdminNotifications,
+  type Notification,
+} from '@/api/admin'
 
 interface TopbarProps {
   title: string
@@ -27,6 +33,14 @@ export function Topbar({ title, unreadCount = 0, onRefresh, refreshing, onMenuCl
   const [notifOpen, setNotifOpen] = useState(false)
   const [notifItems, setNotifItems] = useState<Notification[]>([])
   const [notifLoading, setNotifLoading] = useState(false)
+  /** Cleared when parent `unreadCount` updates after sync */
+  const [unreadBadgeOverride, setUnreadBadgeOverride] = useState<number | null>(null)
+
+  const displayUnreadCount = unreadBadgeOverride !== null ? unreadBadgeOverride : unreadCount
+
+  useEffect(() => {
+    setUnreadBadgeOverride(null)
+  }, [unreadCount])
 
   const loadNotifications = useCallback(async () => {
     setNotifLoading(true)
@@ -46,9 +60,10 @@ export function Topbar({ title, unreadCount = 0, onRefresh, refreshing, onMenuCl
 
   const handleReadOne = async (id: string) => {
     try {
-      await markNotificationRead(id)
-      await sync()
+      const res = await markNotificationRead(id)
       setNotifItems((prev) => prev.map((n) => (n.id === id ? { ...n, readAt: new Date().toISOString() } : n)))
+      if (typeof res.unreadCount === 'number') setUnreadBadgeOverride(res.unreadCount)
+      await sync()
     } catch {
       /* ignore mark-read errors */
     }
@@ -57,10 +72,22 @@ export function Topbar({ title, unreadCount = 0, onRefresh, refreshing, onMenuCl
   const handleReadAll = async () => {
     try {
       await markAllNotificationsRead()
-      await sync()
+      setUnreadBadgeOverride(0)
       setNotifItems((prev) => prev.map((n) => ({ ...n, readAt: n.readAt || new Date().toISOString() })))
+      await sync()
     } catch {
       /* ignore mark-all-read errors */
+    }
+  }
+
+  const handleClearAll = async () => {
+    try {
+      await deleteAllAdminNotifications()
+      setUnreadBadgeOverride(0)
+      setNotifItems([])
+      await sync()
+    } catch {
+      /* ignore */
     }
   }
 
@@ -94,13 +121,13 @@ export function Topbar({ title, unreadCount = 0, onRefresh, refreshing, onMenuCl
           <Popover.Trigger asChild>
             <Button variant="ghost" size="icon" className="relative" title="Notifications" aria-label="Notifications">
               <Bell className="h-4 w-4" />
-              {unreadCount > 0 && (
+              {displayUnreadCount > 0 && (
                 <motion.span
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-danger text-[10px] font-bold text-white"
                 >
-                  {unreadCount > 9 ? '9+' : unreadCount}
+                  {displayUnreadCount > 9 ? '9+' : displayUnreadCount}
                 </motion.span>
               )}
             </Button>
@@ -114,13 +141,8 @@ export function Topbar({ title, unreadCount = 0, onRefresh, refreshing, onMenuCl
               className="z-[10100] w-[min(calc(100vw-2rem),22rem)] rounded-xl border border-border-subtle bg-popover text-popover-foreground shadow-lg outline-none"
               onOpenAutoFocus={(e) => e.preventDefault()}
             >
-              <div className="flex items-center justify-between gap-2 border-b border-border-subtle px-3 py-2">
+              <div className="border-b border-border-subtle px-3 py-2">
                 <p className="text-sm font-semibold text-text-primary">Notifications</p>
-                {notifItems.some((n) => !n.readAt) && (
-                  <button type="button" onClick={() => void handleReadAll()} className="text-xs font-medium text-accent hover:underline">
-                    Mark all read
-                  </button>
-                )}
               </div>
               <div className="max-h-[min(70vh,24rem)] overflow-y-auto">
                 {notifLoading ? (
@@ -155,6 +177,24 @@ export function Topbar({ title, unreadCount = 0, onRefresh, refreshing, onMenuCl
                   </ul>
                 )}
               </div>
+              {(notifItems.length > 0 || displayUnreadCount > 0) && (
+                <div className="flex items-center justify-end gap-3 border-t border-border-subtle px-3 py-2">
+                  <button
+                    type="button"
+                    onClick={() => void handleReadAll()}
+                    className="text-xs text-text-tertiary hover:text-text-secondary transition-colors"
+                  >
+                    Mark all as read
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleClearAll()}
+                    className="text-xs text-text-tertiary hover:text-text-secondary transition-colors"
+                  >
+                    Clear all
+                  </button>
+                </div>
+              )}
             </Popover.Content>
           </Popover.Portal>
         </Popover.Root>
