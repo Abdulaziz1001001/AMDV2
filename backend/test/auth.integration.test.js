@@ -89,3 +89,68 @@ test('employee token cannot access admin all-data', async () => {
   const token = login.body.token;
   await request(app).get('/api/admin/all-data').set('Authorization', 'Bearer ' + token).expect(403);
 });
+
+test('PUT /api/admin/credentials rejects wrong current password', async () => {
+  const login = await request(app)
+    .post('/api/auth/admin-login')
+    .send({ username: 'testadmin', password: 'secretpass' });
+  const token = login.body.token;
+  const res = await request(app)
+    .put('/api/admin/credentials')
+    .set('Authorization', 'Bearer ' + token)
+    .send({ currentPassword: 'wrong', newUsername: 'testadmin' })
+    .expect(403);
+  assert.equal(res.body.msg, 'Incorrect current password');
+});
+
+test('PUT /api/admin/credentials validates new password length', async () => {
+  const login = await request(app)
+    .post('/api/auth/admin-login')
+    .send({ username: 'testadmin', password: 'secretpass' });
+  const token = login.body.token;
+  const res = await request(app)
+    .put('/api/admin/credentials')
+    .set('Authorization', 'Bearer ' + token)
+    .send({ currentPassword: 'secretpass', newUsername: 'testadmin', newPassword: 'short' })
+    .expect(400);
+  assert.ok(String(res.body.msg).length > 0);
+});
+
+test('PUT /api/admin/credentials updates username and can update password', async () => {
+  const login1 = await request(app)
+    .post('/api/auth/admin-login')
+    .send({ username: 'testadmin', password: 'secretpass' });
+  const token1 = login1.body.token;
+
+  const u1 = await request(app)
+    .put('/api/admin/credentials')
+    .set('Authorization', 'Bearer ' + token1)
+    .send({ currentPassword: 'secretpass', newUsername: 'testadmin2' })
+    .expect(200);
+  assert.equal(u1.body.username, 'testadmin2');
+  assert.equal(u1.body.passwordChanged, false);
+
+  const login2 = await request(app)
+    .post('/api/auth/admin-login')
+    .send({ username: 'testadmin2', password: 'secretpass' });
+  const token2 = login2.body.token;
+
+  const u2 = await request(app)
+    .put('/api/admin/credentials')
+    .set('Authorization', 'Bearer ' + token2)
+    .send({ currentPassword: 'secretpass', newUsername: 'testadmin2', newPassword: 'newsecret9' })
+    .expect(200);
+  assert.equal(u2.body.passwordChanged, true);
+
+  const login3 = await request(app)
+    .post('/api/auth/admin-login')
+    .send({ username: 'testadmin2', password: 'newsecret9' });
+  const token3 = login3.body.token;
+  assert.ok(token3);
+
+  await request(app)
+    .put('/api/admin/credentials')
+    .set('Authorization', 'Bearer ' + token3)
+    .send({ currentPassword: 'newsecret9', newUsername: 'testadmin', newPassword: 'secretpass' })
+    .expect(200);
+});

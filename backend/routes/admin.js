@@ -10,7 +10,7 @@ const WorkPolicy = require('../models/WorkPolicy');
 const Department = require('../models/Department');
 const LeaveRequest = require('../models/LeaveRequest');
 const auth = require('../middleware/authMiddleware');
-const { employeeWriteSchema, validateBody } = require('../middleware/validation');
+const { employeeWriteSchema, adminCredentialsSchema, validateBody } = require('../middleware/validation');
 const { logAudit } = require('../lib/auditHelper');
 const { formatAttendanceRecords } = require('../lib/formatAttendanceRecord');
 
@@ -27,6 +27,45 @@ const router = express.Router();
 
 router.use(auth);
 router.use(auth.requireRole('admin'));
+
+router.put('/credentials', validateBody(adminCredentialsSchema), async (req, res) => {
+  try {
+    const admin = await AdminUser.findById(req.user.id);
+    if (!admin) return res.status(404).json({ msg: 'Admin not found' });
+
+    const ok = await bcrypt.compare(req.body.currentPassword, admin.password);
+    if (!ok) return res.status(403).json({ msg: 'Incorrect current password' });
+
+    const prevUsername = admin.username;
+    const nextUser = req.body.newUsername.trim();
+    if (nextUser !== admin.username) {
+      const taken = await AdminUser.findOne({ username: nextUser, _id: { $ne: admin._id } });
+      if (taken) return res.status(409).json({ msg: 'Username already taken' });
+      admin.username = nextUser;
+    }
+
+    const np = (req.body.newPassword ?? '').trim();
+    let passwordChanged = false;
+    if (np.length > 0) {
+      admin.password = await bcrypt.hash(np, 10);
+      passwordChanged = true;
+    }
+
+    await admin.save();
+    logAudit(req, 'admin_credentials_update', 'Admin', admin._id.toString(), { username: prevUsername }, {
+      username: admin.username,
+      passwordChanged,
+    });
+
+    res.json({
+      msg: 'Credentials updated successfully',
+      username: admin.username,
+      passwordChanged,
+    });
+  } catch (err) {
+    res.status(500).json({ msg: err.message });
+  }
+});
 
 router.get('/all-data', async (req, res) => {
   try {

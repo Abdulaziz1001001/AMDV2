@@ -61,6 +61,13 @@ const ar: Record<string, string> = {
   welcome: 'مرحباً بكم في AMD United',
   subtitle: 'نظام إدارة الموارد البشرية والحضور',
 
+  accountSecurity: 'أمان الحساب',
+  currentPasswordLabel: 'كلمة المرور الحالية',
+  newPasswordOptional: 'كلمة مرور جديدة (اختياري)',
+  updateCredentials: 'تحديث البيانات',
+  updatingCredentials: 'جاري التحديث…',
+  credentialsUpdated: 'تم تحديث بيانات الدخول بنجاح.',
+
   appearance: 'المظهر',
   theme: 'السمة',
   themeCurrent: 'الحالية',

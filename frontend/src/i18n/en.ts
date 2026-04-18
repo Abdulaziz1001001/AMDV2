@@ -61,6 +61,13 @@ const en = {
   welcome: 'Welcome to AMD United',
   subtitle: 'HR & Attendance Management System',
 
+  accountSecurity: 'Account Security',
+  currentPasswordLabel: 'Current password',
+  newPasswordOptional: 'New password (optional)',
+  updateCredentials: 'Update Credentials',
+  updatingCredentials: 'Updating…',
+  credentialsUpdated: 'Credentials updated successfully.',
+
   appearance: 'Appearance',
   theme: 'Theme',
   themeCurrent: 'Current',

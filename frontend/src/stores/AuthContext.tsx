@@ -25,6 +25,7 @@ interface AuthCtx {
   adminLogin: (u: string, p: string) => Promise<void>
   empLogin: (u: string, p: string) => Promise<void>
   logout: () => void
+  patchSession: (partial: Partial<Session>) => void
   goto: (p: Page) => void
 }
 
@@ -35,6 +36,7 @@ const AuthContext = createContext<AuthCtx>({
   adminLogin: async () => {},
   empLogin: async () => {},
   logout: () => {},
+  patchSession: () => {},
   goto: () => {},
 })
 
@@ -98,10 +100,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setPage('home')
   }, [])
 
+  const patchSession = useCallback((partial: Partial<Session>) => {
+    setSession((s) => (s ? { ...s, ...partial } : null))
+  }, [])
+
   const goto = useCallback((p: Page) => setPage(p), [])
 
   return (
-    <AuthContext.Provider value={{ page, role, session, adminLogin, empLogin, logout, goto }}>
+    <AuthContext.Provider value={{ page, role, session, adminLogin, empLogin, logout, patchSession, goto }}>
       {children}
     </AuthContext.Provider>
   )

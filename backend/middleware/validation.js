@@ -62,6 +62,23 @@ const employeeWriteSchema = z
     }
   });
 
+const adminCredentialsSchema = z
+  .object({
+    currentPassword: z.string().min(1, 'Current password is required').max(500),
+    newUsername: z.string().trim().min(1, 'Username is required').max(200),
+    newPassword: z.string().max(500).optional(),
+  })
+  .superRefine((data, ctx) => {
+    const np = (data.newPassword ?? '').trim();
+    if (np.length > 0 && np.length < 8) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'New password must be at least 8 characters',
+        path: ['newPassword'],
+      });
+    }
+  });
+
 function validateBody(schema) {
   return (req, res, next) => {
     const parsed = schema.safeParse(req.body);
@@ -93,6 +110,7 @@ module.exports = {
   attendanceUpsertSchema,
   closeDaySchema,
   employeeWriteSchema,
+  adminCredentialsSchema,
   validateBody,
   validateQuery,
 };

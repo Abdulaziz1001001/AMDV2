@@ -262,6 +262,20 @@ export function updateWorkPolicy(body: Partial<WorkPolicyData>) {
   return request<WorkPolicyData>('/admin/work-policy', 'PUT', body)
 }
 
+export interface AdminCredentialsUpdateResponse {
+  msg: string
+  username: string
+  passwordChanged: boolean
+}
+
+export function updateAdminCredentials(body: {
+  currentPassword: string
+  newUsername: string
+  newPassword?: string
+}) {
+  return request<AdminCredentialsUpdateResponse>('/admin/credentials', 'PUT', body)
+}
+
 export function createEmployee(data: Partial<Employee> & { password?: string }) {
   return request('/admin/employee', 'POST', data)
 }

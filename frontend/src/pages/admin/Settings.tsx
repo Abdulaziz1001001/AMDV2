@@ -1,23 +1,57 @@
-import { useState } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useData } from '@/stores/DataContext'
 import { useToast } from '@/components/ui/Toast'
 import { useTheme } from '@/stores/ThemeContext'
 import { useLang } from '@/stores/LangContext'
-import { updateWorkPolicy } from '@/api/admin'
+import { useAuth } from '@/stores/AuthContext'
+import { updateAdminCredentials, updateWorkPolicy } from '@/api/admin'
 
 export default function Settings() {
   const { workPolicy, sync } = useData()
   const { toast } = useToast()
+  const { session, patchSession, logout } = useAuth()
   const { theme, toggle: toggleTheme } = useTheme()
   const { lang, toggle: toggleLang, t } = useLang()
+  const [credentialUsername, setCredentialUsername] = useState('')
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [credentialsSaving, setCredentialsSaving] = useState(false)
   const [annualLeave, setAnnualLeave] = useState(String(workPolicy?.annualLeaveDays ?? 30))
   const [otRate, setOtRate] = useState(String(workPolicy?.overtimeRateMultiplier ?? 1.5))
   const [maxBreak, setMaxBreak] = useState(String(workPolicy?.maxBreakMinutes ?? 60))
   const [accrualEnabled, setAccrualEnabled] = useState(workPolicy?.leaveAccrual?.enabled ?? false)
   const [accrualRate, setAccrualRate] = useState(String(workPolicy?.leaveAccrual?.monthlyRate ?? 2.5))
   const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (session?.username) setCredentialUsername(session.username)
+  }, [session?.username])
+
+  const submitCredentials = async (e: FormEvent) => {
+    e.preventDefault()
+    setCredentialsSaving(true)
+    try {
+      const np = newPassword.trim()
+      const res = await updateAdminCredentials({
+        currentPassword,
+        newUsername: credentialUsername.trim(),
+        ...(np.length > 0 ? { newPassword: np } : {}),
+      })
+      toast(t('credentialsUpdated'), 'success')
+      setCurrentPassword('')
+      setNewPassword('')
+      if (res.passwordChanged) {
+        logout()
+      } else {
+        patchSession({ username: res.username })
+      }
+    } catch (err: unknown) {
+      toast((err as Error).message, 'error')
+    }
+    setCredentialsSaving(false)
+  }
 
   const save = async () => {
     setSaving(true)
@@ -45,6 +79,47 @@ export default function Settings() {
 
   return (
     <div className="max-w-2xl space-y-10">
+      <section className={panelClass}>
+        <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-text-tertiary">{t('accountSecurity')}</h2>
+        <form className="mt-8 space-y-8" onSubmit={submitCredentials} autoComplete="off">
+          <div className="space-y-6">
+            <div>
+              <label className="mb-2 block text-xs font-medium text-text-secondary">{t('username')}</label>
+              <Input
+                type="text"
+                name="amd-admin-username"
+                autoComplete="username"
+                value={credentialUsername}
+                onChange={(e) => setCredentialUsername(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="mb-2 block text-xs font-medium text-text-secondary">{t('currentPasswordLabel')}</label>
+              <Input
+                type="password"
+                name="amd-admin-current-password"
+                autoComplete="current-password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="mb-2 block text-xs font-medium text-text-secondary">{t('newPasswordOptional')}</label>
+              <Input
+                type="password"
+                name="amd-admin-new-password"
+                autoComplete="new-password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+              />
+            </div>
+          </div>
+          <Button type="submit" variant="ghost" size="sm" disabled={credentialsSaving} className="-ml-1">
+            {credentialsSaving ? t('updatingCredentials') : t('updateCredentials')}
+          </Button>
+        </form>
+      </section>
+
       <section className={panelClass}>
         <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-text-tertiary">{t('appearance')}</h2>
         <div className="mt-6 space-y-8">
