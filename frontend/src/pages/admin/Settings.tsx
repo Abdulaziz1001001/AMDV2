@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useData } from '@/stores/DataContext'
@@ -12,7 +11,7 @@ export default function Settings() {
   const { workPolicy, sync } = useData()
   const { toast } = useToast()
   const { theme, toggle: toggleTheme } = useTheme()
-  const { lang, toggle: toggleLang } = useLang()
+  const { lang, toggle: toggleLang, t } = useLang()
   const [annualLeave, setAnnualLeave] = useState(String(workPolicy?.annualLeaveDays ?? 30))
   const [otRate, setOtRate] = useState(String(workPolicy?.overtimeRateMultiplier ?? 1.5))
   const [maxBreak, setMaxBreak] = useState(String(workPolicy?.maxBreakMinutes ?? 60))
@@ -34,52 +33,87 @@ export default function Settings() {
         },
       })
       await sync()
-      toast('Settings saved', 'success')
-    } catch (e: unknown) { toast((e as Error).message, 'error') }
+      toast(t('settingsSaved'), 'success')
+    } catch (e: unknown) {
+      toast((e as Error).message, 'error')
+    }
     setSaving(false)
   }
 
+  const panelClass =
+    'rounded-2xl bg-slate-50 px-6 py-8 dark:bg-slate-900/90 sm:px-8'
+
   return (
-    <div className="max-w-2xl space-y-6">
-      <Card>
-        <CardHeader><CardTitle>Appearance</CardTitle></CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between py-2">
-            <div><p className="text-sm font-medium text-text-primary">Theme</p><p className="text-xs text-text-tertiary">Current: {theme}</p></div>
-            <Button variant="secondary" size="sm" onClick={toggleTheme}>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</Button>
+    <div className="max-w-2xl space-y-10">
+      <section className={panelClass}>
+        <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-text-tertiary">{t('appearance')}</h2>
+        <div className="mt-6 space-y-8">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium text-text-primary">{t('theme')}</p>
+              <p className="mt-0.5 text-xs text-text-tertiary">
+                {t('themeCurrent')}: {theme === 'dark' ? t('darkMode') : t('lightMode')}
+              </p>
+            </div>
+            <Button variant="secondary" size="sm" onClick={toggleTheme}>
+              {theme === 'dark' ? t('lightMode') : t('darkMode')}
+            </Button>
           </div>
-          <div className="flex items-center justify-between py-2 border-t border-border-subtle">
-            <div><p className="text-sm font-medium text-text-primary">Language</p><p className="text-xs text-text-tertiary">Current: {lang === 'ar' ? 'العربية' : 'English'}</p></div>
-            <Button variant="secondary" size="sm" onClick={toggleLang}>{lang === 'en' ? 'العربية' : 'English'}</Button>
+          <div className="flex flex-wrap items-start justify-between gap-4 pt-6">
+            <div>
+              <p className="text-sm font-medium text-text-primary">{t('languageLabel')}</p>
+              <p className="mt-0.5 text-xs text-text-tertiary">
+                {t('languageCurrent')}: {lang === 'ar' ? 'العربية' : 'English'}
+              </p>
+            </div>
+            <Button variant="secondary" size="sm" onClick={toggleLang}>
+              {lang === 'en' ? 'العربية' : 'English'}
+            </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
-      <Card>
-        <CardHeader><CardTitle>Leave & Overtime</CardTitle></CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-4">
-            <div><label className="text-xs font-medium text-text-secondary block mb-1">Annual Leave Days</label><Input type="number" value={annualLeave} onChange={(e) => setAnnualLeave(e.target.value)} /></div>
-            <div><label className="text-xs font-medium text-text-secondary block mb-1">Overtime Rate Multiplier</label><Input type="number" step="0.1" value={otRate} onChange={(e) => setOtRate(e.target.value)} /></div>
-            <div><label className="text-xs font-medium text-text-secondary block mb-1">Max Break (min)</label><Input type="number" value={maxBreak} onChange={(e) => setMaxBreak(e.target.value)} /></div>
+      <section className={panelClass}>
+        <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-text-tertiary">{t('holidaysAndOvertime')}</h2>
+        <div className="mt-8 space-y-10">
+          <div className="grid gap-8 sm:grid-cols-2">
+            <div>
+              <label className="mb-2 block text-xs font-medium text-text-secondary">{t('annualLeaveDays')}</label>
+              <Input type="number" value={annualLeave} onChange={(e) => setAnnualLeave(e.target.value)} />
+            </div>
+            <div>
+              <label className="mb-2 block text-xs font-medium text-text-secondary">{t('overtimeRateMultiplier')}</label>
+              <Input type="number" step="0.1" value={otRate} onChange={(e) => setOtRate(e.target.value)} />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="mb-2 block text-xs font-medium text-text-secondary">{t('maxBreakMinutes')}</label>
+              <Input type="number" value={maxBreak} onChange={(e) => setMaxBreak(e.target.value)} className="max-w-xs" />
+            </div>
           </div>
-        </CardContent>
-      </Card>
 
-      <Card>
-        <CardHeader><CardTitle>Leave Accrual</CardTitle></CardHeader>
-        <CardContent>
-          <label className="flex items-center gap-2 mb-4 cursor-pointer">
-            <input type="checkbox" checked={accrualEnabled} onChange={(e) => setAccrualEnabled(e.target.checked)} className="h-4 w-4 rounded border-border accent-accent" />
-            <span className="text-sm text-text-primary">Enable monthly accrual</span>
-          </label>
-          {accrualEnabled && (
-            <div><label className="text-xs font-medium text-text-secondary block mb-1">Monthly Rate (days)</label><Input type="number" step="0.5" value={accrualRate} onChange={(e) => setAccrualRate(e.target.value)} className="max-w-40" /></div>
-          )}
-        </CardContent>
-      </Card>
+          <div className="border-t border-slate-200/80 pt-10 dark:border-slate-700/80">
+            <label className="flex cursor-pointer items-center gap-3">
+              <input
+                type="checkbox"
+                checked={accrualEnabled}
+                onChange={(e) => setAccrualEnabled(e.target.checked)}
+                className="accent-accent h-4 w-4 rounded border-border"
+              />
+              <span className="text-sm text-text-primary">{t('enableMonthlyAccrual')}</span>
+            </label>
+            {accrualEnabled && (
+              <div className="mt-6">
+                <label className="mb-2 block text-xs font-medium text-text-secondary">{t('monthlyAccrualRate')}</label>
+                <Input type="number" step="0.5" value={accrualRate} onChange={(e) => setAccrualRate(e.target.value)} className="max-w-40" />
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
 
-      <Button onClick={save} disabled={saving}>{saving ? 'Saving...' : 'Save Settings'}</Button>
+      <Button onClick={save} disabled={saving}>
+        {saving ? t('savingSettings') : t('saveSettings')}
+      </Button>
     </div>
   )
 }

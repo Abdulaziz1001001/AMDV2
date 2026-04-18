@@ -12,7 +12,6 @@ import {
   Calendar,
   ClipboardList,
   Briefcase,
-  HardHat,
   ClipboardCheck,
   Megaphone,
   AlertTriangle,
@@ -23,6 +22,7 @@ import {
   Settings,
   LogOut,
 } from 'lucide-react'
+import { BrandLogo } from '@/components/BrandLogo'
 import type { LucideIcon } from 'lucide-react'
 
 interface NavItem {
@@ -41,11 +41,10 @@ const menuItems: NavItem[] = [
   { key: 'calendar', icon: Calendar, labelKey: 'workCalendar' },
   { key: 'records', icon: ClipboardList, labelKey: 'records' },
   { key: 'hr', icon: Briefcase, labelKey: 'hrManagement' },
-  { key: 'projects', icon: HardHat, labelKey: 'projectsSites' },
   { key: 'onboarding', icon: ClipboardCheck, labelKey: 'onboarding' },
   { key: 'announcements', icon: Megaphone, labelKey: 'announcements' },
   { key: 'safety', icon: AlertTriangle, labelKey: 'safetyIncidents' },
-  { key: 'directory', icon: BookUser, labelKey: 'directoryOrgChart' },
+  { key: 'directory', icon: BookUser, labelKey: 'directory' },
   { key: 'accrual', icon: Calculator, labelKey: 'leaveAccrual' },
 ]
 
@@ -84,8 +83,8 @@ export function Sidebar({ activePanel, onNavigate }: SidebarProps) {
     >
       <div className="shrink-0 border-b border-[#1f1f1f] px-4 py-5">
         <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#E05A2C] text-sm font-bold text-white shadow-sm">
-            A
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white/10 p-1">
+            <BrandLogo size="lg" className="h-8 w-8" />
           </div>
           <div className="min-w-0 pt-0.5">
             <p className="text-[13px] font-bold uppercase tracking-[0.12em] text-white">AMD United</p>

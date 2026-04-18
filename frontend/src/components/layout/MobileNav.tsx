@@ -3,6 +3,7 @@ import { cn } from '@/lib/cn'
 import { useLang } from '@/stores/LangContext'
 import { useAuth } from '@/stores/AuthContext'
 import { navGroups } from './Sidebar'
+import { BrandLogo } from '@/components/BrandLogo'
 import { LogOut, X } from 'lucide-react'
 
 interface MobileNavProps {
@@ -41,8 +42,8 @@ export function MobileNav({ open, onClose, activePanel, onNavigate }: MobileNavP
           >
             <div className="flex h-14 shrink-0 items-center justify-between border-b border-[#1f1f1f] px-4">
               <div className="flex min-w-0 items-center gap-3">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#E05A2C] text-xs font-bold text-white">
-                  A
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white/10 p-1">
+                  <BrandLogo size="md" className="h-7 w-7" />
                 </div>
                 <div className="min-w-0">
                   <p className="truncate text-sm font-bold uppercase tracking-wide text-white">AMD United</p>

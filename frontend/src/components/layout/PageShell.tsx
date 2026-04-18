@@ -17,7 +17,6 @@ const Locations = lazy(() => import('@/pages/admin/Locations'))
 const Records = lazy(() => import('@/pages/admin/Records'))
 const HrManagement = lazy(() => import('@/pages/admin/HrManagement'))
 const WorkCalendar = lazy(() => import('@/pages/admin/Calendar'))
-const Projects = lazy(() => import('@/pages/admin/Projects'))
 const Onboarding = lazy(() => import('@/pages/admin/Onboarding'))
 const Announcements = lazy(() => import('@/pages/admin/Announcements'))
 const Safety = lazy(() => import('@/pages/admin/Safety'))
@@ -39,7 +38,6 @@ const panels: Record<string, () => ReactNode> = {
   calendar: () => <WorkCalendar />,
   records: () => <Records />,
   hr: () => <HrManagement />,
-  projects: () => <Projects />,
   onboarding: () => <Onboarding />,
   announcements: () => <Announcements />,
   safety: () => <Safety />,
@@ -60,7 +58,6 @@ const panelTitleKeys: Record<string, string> = {
   calendar: 'workCalendar',
   records: 'records',
   hr: 'hrManagement',
-  projects: 'projectsSites',
   onboarding: 'onboarding',
   announcements: 'announcements',
   safety: 'safetyIncidents',
@@ -85,8 +82,8 @@ export function PageShell() {
   }, [])
 
   useEffect(() => {
-    sync().then(() => toast('Synced', 'success')).catch(() => toast('Sync failed', 'error'))
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- initial bootstrap only
+    sync().then(() => toast(t('synced'), 'success')).catch(() => toast(t('syncFailed'), 'error'))
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- bootstrap once
   }, [])
 
   const handleRefresh = useCallback(async () => {
@@ -94,7 +91,7 @@ export function PageShell() {
       await sync()
       toast(t('synced'), 'success')
     } catch {
-      toast('Sync failed', 'error')
+      toast(t('syncFailed'), 'error')
     }
   }, [sync, toast, t])
 
