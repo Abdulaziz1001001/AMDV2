@@ -25,6 +25,8 @@ const attendanceUpsertSchema = z.object({
   approvalStatus: approvalStatusSchema.optional(),
   attachment: z.string().trim().max(4000).optional(),
   projectId: z.string().trim().min(1).optional(),
+  lat: z.number().finite().optional(),
+  lng: z.number().finite().optional(),
 });
 
 const closeDaySchema = z.object({

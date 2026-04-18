@@ -5,6 +5,7 @@ const Location = require('../models/Location');
 const Record = require('../models/Record');
 const { attendanceUpsertSchema, validateBody } = require('../middleware/validation');
 const { upsertEmployeeRecord } = require('../controllers/attendanceController');
+const { locationVisibleForEmployee } = require('../lib/locationAccess');
 
 const router = express.Router();
 
@@ -13,19 +14,6 @@ router.use(auth.requireRole(['employee', 'manager']));
 
 function formatDocs(arr) {
   return arr.map((doc) => ({ ...doc._doc, id: doc._id.toString() }));
-}
-
-/** Align with attendanceController site rules for map listing */
-function locationVisibleForEmployee(loc, empGroupIdStr) {
-  const ag = loc.allowedGroups;
-  if (ag && ag.length > 0) {
-    if (!empGroupIdStr) return false;
-    return ag.some((id) => String(id) === empGroupIdStr);
-  }
-  if (loc.groupId != null && loc.groupId !== '') {
-    return empGroupIdStr && String(loc.groupId) === empGroupIdStr;
-  }
-  return true;
 }
 
 /** Same shape as /api/admin/all-data, scoped to the logged-in employee (for DB.sync on the portal). */

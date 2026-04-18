@@ -85,11 +85,20 @@ export default function Attendance() {
     }
   }, [])
 
+  const GEO_DENIED = 'PERMISSION_DENIED'
+
   const getPos = (): Promise<{ lat: number; lng: number }> =>
     new Promise((resolve, reject) => {
       navigator.geolocation.getCurrentPosition(
-        (p) => { const loc = { lat: p.coords.latitude, lng: p.coords.longitude }; setPos(loc); resolve(loc) },
-        () => reject(new Error('Location required')),
+        (p) => {
+          const loc = { lat: p.coords.latitude, lng: p.coords.longitude }
+          setPos(loc)
+          resolve(loc)
+        },
+        (err: GeolocationPositionError) => {
+          if (err.code === err.PERMISSION_DENIED) reject(new Error(GEO_DENIED))
+          else reject(new Error('Location required'))
+        },
         { enableHighAccuracy: true, timeout: 10000 },
       )
     })
@@ -128,12 +137,16 @@ export default function Attendance() {
         checkIn: new Date().toISOString(),
         checkInLat: loc.lat,
         checkInLng: loc.lng,
+        lat: loc.lat,
+        lng: loc.lng,
       })
       await loadToday()
       toast('Checked in!', 'success')
     } catch (e: unknown) {
-      if (e instanceof ApiError && e.status === 403) {
-        toast('Check-in Failed: You are not assigned to this location.', 'error')
+      if (e instanceof Error && e.message === GEO_DENIED) {
+        toast('Location permissions are required to check in.', 'error')
+      } else if (e instanceof ApiError) {
+        toast(e.message, 'error')
       } else {
         toast((e as Error).message, 'error')
       }
@@ -155,10 +168,20 @@ export default function Attendance() {
         checkOut: new Date().toISOString(),
         checkOutLat: loc.lat,
         checkOutLng: loc.lng,
+        lat: loc.lat,
+        lng: loc.lng,
       })
       await loadToday()
       toast('Checked out!', 'success')
-    } catch (e: unknown) { toast((e as Error).message, 'error') }
+    } catch (e: unknown) {
+      if (e instanceof Error && e.message === GEO_DENIED) {
+        toast('Location permissions are required to check in.', 'error')
+      } else if (e instanceof ApiError) {
+        toast(e.message, 'error')
+      } else {
+        toast((e as Error).message, 'error')
+      }
+    }
     setLoading(false)
   }
 

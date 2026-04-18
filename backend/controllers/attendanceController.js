@@ -1,11 +1,21 @@
 const Employee = require('../models/Employee');
 const Group = require('../models/Group');
 const Record = require('../models/Record');
+const Project = require('../models/Project');
 const { ShiftAssignment, Shift } = require('../models/Shift');
 const Overtime = require('../models/Overtime');
 const WorkPolicy = require('../models/WorkPolicy');
 const AdminNotification = require('../models/AdminNotification');
 const { upsertPendingLeaveNotification, upsertActivityNotification } = require('../lib/recordNotifications');
+const { haversineDistanceMeters } = require('../lib/geo');
+const {
+  getAuthorizedWorkSites,
+  isInsideAnyAuthorizedGeofence,
+  resolveClosestAuthorizedSite,
+} = require('../lib/locationAccess');
+
+const MSG_NO_SITES = 'Check-in Failed: No locations assigned. Please contact your Manager.';
+const MSG_OUTSIDE = 'Check-in Failed: You are outside the authorized site perimeter.';
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
@@ -22,75 +32,6 @@ function riyadhMinutesNow() {
   const utc = now.getTime() + now.getTimezoneOffset() * 60000;
   const riyadh = new Date(utc + 3600000 * 3);
   return riyadh.getHours() * 60 + riyadh.getMinutes();
-}
-
-/** Meters between two WGS84 points (same approximation as legacy project match). */
-function flatDistMeters(lat, lng, plat, plng) {
-  const dlat = (Number(plat) - Number(lat)) * 111320;
-  const dlng = (Number(plng) - Number(lng)) * 111320 * Math.cos((Number(lat) * Math.PI) / 180);
-  return Math.sqrt(dlat * dlat + dlng * dlng);
-}
-
-/**
- * allowedGroups non-empty → employee must be in one of them.
- * allowedGroups empty + legacy groupId → must match that group.
- * Otherwise open to all.
- */
-function isEmployeeAllowedAtSite(siteDoc, empGroupId, kind) {
-  const ag = siteDoc.allowedGroups;
-  if (ag && ag.length > 0) {
-    if (!empGroupId) return false;
-    return ag.some((id) => String(id) === String(empGroupId));
-  }
-  if (siteDoc.groupId != null && siteDoc.groupId !== '') {
-    return empGroupId && String(siteDoc.groupId) === String(empGroupId);
-  }
-  return true;
-}
-
-/**
- * Closest geofence among Locations and active Projects. Tie distance → prefer Location.
- */
-async function resolveClosestSiteKind(lat, lng) {
-  const Location = require('../models/Location');
-  const Project = require('../models/Project');
-
-  let bestLoc = null;
-  let bestLocDist = Infinity;
-  const locs = await Location.find({ lat: { $exists: true }, lng: { $exists: true } });
-  for (const loc of locs) {
-    const dist = flatDistMeters(lat, lng, loc.lat, loc.lng);
-    const radius = loc.radius || 500;
-    if (dist <= radius && dist < bestLocDist) {
-      bestLoc = loc;
-      bestLocDist = dist;
-    }
-  }
-
-  let bestProj = null;
-  let bestProjDist = Infinity;
-  const activeProjects = await Project.find({ status: 'active', lat: { $exists: true }, lng: { $exists: true } });
-  for (const p of activeProjects) {
-    const dist = flatDistMeters(lat, lng, p.lat, p.lng);
-    const radius = p.radius || 500;
-    if (dist <= radius && dist < bestProjDist) {
-      bestProj = p;
-      bestProjDist = dist;
-    }
-  }
-
-  if (!bestLoc && !bestProj) return null;
-  if (!bestLoc) return { kind: 'project', doc: bestProj };
-  if (!bestProj) return { kind: 'location', doc: bestLoc };
-  if (bestLocDist < bestProjDist) return { kind: 'location', doc: bestLoc };
-  if (bestProjDist < bestLocDist) return { kind: 'project', doc: bestProj };
-  return { kind: 'location', doc: bestLoc };
-}
-
-async function resolveSiteDisplayNameAt(lat, lng) {
-  const hit = await resolveClosestSiteKind(lat, lng);
-  if (!hit) return '';
-  return hit.doc.name || '';
 }
 
 async function getEffectiveShift(employeeId, dateStr) {
@@ -123,6 +64,8 @@ async function upsertEmployeeRecord(req, res) {
       approvalStatus,
       attachment,
       projectId,
+      lat,
+      lng,
     } = req.body;
 
     if (String(employeeId) !== String(req.user.id)) {
@@ -131,9 +74,29 @@ async function upsertEmployeeRecord(req, res) {
 
     let record = await Record.findOne({ employeeId, date });
 
+    /** Set when processing checkout geofence (reuse for checkout location name). */
+    let sitesCheckout = null;
+
     if (record) {
       if (checkOut && status === 'early_leave') {
         return res.status(400).json({ msg: 'Early checkouts must go through /api/checkouts/early' });
+      }
+
+      if (checkOut) {
+        const empCo = await Employee.findById(employeeId);
+        if (!empCo) return res.status(404).json({ msg: 'Employee not found' });
+        sitesCheckout = await getAuthorizedWorkSites(empCo);
+        if (sitesCheckout.locations.length + sitesCheckout.projects.length === 0) {
+          return res.status(403).json({ msg: MSG_NO_SITES });
+        }
+        const outLat = lat ?? checkOutLat;
+        const outLng = lng ?? checkOutLng;
+        if (outLat == null || outLng == null || !Number.isFinite(Number(outLat)) || !Number.isFinite(Number(outLng))) {
+          return res.status(400).json({ msg: 'GPS coordinates are required for check-out.' });
+        }
+        if (!isInsideAnyAuthorizedGeofence(outLat, outLng, sitesCheckout.locations, sitesCheckout.projects)) {
+          return res.status(403).json({ msg: MSG_OUTSIDE });
+        }
       }
 
       if (checkOut && !record.checkOut) {
@@ -179,13 +142,18 @@ async function upsertEmployeeRecord(req, res) {
       record.checkOut = checkOut || record.checkOut;
       record.checkOutLat = checkOutLat || record.checkOutLat;
       record.checkOutLng = checkOutLng || record.checkOutLng;
-      if (checkOutLat != null && checkOutLng != null) {
-        const checkoutName = await resolveSiteDisplayNameAt(Number(checkOutLat), Number(checkOutLng));
+
+      const outLat = lat ?? checkOutLat;
+      const outLng = lng ?? checkOutLng;
+      if (sitesCheckout && outLat != null && outLng != null) {
+        const hit = resolveClosestAuthorizedSite(Number(outLat), Number(outLng), sitesCheckout.locations, sitesCheckout.projects);
+        const checkoutName = hit ? hit.doc.name || '' : '';
         const baseName = record.locationName || '';
         if (checkoutName && checkoutName !== baseName) {
           record.checkoutLocationName = checkoutName;
         }
       }
+
       if (approvalStatus) record.approvalStatus = approvalStatus;
       if (notes) record.notes = record.notes ? `${record.notes} | ${notes}` : notes;
       if (attachment) record.attachment = attachment;
@@ -201,6 +169,24 @@ async function upsertEmployeeRecord(req, res) {
 
     const emp = await Employee.findById(employeeId);
     if (!emp) return res.status(404).json({ msg: 'Employee not found' });
+
+    if (!checkIn) {
+      return res.status(400).json({ msg: 'Check-in time is required for a new attendance record.' });
+    }
+
+    const sites = await getAuthorizedWorkSites(emp);
+    if (sites.locations.length + sites.projects.length === 0) {
+      return res.status(403).json({ msg: MSG_NO_SITES });
+    }
+
+    const inLat = lat ?? checkInLat;
+    const inLng = lng ?? checkInLng;
+    if (inLat == null || inLng == null || !Number.isFinite(Number(inLat)) || !Number.isFinite(Number(inLng))) {
+      return res.status(400).json({ msg: 'GPS coordinates are required for check-in.' });
+    }
+    if (!isInsideAnyAuthorizedGeofence(inLat, inLng, sites.locations, sites.projects)) {
+      return res.status(403).json({ msg: MSG_OUTSIDE });
+    }
 
     let finalStatus = status || 'present';
     const shift = await getEffectiveShift(employeeId, date);
@@ -223,45 +209,33 @@ async function upsertEmployeeRecord(req, res) {
     }
 
     let resolvedProjectId = projectId || undefined;
-    if (!resolvedProjectId && checkInLat && checkInLng) {
-      try {
-        const Project = require('../models/Project');
-        const activeProjects = await Project.find({ status: 'active', lat: { $exists: true }, lng: { $exists: true } });
-        let closest = null;
-        let closestDist = Infinity;
-        for (const p of activeProjects) {
-          const dist = flatDistMeters(Number(checkInLat), Number(checkInLng), p.lat, p.lng);
-          const radius = p.radius || 500;
-          if (dist <= radius && dist < closestDist) {
-            closest = p;
-            closestDist = dist;
-          }
-        }
-        if (closest) resolvedProjectId = closest._id;
-      } catch (_) {
-        // best-effort project detection
+    if (resolvedProjectId) {
+      const ok = sites.projects.some((p) => String(p._id) === String(resolvedProjectId));
+      if (!ok) {
+        return res.status(403).json({ msg: 'You are not authorized to check in at this location.' });
       }
+    } else {
+      let closest = null;
+      let closestDist = Infinity;
+      for (const p of sites.projects) {
+        const dist = haversineDistanceMeters(Number(inLat), Number(inLng), p.lat, p.lng);
+        const radius = p.radius || 500;
+        if (dist <= radius && dist < closestDist) {
+          closest = p;
+          closestDist = dist;
+        }
+      }
+      if (closest) resolvedProjectId = closest._id;
     }
 
     let locationName;
-    if (checkInLat != null && checkInLng != null) {
-      const site = await resolveClosestSiteKind(Number(checkInLat), Number(checkInLng));
-      if (site) {
-        if (!isEmployeeAllowedAtSite(site.doc, emp.groupId, site.kind)) {
-          return res.status(403).json({ msg: 'You are not authorized to check in at this location.' });
-        }
-        locationName = site.doc.name || '';
-      }
+    const site = resolveClosestAuthorizedSite(Number(inLat), Number(inLng), sites.locations, sites.projects);
+    if (site) {
+      locationName = site.doc.name || '';
     }
     if (!locationName && resolvedProjectId) {
-      const Project = require('../models/Project');
       const proj = await Project.findById(resolvedProjectId);
-      if (proj) {
-        if (!isEmployeeAllowedAtSite(proj, emp.groupId, 'project')) {
-          return res.status(403).json({ msg: 'You are not authorized to check in at this location.' });
-        }
-        locationName = proj.name || '';
-      }
+      if (proj) locationName = proj.name || '';
     }
 
     const newRecord = new Record({
