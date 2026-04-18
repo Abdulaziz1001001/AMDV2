@@ -56,14 +56,28 @@ function riyadhMinutesNow() {
 async function getEffectiveShift(employeeId, dateStr) {
   const assignment = await ShiftAssignment.findOne({ employeeId, date: dateStr }).populate('shiftId');
   if (assignment && assignment.shiftId) {
+    // #region agent log
+    fetch('http://127.0.0.1:7571/ingest/97553eb3-f982-42df-afcf-af27afd98f83',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'e984cd'},body:JSON.stringify({sessionId:'e984cd',location:'attendanceController:getEffectiveShift',message:'branch roster',data:{employeeId:String(employeeId),dateStr,endTime:assignment.shiftId.endTime,assignmentId:String(assignment._id)},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
+    // #endregion
     return { startTime: assignment.shiftId.startTime, endTime: assignment.shiftId.endTime, source: 'roster' };
   }
   const defaultShift = await Shift.findOne({ isDefault: true });
-  if (defaultShift) return { startTime: defaultShift.startTime, endTime: defaultShift.endTime, source: 'default_shift' };
+  if (defaultShift) {
+    // #region agent log
+    fetch('http://127.0.0.1:7571/ingest/97553eb3-f982-42df-afcf-af27afd98f83',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'e984cd'},body:JSON.stringify({sessionId:'e984cd',location:'attendanceController:getEffectiveShift',message:'branch default_shift',data:{employeeId:String(employeeId),dateStr,endTime:defaultShift.endTime},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
+    // #endregion
+    return { startTime: defaultShift.startTime, endTime: defaultShift.endTime, source: 'default_shift' };
+  }
   const emp = await Employee.findById(employeeId);
   if (emp && emp.workStart && emp.workEnd) {
+    // #region agent log
+    fetch('http://127.0.0.1:7571/ingest/97553eb3-f982-42df-afcf-af27afd98f83',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'e984cd'},body:JSON.stringify({sessionId:'e984cd',location:'attendanceController:getEffectiveShift',message:'branch employee',data:{employeeId:String(employeeId),dateStr,workEnd:emp.workEnd,workStart:emp.workStart},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
+    // #endregion
     return { startTime: emp.workStart, endTime: emp.workEnd, source: 'employee' };
   }
+  // #region agent log
+  fetch('http://127.0.0.1:7571/ingest/97553eb3-f982-42df-afcf-af27afd98f83',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'e984cd'},body:JSON.stringify({sessionId:'e984cd',location:'attendanceController:getEffectiveShift',message:'branch null',data:{employeeId:String(employeeId),dateStr},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
+  // #endregion
   return null;
 }
 
@@ -112,6 +126,15 @@ async function upsertEmployeeRecord(req, res) {
         const endMinEarly = shiftEarly ? parseTimeToMinutes(shiftEarly.endTime) : null;
         const currMinEarly = riyadhMinutesNow();
         const isEarlyCheckout = endMinEarly !== null && currMinEarly < endMinEarly;
+        // #region agent log
+        (() => {
+          const now = new Date();
+          const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Riyadh', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(now);
+          const hp = parts.find((p) => p.type === 'hour')?.value;
+          const mp = parts.find((p) => p.type === 'minute')?.value;
+          fetch('http://127.0.0.1:7571/ingest/97553eb3-f982-42df-afcf-af27afd98f83',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'e984cd'},body:JSON.stringify({sessionId:'e984cd',location:'attendanceController:checkoutGate',message:'early decision',data:{recordDate:date,employeeId:String(employeeId),shiftSource:shiftEarly?.source,endTimeRaw:shiftEarly?.endTime,endMinEarly,currMinEarly,isEarlyCheckout,riyadhHourPart:hp,riyadhMinutePart:mp,endTimeType:shiftEarly?.endTime!=null?typeof shiftEarly.endTime:'null',empWorkEnd:empCo.workEnd,empWorkStart:empCo.workStart,empEndMin:parseTimeToMinutes(empCo.workEnd)},timestamp:Date.now(),hypothesisId:'H2-H5'})}).catch(()=>{});
+        })();
+        // #endregion
 
         let earlyCheckoutDoc = null;
         if (isEarlyCheckout) {
