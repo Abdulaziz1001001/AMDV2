@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 const Employee = require('../models/Employee');
 const Group = require('../models/Group');
 const Record = require('../models/Record');
@@ -19,6 +21,20 @@ const MSG_NO_SITES = 'Check-in Failed: No locations assigned. Please contact you
 const MSG_OUTSIDE = 'Check-in Failed: You are outside the authorized site perimeter.';
 const MSG_CHECKOUT_BLOCKED =
   'Checkout blocked. You cannot leave early without an approved request.';
+
+const AGENT_DEBUG_LOG = path.join(__dirname, '..', '..', 'debug-e984cd.log');
+/** NDJSON to workspace + ingest (debug session e984cd). */
+function agentDebug(payload) {
+  const body = { sessionId: 'e984cd', timestamp: Date.now(), ...payload };
+  fetch('http://127.0.0.1:7571/ingest/97553eb3-f982-42df-afcf-af27afd98f83', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'e984cd' },
+    body: JSON.stringify(body),
+  }).catch(() => {});
+  try {
+    fs.appendFileSync(AGENT_DEBUG_LOG, JSON.stringify(body) + '\n');
+  } catch (_) {}
+}
 
 function todayStr() {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Riyadh' });
@@ -54,29 +70,81 @@ function riyadhMinutesNow() {
 }
 
 async function getEffectiveShift(employeeId, dateStr) {
-  const assignment = await ShiftAssignment.findOne({ employeeId, date: dateStr }).populate('shiftId');
+  const [assignment, emp] = await Promise.all([
+    ShiftAssignment.findOne({ employeeId, date: dateStr }).populate('shiftId'),
+    Employee.findById(employeeId).select('workStart workEnd').lean(),
+  ]);
+
   if (assignment && assignment.shiftId) {
+    const rosterEnd = assignment.shiftId.endTime;
+    /** When both roster and profile exist, admin-set workEnd wins for checkout deadline (not roster end). */
+    const effectiveEnd = emp && emp.workEnd ? emp.workEnd : rosterEnd;
+    const mergedEnd = !!(emp && emp.workEnd && String(effectiveEnd) !== String(rosterEnd));
     // #region agent log
-    fetch('http://127.0.0.1:7571/ingest/97553eb3-f982-42df-afcf-af27afd98f83',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'e984cd'},body:JSON.stringify({sessionId:'e984cd',location:'attendanceController:getEffectiveShift',message:'branch roster',data:{employeeId:String(employeeId),dateStr,endTime:assignment.shiftId.endTime,assignmentId:String(assignment._id)},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
+    agentDebug({
+      location: 'attendanceController:getEffectiveShift',
+      message: 'branch roster',
+      hypothesisId: 'H1',
+      runId: 'post-fix',
+      data: {
+        employeeId: String(employeeId),
+        dateStr,
+        rosterEnd,
+        empWorkEnd: emp?.workEnd ?? null,
+        effectiveEnd,
+        mergedEnd,
+        assignmentId: String(assignment._id),
+      },
+    });
     // #endregion
-    return { startTime: assignment.shiftId.startTime, endTime: assignment.shiftId.endTime, source: 'roster' };
+    return {
+      startTime: assignment.shiftId.startTime,
+      endTime: effectiveEnd,
+      source: mergedEnd ? 'roster_employee_end' : 'roster',
+    };
   }
-  const defaultShift = await Shift.findOne({ isDefault: true });
-  if (defaultShift) {
-    // #region agent log
-    fetch('http://127.0.0.1:7571/ingest/97553eb3-f982-42df-afcf-af27afd98f83',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'e984cd'},body:JSON.stringify({sessionId:'e984cd',location:'attendanceController:getEffectiveShift',message:'branch default_shift',data:{employeeId:String(employeeId),dateStr,endTime:defaultShift.endTime},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
-    // #endregion
-    return { startTime: defaultShift.startTime, endTime: defaultShift.endTime, source: 'default_shift' };
-  }
-  const emp = await Employee.findById(employeeId);
+
+  /** Admin-set hours on the employee profile override the company default shift when no roster row exists. */
   if (emp && emp.workStart && emp.workEnd) {
     // #region agent log
-    fetch('http://127.0.0.1:7571/ingest/97553eb3-f982-42df-afcf-af27afd98f83',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'e984cd'},body:JSON.stringify({sessionId:'e984cd',location:'attendanceController:getEffectiveShift',message:'branch employee',data:{employeeId:String(employeeId),dateStr,workEnd:emp.workEnd,workStart:emp.workStart},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
+    agentDebug({
+      location: 'attendanceController:getEffectiveShift',
+      message: 'branch employee',
+      hypothesisId: 'H1',
+      runId: 'post-fix',
+      data: {
+        employeeId: String(employeeId),
+        dateStr,
+        workEnd: emp.workEnd,
+        workStart: emp.workStart,
+      },
+    });
     // #endregion
     return { startTime: emp.workStart, endTime: emp.workEnd, source: 'employee' };
   }
+
+  const defaultShift = await Shift.findOne({ isDefault: true });
+  if (defaultShift) {
+    // #region agent log
+    agentDebug({
+      location: 'attendanceController:getEffectiveShift',
+      message: 'branch default_shift',
+      hypothesisId: 'H1',
+      runId: 'post-fix',
+      data: { employeeId: String(employeeId), dateStr, endTime: defaultShift.endTime },
+    });
+    // #endregion
+    return { startTime: defaultShift.startTime, endTime: defaultShift.endTime, source: 'default_shift' };
+  }
+
   // #region agent log
-  fetch('http://127.0.0.1:7571/ingest/97553eb3-f982-42df-afcf-af27afd98f83',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'e984cd'},body:JSON.stringify({sessionId:'e984cd',location:'attendanceController:getEffectiveShift',message:'branch null',data:{employeeId:String(employeeId),dateStr},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
+  agentDebug({
+    location: 'attendanceController:getEffectiveShift',
+    message: 'branch null',
+    hypothesisId: 'H1',
+    runId: 'post-fix',
+    data: { employeeId: String(employeeId), dateStr },
+  });
   // #endregion
   return null;
 }
@@ -129,10 +197,35 @@ async function upsertEmployeeRecord(req, res) {
         // #region agent log
         (() => {
           const now = new Date();
-          const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Riyadh', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(now);
+          const parts = new Intl.DateTimeFormat('en-GB', {
+            timeZone: 'Asia/Riyadh',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+          }).formatToParts(now);
           const hp = parts.find((p) => p.type === 'hour')?.value;
           const mp = parts.find((p) => p.type === 'minute')?.value;
-          fetch('http://127.0.0.1:7571/ingest/97553eb3-f982-42df-afcf-af27afd98f83',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'e984cd'},body:JSON.stringify({sessionId:'e984cd',location:'attendanceController:checkoutGate',message:'early decision',data:{recordDate:date,employeeId:String(employeeId),shiftSource:shiftEarly?.source,endTimeRaw:shiftEarly?.endTime,endMinEarly,currMinEarly,isEarlyCheckout,riyadhHourPart:hp,riyadhMinutePart:mp,endTimeType:shiftEarly?.endTime!=null?typeof shiftEarly.endTime:'null',empWorkEnd:empCo.workEnd,empWorkStart:empCo.workStart,empEndMin:parseTimeToMinutes(empCo.workEnd)},timestamp:Date.now(),hypothesisId:'H2-H5'})}).catch(()=>{});
+          agentDebug({
+            location: 'attendanceController:checkoutGate',
+            message: 'early decision',
+            hypothesisId: 'H2-H5',
+            runId: 'post-fix',
+            data: {
+              recordDate: date,
+              employeeId: String(employeeId),
+              shiftSource: shiftEarly?.source,
+              endTimeRaw: shiftEarly?.endTime,
+              endMinEarly,
+              currMinEarly,
+              isEarlyCheckout,
+              riyadhHourPart: hp,
+              riyadhMinutePart: mp,
+              endTimeType: shiftEarly?.endTime != null ? typeof shiftEarly.endTime : 'null',
+              empWorkEnd: empCo.workEnd,
+              empWorkStart: empCo.workStart,
+              empEndMin: parseTimeToMinutes(empCo.workEnd),
+            },
+          });
         })();
         // #endregion
 
