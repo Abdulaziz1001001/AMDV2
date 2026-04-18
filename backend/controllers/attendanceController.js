@@ -1,5 +1,4 @@
-const fs = require('fs');
-const path = require('path');
+const mongoose = require('mongoose');
 const Employee = require('../models/Employee');
 const Group = require('../models/Group');
 const Record = require('../models/Record');
@@ -21,20 +20,6 @@ const MSG_NO_SITES = 'Check-in Failed: No locations assigned. Please contact you
 const MSG_OUTSIDE = 'Check-in Failed: You are outside the authorized site perimeter.';
 const MSG_CHECKOUT_BLOCKED =
   'Checkout blocked. You cannot leave early without an approved request.';
-
-const AGENT_DEBUG_LOG = path.join(__dirname, '..', '..', 'debug-e984cd.log');
-/** NDJSON to workspace + ingest (debug session e984cd). */
-function agentDebug(payload) {
-  const body = { sessionId: 'e984cd', timestamp: Date.now(), ...payload };
-  fetch('http://127.0.0.1:7571/ingest/97553eb3-f982-42df-afcf-af27afd98f83', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'e984cd' },
-    body: JSON.stringify(body),
-  }).catch(() => {});
-  try {
-    fs.appendFileSync(AGENT_DEBUG_LOG, JSON.stringify(body) + '\n');
-  } catch (_) {}
-}
 
 function todayStr() {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Riyadh' });
@@ -80,23 +65,6 @@ async function getEffectiveShift(employeeId, dateStr) {
     /** When both roster and profile exist, admin-set workEnd wins for checkout deadline (not roster end). */
     const effectiveEnd = emp && emp.workEnd ? emp.workEnd : rosterEnd;
     const mergedEnd = !!(emp && emp.workEnd && String(effectiveEnd) !== String(rosterEnd));
-    // #region agent log
-    agentDebug({
-      location: 'attendanceController:getEffectiveShift',
-      message: 'branch roster',
-      hypothesisId: 'H1',
-      runId: 'post-fix',
-      data: {
-        employeeId: String(employeeId),
-        dateStr,
-        rosterEnd,
-        empWorkEnd: emp?.workEnd ?? null,
-        effectiveEnd,
-        mergedEnd,
-        assignmentId: String(assignment._id),
-      },
-    });
-    // #endregion
     return {
       startTime: assignment.shiftId.startTime,
       endTime: effectiveEnd,
@@ -106,46 +74,14 @@ async function getEffectiveShift(employeeId, dateStr) {
 
   /** Admin-set hours on the employee profile override the company default shift when no roster row exists. */
   if (emp && emp.workStart && emp.workEnd) {
-    // #region agent log
-    agentDebug({
-      location: 'attendanceController:getEffectiveShift',
-      message: 'branch employee',
-      hypothesisId: 'H1',
-      runId: 'post-fix',
-      data: {
-        employeeId: String(employeeId),
-        dateStr,
-        workEnd: emp.workEnd,
-        workStart: emp.workStart,
-      },
-    });
-    // #endregion
     return { startTime: emp.workStart, endTime: emp.workEnd, source: 'employee' };
   }
 
   const defaultShift = await Shift.findOne({ isDefault: true });
   if (defaultShift) {
-    // #region agent log
-    agentDebug({
-      location: 'attendanceController:getEffectiveShift',
-      message: 'branch default_shift',
-      hypothesisId: 'H1',
-      runId: 'post-fix',
-      data: { employeeId: String(employeeId), dateStr, endTime: defaultShift.endTime },
-    });
-    // #endregion
     return { startTime: defaultShift.startTime, endTime: defaultShift.endTime, source: 'default_shift' };
   }
 
-  // #region agent log
-  agentDebug({
-    location: 'attendanceController:getEffectiveShift',
-    message: 'branch null',
-    hypothesisId: 'H1',
-    runId: 'post-fix',
-    data: { employeeId: String(employeeId), dateStr },
-  });
-  // #endregion
   return null;
 }
 
@@ -172,8 +108,12 @@ async function upsertEmployeeRecord(req, res) {
     if (String(employeeId) !== String(req.user.id)) {
       return res.status(403).json({ msg: 'Cannot record attendance for another user' });
     }
+    if (!mongoose.isValidObjectId(String(employeeId))) {
+      return res.status(400).json({ msg: 'Invalid employee id' });
+    }
+    const empOid = new mongoose.Types.ObjectId(String(employeeId));
 
-    let record = await Record.findOne({ employeeId, date });
+    let record = await Record.findOne({ employeeId: empOid, date });
 
     /** Set when processing checkout geofence (reuse for checkout location name). */
     let sitesCheckout = null;
@@ -186,48 +126,14 @@ async function upsertEmployeeRecord(req, res) {
       }
 
       if (checkOut) {
-        const empCo = await Employee.findById(employeeId);
+        const empCo = await Employee.findById(empOid);
         if (!empCo) return res.status(404).json({ msg: 'Employee not found' });
         sitesCheckout = await getAuthorizedWorkSites(empCo);
 
-        const shiftEarly = await getEffectiveShift(employeeId, date);
+        const shiftEarly = await getEffectiveShift(empOid, date);
         const endMinEarly = shiftEarly ? parseTimeToMinutes(shiftEarly.endTime) : null;
         const currMinEarly = riyadhMinutesNow();
         const isEarlyCheckout = endMinEarly !== null && currMinEarly < endMinEarly;
-        // #region agent log
-        (() => {
-          const now = new Date();
-          const parts = new Intl.DateTimeFormat('en-GB', {
-            timeZone: 'Asia/Riyadh',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false,
-          }).formatToParts(now);
-          const hp = parts.find((p) => p.type === 'hour')?.value;
-          const mp = parts.find((p) => p.type === 'minute')?.value;
-          agentDebug({
-            location: 'attendanceController:checkoutGate',
-            message: 'early decision',
-            hypothesisId: 'H2-H5',
-            runId: 'post-fix',
-            data: {
-              recordDate: date,
-              employeeId: String(employeeId),
-              shiftSource: shiftEarly?.source,
-              endTimeRaw: shiftEarly?.endTime,
-              endMinEarly,
-              currMinEarly,
-              isEarlyCheckout,
-              riyadhHourPart: hp,
-              riyadhMinutePart: mp,
-              endTimeType: shiftEarly?.endTime != null ? typeof shiftEarly.endTime : 'null',
-              empWorkEnd: empCo.workEnd,
-              empWorkStart: empCo.workStart,
-              empEndMin: parseTimeToMinutes(empCo.workEnd),
-            },
-          });
-        })();
-        // #endregion
 
         let earlyCheckoutDoc = null;
         if (isEarlyCheckout) {
@@ -263,7 +169,7 @@ async function upsertEmployeeRecord(req, res) {
       }
 
       if (checkOut && !record.checkOut) {
-        const shift = await getEffectiveShift(employeeId, date);
+        const shift = await getEffectiveShift(empOid, date);
         const endMin = shift ? parseTimeToMinutes(shift.endTime) : null;
         const currMin = riyadhMinutesNow();
         if (endMin !== null && currMin > endMin) {
@@ -271,18 +177,18 @@ async function upsertEmployeeRecord(req, res) {
           if (extraMinutes >= 5) {
             record.overtimeMinutes = extraMinutes;
             try {
-              const existing = await Overtime.findOne({ employeeId, date });
+              const existing = await Overtime.findOne({ employeeId: empOid, date });
               if (!existing) {
                 const policy = await WorkPolicy.findOne({ key: 'company' });
                 const ot = await Overtime.create({
-                  employeeId,
+                  employeeId: empOid,
                   attendanceId: record._id,
                   date,
                   extraMinutes,
                   reason: 'Auto-detected on checkout',
                   rateMultiplier: policy ? policy.overtimeRateMultiplier || 1.5 : 1.5,
                 });
-                const emp = await Employee.findById(employeeId);
+                const emp = await Employee.findById(empOid);
                 await AdminNotification.create({
                   type: 'overtime_pending',
                   title: 'Overtime Request',
@@ -332,7 +238,7 @@ async function upsertEmployeeRecord(req, res) {
       return res.json({ msg: 'Check-out updated successfully', record });
     }
 
-    const emp = await Employee.findById(employeeId);
+    const emp = await Employee.findById(empOid);
     if (!emp) return res.status(404).json({ msg: 'Employee not found' });
 
     if (!checkIn) {
@@ -354,7 +260,7 @@ async function upsertEmployeeRecord(req, res) {
     }
 
     let finalStatus = status || 'present';
-    const shift = await getEffectiveShift(employeeId, date);
+    const shift = await getEffectiveShift(empOid, date);
     const startTime = shift ? shift.startTime : emp.workStart;
     if (checkIn && startTime) {
       const expectedStartMinutes = parseTimeToMinutes(startTime);
@@ -404,7 +310,7 @@ async function upsertEmployeeRecord(req, res) {
     }
 
     const newRecord = new Record({
-      employeeId,
+      employeeId: empOid,
       date,
       checkIn,
       checkInLat,
@@ -454,14 +360,14 @@ async function closeDay(req, res) {
       Record.find({ date }),
     ]);
 
-    const checkedInIds = new Set(existingRecords.map((r) => r.employeeId));
+    const checkedInIds = new Set(existingRecords.map((r) => String(r.employeeId)));
     const absentees = [];
 
     for (const emp of employees) {
       if (checkedInIds.has(String(emp._id))) continue;
       if (!isWorkingDay(date, emp.groupId, policy, groups)) continue;
       absentees.push({
-        employeeId: String(emp._id),
+        employeeId: emp._id,
         date,
         status: 'absent',
         approvalStatus: 'none',

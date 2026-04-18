@@ -12,6 +12,7 @@ const LeaveRequest = require('../models/LeaveRequest');
 const auth = require('../middleware/authMiddleware');
 const { employeeWriteSchema, validateBody } = require('../middleware/validation');
 const { logAudit } = require('../lib/auditHelper');
+const { formatAttendanceRecords } = require('../lib/formatAttendanceRecord');
 
 /** Admin dashboard inbox only (not employee-targeted notifications). */
 const ADMIN_NOTIFICATION_INBOX = {
@@ -37,7 +38,7 @@ router.get('/all-data', async (req, res) => {
       Employee.find(),
       Group.find(),
       Location.find(),
-      Record.find(),
+      Record.find().populate('employeeId', 'name eid departmentId'),
       Department.find().populate('managerId', 'name eid'),
       LeaveRequest.find().populate('employeeId', 'name eid'),
       WorkPolicy.findOne({ key: 'company' }),
@@ -53,7 +54,7 @@ router.get('/all-data', async (req, res) => {
       employees: format(employees),
       groups: format(groups),
       locations: format(locations),
-      records: format(records),
+      records: formatAttendanceRecords(records),
       departments: format(departments),
       leaveRequests: format(leaveRequests),
       workPolicy: workPolicy ? { ...workPolicy._doc, id: workPolicy._id.toString() } : null,
@@ -157,8 +158,10 @@ router.get('/records/filter', async (req, res) => {
       if (from) query.date.$gte = String(from);
       if (to) query.date.$lte = String(to);
     }
-    const records = await Record.find(query).sort({ date: -1, createdAt: -1 });
-    res.json(records.map((doc) => ({ ...doc._doc, id: doc._id.toString() })));
+    const records = await Record.find(query)
+      .populate('employeeId', 'name eid departmentId')
+      .sort({ date: -1, createdAt: -1 });
+    res.json(formatAttendanceRecords(records));
   } catch (err) {
     res.status(500).json({ msg: err.message });
   }

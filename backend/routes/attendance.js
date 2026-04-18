@@ -1,5 +1,7 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const auth = require('../middleware/authMiddleware');
+const { recordEmployeeKey } = require('../lib/recordEmployeeKey');
 const Record = require('../models/Record');
 const Employee = require('../models/Employee');
 const EarlyCheckout = require('../models/EarlyCheckout');
@@ -109,7 +111,9 @@ router.get('/report', auth.requireRole(['admin', 'manager']), async (req, res) =
       if (endDate) q.date.$lte = endDate;
     }
 
-    const records = await Record.find(q).sort({ date: 1 });
+    const records = await Record.find(q)
+      .populate('employeeId', 'name eid departmentId')
+      .sort({ date: 1 });
 
     const attendanceIds = records.map((r) => r._id);
     const earlyForRows = attendanceIds.length
@@ -126,7 +130,7 @@ router.get('/report', auth.requireRole(['admin', 'manager']), async (req, res) =
     } else if (employeeId) {
       empIds = [employeeId];
     } else {
-      empIds = [...new Set(records.map((r) => r.employeeId))];
+      empIds = [...new Set(records.map((r) => recordEmployeeKey(r)))];
     }
     const employees = await Employee.find({ _id: { $in: empIds } });
     const empMap = {};
@@ -138,8 +142,8 @@ router.get('/report', auth.requireRole(['admin', 'manager']), async (req, res) =
     depts.forEach((d) => { deptMap[String(d._id)] = d.name; });
 
     const summary = empIds.map((eid) => {
-      const emp = empMap[eid] || {};
-      const empRecs = records.filter((r) => r.employeeId === eid);
+      const emp = empMap[String(eid)] || {};
+      const empRecs = records.filter((r) => recordEmployeeKey(r) === String(eid));
       const present = empRecs.filter((r) => ['present', 'late', 'early_leave'].includes(r.status)).length;
       const late = empRecs.filter((r) => r.status === 'late').length;
       const absent = empRecs.filter((r) => r.status === 'absent').length;
@@ -179,7 +183,12 @@ router.get('/report', auth.requireRole(['admin', 'manager']), async (req, res) =
     });
 
     const recordDetails = records.map((r) => {
-      const emp = empMap[String(r.employeeId)] || {};
+      const key = recordEmployeeKey(r);
+      const emp = empMap[key] || {};
+      const pop =
+        r.employeeId && typeof r.employeeId === 'object' && !(r.employeeId instanceof mongoose.Types.ObjectId)
+          ? r.employeeId
+          : null;
       const ec = earlyByAttendance[String(r._id)];
       let notes = r.notes || '';
       if (ec && ec.reason) {
@@ -188,9 +197,9 @@ router.get('/report', auth.requireRole(['admin', 'manager']), async (req, res) =
       }
       return {
         recordId: String(r._id),
-        employeeId: String(r.employeeId),
-        employeeName: emp.name || 'Unknown',
-        employeeEid: emp.eid || '',
+        employeeId: key,
+        employeeName: (pop && pop.name) || emp.name || 'Unknown',
+        employeeEid: (pop && pop.eid) || emp.eid || '',
         date: r.date,
         checkIn: r.checkIn || '',
         checkOut: r.checkOut || '',

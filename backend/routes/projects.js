@@ -3,6 +3,7 @@ const auth = require('../middleware/authMiddleware');
 const Project = require('../models/Project');
 const Record = require('../models/Record');
 const Employee = require('../models/Employee');
+const { recordEmployeeKey } = require('../lib/recordEmployeeKey');
 
 const router = express.Router();
 router.use(auth);
@@ -54,15 +55,17 @@ router.get('/:id/report', auth.requireRole(['admin', 'manager']), async (req, re
     const q = { projectId: req.params.id };
     if (from || to) { q.date = {}; if (from) q.date.$gte = from; if (to) q.date.$lte = to; }
 
-    const records = await Record.find(q).sort({ date: -1 });
-    const empIds = [...new Set(records.map((r) => r.employeeId))];
+    const records = await Record.find(q)
+      .populate('employeeId', 'name eid departmentId')
+      .sort({ date: -1 });
+    const empIds = [...new Set(records.map((r) => recordEmployeeKey(r)))];
     const employees = await Employee.find({ _id: { $in: empIds } });
     const empMap = {};
     employees.forEach((e) => { empMap[String(e._id)] = e; });
 
     const summary = empIds.map((eid) => {
-      const emp = empMap[eid] || {};
-      const empRecs = records.filter((r) => r.employeeId === eid);
+      const emp = empMap[String(eid)] || {};
+      const empRecs = records.filter((r) => recordEmployeeKey(r) === String(eid));
       const totalMinutes = empRecs.reduce((acc, r) => {
         if (!r.checkIn || !r.checkOut) return acc;
         return acc + (new Date(r.checkOut) - new Date(r.checkIn)) / 60000;

@@ -9,7 +9,7 @@ const BreakEntrySchema = new mongoose.Schema(
 );
 
 const RecordSchema = new mongoose.Schema({
-  employeeId: { type: String, required: true },
+  employeeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Employee', required: true },
   date: { type: String, required: true },
   checkIn: { type: String },
   checkInLat: { type: Number },
@@ -28,5 +28,7 @@ const RecordSchema = new mongoose.Schema({
   breaks: { type: [BreakEntrySchema], default: [] },
   overtimeMinutes: { type: Number, default: 0 },
 }, { timestamps: true });
+
+RecordSchema.index({ employeeId: 1, date: 1 }, { unique: true });
 
 module.exports = mongoose.models.Record || mongoose.model('Record', RecordSchema);

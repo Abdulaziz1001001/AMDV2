@@ -6,6 +6,7 @@ const Record = require('../models/Record');
 const { attendanceUpsertSchema, validateBody } = require('../middleware/validation');
 const { upsertEmployeeRecord } = require('../controllers/attendanceController');
 const { locationVisibleForEmployee } = require('../lib/locationAccess');
+const { formatAttendanceRecords } = require('../lib/formatAttendanceRecord');
 
 const router = express.Router();
 
@@ -24,8 +25,10 @@ router.get('/records', async (req, res) => {
     if (req.query.date) {
       q.date = String(req.query.date);
     }
-    const records = await Record.find(q).sort({ date: -1 });
-    res.json(formatDocs(records));
+    const records = await Record.find(q)
+      .populate('employeeId', 'name eid departmentId')
+      .sort({ date: -1 });
+    res.json(formatAttendanceRecords(records));
   } catch (err) {
     console.error('employee /records error:', err);
     res.status(500).json({ msg: err.message });
@@ -44,7 +47,7 @@ router.get('/me-data', async (req, res) => {
 
     const now = new Date();
     const [records, announcements] = await Promise.all([
-      Record.find({ employeeId: String(req.user.id) }),
+      Record.find({ employeeId: String(req.user.id) }).populate('employeeId', 'name eid departmentId'),
       Announcement.find({
         $or: [{ expiresAt: null }, { expiresAt: { $exists: false } }, { expiresAt: { $gte: now } }],
         $and: [{ $or: [
@@ -59,7 +62,7 @@ router.get('/me-data', async (req, res) => {
       employees: [],
       groups: [],
       locations: formatDocs(locations),
-      records: formatDocs(records),
+      records: formatAttendanceRecords(records),
       announcements: formatDocs(announcements),
     });
   } catch (err) {
