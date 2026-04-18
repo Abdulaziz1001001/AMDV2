@@ -262,6 +262,18 @@ export function updateWorkPolicy(body: Partial<WorkPolicyData>) {
   return request<WorkPolicyData>('/admin/work-policy', 'PUT', body)
 }
 
+export interface AdminProfile {
+  id: string
+  username: string
+  name: string
+  email?: string
+}
+
+/** GET /admin/me — hydrate admin session after page reload (JWT still valid). */
+export function fetchAdminProfile() {
+  return request<AdminProfile>('/admin/me')
+}
+
 export interface AdminCredentialsUpdateResponse {
   msg: string
   username: string

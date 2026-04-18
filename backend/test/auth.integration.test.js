@@ -82,6 +82,16 @@ test('GET /api/admin/all-data with admin token returns data', async () => {
   assert.ok(Array.isArray(res.body.employees));
 });
 
+test('GET /api/admin/me returns profile for admin token', async () => {
+  const login = await request(app)
+    .post('/api/auth/admin-login')
+    .send({ username: 'testadmin', password: 'secretpass' });
+  const token = login.body.token;
+  const res = await request(app).get('/api/admin/me').set('Authorization', 'Bearer ' + token).expect(200);
+  assert.equal(res.body.username, 'testadmin');
+  assert.ok(res.body.id);
+});
+
 test('employee token cannot access admin all-data', async () => {
   const login = await request(app)
     .post('/api/auth/emp-login')

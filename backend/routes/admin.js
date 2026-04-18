@@ -67,6 +67,22 @@ router.put('/credentials', validateBody(adminCredentialsSchema), async (req, res
   }
 });
 
+/** Current admin profile (JWT subject). Used to hydrate session after refresh. */
+router.get('/me', async (req, res) => {
+  try {
+    const admin = await AdminUser.findById(req.user.id).select('username name email');
+    if (!admin) return res.status(404).json({ msg: 'Admin not found' });
+    res.json({
+      id: admin._id.toString(),
+      username: admin.username,
+      name: admin.name,
+      email: admin.email || '',
+    });
+  } catch (err) {
+    res.status(500).json({ msg: err.message });
+  }
+});
+
 router.get('/all-data', async (req, res) => {
   try {
     const Project = require('../models/Project');

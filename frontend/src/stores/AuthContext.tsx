@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import * as authApi from '@/api/auth'
+import { fetchAdminProfile } from '@/api/admin'
 
 type Role = 'admin' | 'manager' | 'employee' | null
 type Page = 'home' | 'admin' | 'employee'
@@ -51,6 +52,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (storedRole === 'admin') {
         setRole('admin')
         setPage('admin')
+        fetchAdminProfile()
+          .then((p) => {
+            setSession({ id: p.id, name: p.name, username: p.username, email: p.email })
+          })
+          .catch(() => {})
       } else {
         setRole(storedRole as Role)
         setPage('employee')
