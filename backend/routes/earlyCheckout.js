@@ -103,7 +103,8 @@ router.get('/early', async (req, res) => {
 
 router.put('/early/:id/approve', auth.requireRole(['admin', 'manager']), async (req, res) => {
   try {
-    const { status } = req.body;
+    let { status } = req.body;
+    if (status === 'rejected') status = 'declined';
     if (!['approved', 'declined'].includes(status)) {
       return res.status(400).json({ msg: 'Status must be approved or declined' });
     }

@@ -2,7 +2,6 @@ import { useState, useMemo } from 'react'
 import { type ColumnDef } from '@tanstack/react-table'
 import { Plus, Trash2, Edit2 } from 'lucide-react'
 import { DataTable } from '@/components/ui/DataTable'
-import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { Input } from '@/components/ui/Input'
@@ -11,6 +10,7 @@ import { useData } from '@/stores/DataContext'
 import { useToast } from '@/components/ui/Toast'
 import { useLang } from '@/stores/LangContext'
 import { createEmployee, deleteEmployee, type Employee } from '@/api/admin'
+import { cn } from '@/lib/cn'
 
 export default function Employees() {
   const { employees, groups, departments, sync } = useData()
@@ -20,7 +20,7 @@ export default function Employees() {
   const [editing, setEditing] = useState<Employee | null>(null)
   const [form, setForm] = useState({ name: '', username: '', password: '', email: '', phone: '', groupId: '', departmentId: '', jobTitle: '', workStart: '', workEnd: '', salary: '' })
 
-  const active = useMemo(() => employees.filter((e) => e.active), [employees])
+  const activeCount = useMemo(() => employees.filter((e) => e.active).length, [employees])
 
   const openNew = () => {
     setEditing(null)
@@ -72,7 +72,21 @@ export default function Employees() {
     {
       accessorKey: 'active',
       header: t('status'),
-      cell: ({ getValue }) => <Badge status={getValue() ? 'present' : 'absent'} />,
+      cell: ({ row }) => {
+        const isActive = row.original.active === true
+        return (
+          <span
+            className={cn(
+              'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
+              isActive
+                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'
+                : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400',
+            )}
+          >
+            {isActive ? 'Active' : 'Inactive'}
+          </span>
+        )
+      },
     },
     {
       id: 'actions',
@@ -90,11 +104,13 @@ export default function Employees() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-text-secondary">{active.length} active employees</p>
+        <p className="text-sm text-text-secondary">
+          {activeCount} active · {employees.length} total
+        </p>
         <Button onClick={openNew} size="sm"><Plus className="h-4 w-4" /> {t('create')}</Button>
       </div>
 
-      <DataTable columns={columns} data={active} searchColumn="name" searchPlaceholder={`${t('search')} ${t('employees').toLowerCase()}...`} />
+      <DataTable columns={columns} data={employees} searchColumn="name" searchPlaceholder={`${t('search')} ${t('employees').toLowerCase()}...`} />
 
       <Modal open={modalOpen} onOpenChange={setModalOpen} title={editing ? 'Edit Employee' : 'New Employee'} size="lg">
         <div className="grid grid-cols-2 gap-4">

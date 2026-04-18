@@ -338,7 +338,7 @@ export default function HrManagement() {
                 <Button variant="approval" size="sm" onClick={() => handleEC(slide.item.id, 'approved')}>
                   Approve
                 </Button>
-                <Button variant="decline" size="sm" onClick={() => handleEC(slide.item.id, 'rejected')}>
+                <Button variant="decline" size="sm" onClick={() => handleEC(slide.item.id, 'declined')}>
                   Decline
                 </Button>
               </div>

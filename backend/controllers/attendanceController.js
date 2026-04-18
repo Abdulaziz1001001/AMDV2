@@ -27,14 +27,30 @@ function todayStr() {
 function parseTimeToMinutes(timeStr) {
   if (!timeStr) return null;
   const [h, m] = timeStr.split(':').map(Number);
+  if (!Number.isFinite(h)) return null;
   return h * 60 + (m || 0);
 }
 
+/**
+ * Current wall-clock minutes (0–1439) in a given IANA zone. Used for shift end vs "now" (company: Asia/Riyadh).
+ * Do not use server local getHours() — that caused false "early" blocks at scheduled end.
+ */
+function wallClockMinutesInTimeZone(date, timeZone) {
+  const d = date instanceof Date ? date : new Date(date);
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(d);
+  const hour = parseInt(parts.find((p) => p.type === 'hour')?.value ?? '0', 10);
+  const minute = parseInt(parts.find((p) => p.type === 'minute')?.value ?? '0', 10);
+  const h = hour === 24 ? 0 : hour;
+  return h * 60 + minute;
+}
+
 function riyadhMinutesNow() {
-  const now = new Date();
-  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
-  const riyadh = new Date(utc + 3600000 * 3);
-  return riyadh.getHours() * 60 + riyadh.getMinutes();
+  return wallClockMinutesInTimeZone(new Date(), 'Asia/Riyadh');
 }
 
 async function getEffectiveShift(employeeId, dateStr) {
