@@ -15,6 +15,19 @@ function formatDocs(arr) {
   return arr.map((doc) => ({ ...doc._doc, id: doc._id.toString() }));
 }
 
+/** Align with attendanceController site rules for map listing */
+function locationVisibleForEmployee(loc, empGroupIdStr) {
+  const ag = loc.allowedGroups;
+  if (ag && ag.length > 0) {
+    if (!empGroupIdStr) return false;
+    return ag.some((id) => String(id) === empGroupIdStr);
+  }
+  if (loc.groupId != null && loc.groupId !== '') {
+    return empGroupIdStr && String(loc.groupId) === empGroupIdStr;
+  }
+  return true;
+}
+
 /** Same shape as /api/admin/all-data, scoped to the logged-in employee (for DB.sync on the portal). */
 /** List attendance records for the logged-in employee; optional ?date=YYYY-MM-DD */
 router.get('/records', async (req, res) => {
@@ -38,8 +51,8 @@ router.get('/me-data', async (req, res) => {
 
     const Announcement = require('../models/Announcement');
     const allLocs = await Location.find();
-    const gid = String(emp.groupId);
-    const locations = allLocs.filter((loc) => String(loc.groupId) === gid);
+    const gid = emp.groupId != null ? String(emp.groupId) : '';
+    const locations = allLocs.filter((loc) => locationVisibleForEmployee(loc, gid));
 
     const now = new Date();
     const [records, announcements] = await Promise.all([

@@ -9,6 +9,8 @@ const ProjectSchema = new mongoose.Schema(
     lat: { type: Number },
     lng: { type: Number },
     radius: { type: Number, default: 500 },
+    /** Empty array = open to all groups for check-in authorization */
+    allowedGroups: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Group' }],
     status: { type: String, enum: ['active', 'completed', 'on_hold'], default: 'active' },
     managerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Employee' },
     startDate: { type: Date },

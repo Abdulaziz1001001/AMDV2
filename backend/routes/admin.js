@@ -288,11 +288,19 @@ router.delete('/group/:id', async (req, res) => {
 
 router.post('/location', async (req, res) => {
   try {
-    const { name, groupId, lat, lng, radius } = req.body;
+    const { name, groupId, lat, lng, radius, allowedGroups } = req.body;
     if (!name || lat == null || lng == null) {
       return res.status(400).json({ msg: 'name, lat, and lng are required' });
     }
-    const loc = new Location({ name, groupId, lat, lng, radius });
+    const ag = Array.isArray(allowedGroups) ? allowedGroups.filter((x) => x != null && String(x).trim() !== '') : [];
+    const loc = new Location({
+      name,
+      groupId: groupId != null && groupId !== '' ? groupId : undefined,
+      lat,
+      lng,
+      radius,
+      allowedGroups: ag,
+    });
     await loc.save();
     res.json({ msg: 'Success' });
   } catch (err) {

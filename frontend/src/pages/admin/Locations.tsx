@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { type ColumnDef } from '@tanstack/react-table'
-import { Plus, Trash2 } from 'lucide-react'
+import { ChevronDown, Plus, Trash2 } from 'lucide-react'
+import * as Popover from '@radix-ui/react-popover'
 import { DataTable } from '@/components/ui/DataTable'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { Input } from '@/components/ui/Input'
-import { Select } from '@/components/ui/Select'
 import { useData } from '@/stores/DataContext'
 import { useToast } from '@/components/ui/Toast'
 import { createLocation, deleteLocation, type Location as Loc } from '@/api/admin'
@@ -18,11 +18,27 @@ const RADIUS_PRESETS = [100, 200, 500, 1000] as const
 function emptyForm() {
   return {
     name: '',
-    groupId: '',
+    allowedGroupIds: [] as string[],
     lat: String(DEFAULT_PIN.lat),
     lng: String(DEFAULT_PIN.lng),
     radius: '200',
   }
+}
+
+function allowedGroupsSummary(loc: Loc, allGroups: { id: string; name: string }[]) {
+  const ids =
+    loc.allowedGroups && loc.allowedGroups.length > 0
+      ? loc.allowedGroups.map(String)
+      : loc.groupId
+        ? [String(loc.groupId)]
+        : []
+  if (ids.length === 0) return 'All groups'
+  const names = ids
+    .map((id) => allGroups.find((g) => String(g.id) === id)?.name)
+    .filter(Boolean) as string[]
+  if (names.length === 0) return `${ids.length} group(s)`
+  if (names.length <= 2) return names.join(', ')
+  return `${names.slice(0, 2).join(', ')} +${names.length - 2}`
 }
 
 export default function Locations() {
@@ -69,10 +85,10 @@ export default function Locations() {
     try {
       await createLocation({
         name: form.name.trim(),
-        groupId: form.groupId || undefined,
         lat: latNum,
         lng: lngNum,
         radius: radiusNum,
+        allowedGroups: form.allowedGroupIds.length > 0 ? form.allowedGroupIds : undefined,
       })
       await sync()
       setOpen(false)
@@ -86,11 +102,11 @@ export default function Locations() {
   const columns: ColumnDef<Loc, unknown>[] = [
     { accessorKey: 'name', header: 'Name' },
     {
-      id: 'group',
-      header: 'Group',
+      id: 'groups',
+      header: 'Allowed groups',
       cell: ({ row }) => (
-        <span className="text-text-secondary">
-          {groups.find((g) => g.id === row.original.groupId)?.name || '—'}
+        <span className="max-w-[14rem] truncate text-sm text-text-secondary" title={allowedGroupsSummary(row.original, groups)}>
+          {allowedGroupsSummary(row.original, groups)}
         </span>
       ),
     },
@@ -200,16 +216,57 @@ export default function Locations() {
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
               />
             </div>
-            <div className="sm:col-span-2">
-              <label className="text-xs font-medium text-text-secondary block mb-1">Group (optional)</label>
-              <Select value={form.groupId} onChange={(e) => setForm({ ...form, groupId: e.target.value })}>
-                <option value="">All employees / no group filter</option>
-                {groups.map((g) => (
-                  <option key={g.id} value={g.id}>
-                    {g.name}
-                  </option>
-                ))}
-              </Select>
+            <div className="sm:col-span-2 space-y-2">
+              <label className="text-xs font-medium text-text-secondary block">Allowed groups</label>
+              <p className="text-[11px] leading-snug text-text-tertiary">
+                Leave unchecked for everyone. Otherwise only employees in these groups may check in at this site (when GPS
+                matches this geofence).
+              </p>
+              <Popover.Root>
+                <Popover.Trigger asChild>
+                  <Button type="button" variant="secondary" className="w-full justify-between gap-2 font-normal">
+                    <span className="truncate text-left">
+                      {form.allowedGroupIds.length === 0
+                        ? 'All groups'
+                        : `${form.allowedGroupIds.length} group${form.allowedGroupIds.length === 1 ? '' : 's'} selected`}
+                    </span>
+                    <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </Popover.Trigger>
+                <Popover.Portal>
+                  <Popover.Content
+                    className="z-[100060] max-h-56 w-[min(100%,var(--radix-popover-trigger-width))] overflow-y-auto rounded-xl border border-border-subtle bg-popover p-2 shadow-lg outline-none dark:border-zinc-700 dark:bg-zinc-900"
+                    sideOffset={6}
+                    align="start"
+                  >
+                    {groups.length === 0 ? (
+                      <p className="px-2 py-3 text-xs text-text-tertiary">No groups defined yet.</p>
+                    ) : (
+                      groups.map((g) => (
+                        <label
+                          key={g.id}
+                          className="flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-2 text-sm text-text-primary hover:bg-surface-raised dark:hover:bg-zinc-800"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={form.allowedGroupIds.includes(g.id)}
+                            onChange={() =>
+                              setForm((f) => ({
+                                ...f,
+                                allowedGroupIds: f.allowedGroupIds.includes(g.id)
+                                  ? f.allowedGroupIds.filter((x) => x !== g.id)
+                                  : [...f.allowedGroupIds, g.id],
+                              }))
+                            }
+                            className="size-4 rounded border-border text-accent focus:ring-accent/30"
+                          />
+                          <span>{g.name}</span>
+                        </label>
+                      ))
+                    )}
+                  </Popover.Content>
+                </Popover.Portal>
+              </Popover.Root>
             </div>
           </div>
 

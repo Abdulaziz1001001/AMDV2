@@ -29,6 +29,8 @@ const AttendanceRecordSchema = new mongoose.Schema(
     isForgiven: { type: Boolean, default: false },
     attachment: { type: String },
     projectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Project' },
+    locationName: { type: String },
+    checkoutLocationName: { type: String },
     breaks: { type: [BreakEntrySchema], default: [] },
     overtimeMinutes: { type: Number, default: 0 },
   },

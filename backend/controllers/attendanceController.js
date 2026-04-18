@@ -24,6 +24,75 @@ function riyadhMinutesNow() {
   return riyadh.getHours() * 60 + riyadh.getMinutes();
 }
 
+/** Meters between two WGS84 points (same approximation as legacy project match). */
+function flatDistMeters(lat, lng, plat, plng) {
+  const dlat = (Number(plat) - Number(lat)) * 111320;
+  const dlng = (Number(plng) - Number(lng)) * 111320 * Math.cos((Number(lat) * Math.PI) / 180);
+  return Math.sqrt(dlat * dlat + dlng * dlng);
+}
+
+/**
+ * allowedGroups non-empty → employee must be in one of them.
+ * allowedGroups empty + legacy groupId → must match that group.
+ * Otherwise open to all.
+ */
+function isEmployeeAllowedAtSite(siteDoc, empGroupId, kind) {
+  const ag = siteDoc.allowedGroups;
+  if (ag && ag.length > 0) {
+    if (!empGroupId) return false;
+    return ag.some((id) => String(id) === String(empGroupId));
+  }
+  if (siteDoc.groupId != null && siteDoc.groupId !== '') {
+    return empGroupId && String(siteDoc.groupId) === String(empGroupId);
+  }
+  return true;
+}
+
+/**
+ * Closest geofence among Locations and active Projects. Tie distance → prefer Location.
+ */
+async function resolveClosestSiteKind(lat, lng) {
+  const Location = require('../models/Location');
+  const Project = require('../models/Project');
+
+  let bestLoc = null;
+  let bestLocDist = Infinity;
+  const locs = await Location.find({ lat: { $exists: true }, lng: { $exists: true } });
+  for (const loc of locs) {
+    const dist = flatDistMeters(lat, lng, loc.lat, loc.lng);
+    const radius = loc.radius || 500;
+    if (dist <= radius && dist < bestLocDist) {
+      bestLoc = loc;
+      bestLocDist = dist;
+    }
+  }
+
+  let bestProj = null;
+  let bestProjDist = Infinity;
+  const activeProjects = await Project.find({ status: 'active', lat: { $exists: true }, lng: { $exists: true } });
+  for (const p of activeProjects) {
+    const dist = flatDistMeters(lat, lng, p.lat, p.lng);
+    const radius = p.radius || 500;
+    if (dist <= radius && dist < bestProjDist) {
+      bestProj = p;
+      bestProjDist = dist;
+    }
+  }
+
+  if (!bestLoc && !bestProj) return null;
+  if (!bestLoc) return { kind: 'project', doc: bestProj };
+  if (!bestProj) return { kind: 'location', doc: bestLoc };
+  if (bestLocDist < bestProjDist) return { kind: 'location', doc: bestLoc };
+  if (bestProjDist < bestLocDist) return { kind: 'project', doc: bestProj };
+  return { kind: 'location', doc: bestLoc };
+}
+
+async function resolveSiteDisplayNameAt(lat, lng) {
+  const hit = await resolveClosestSiteKind(lat, lng);
+  if (!hit) return '';
+  return hit.doc.name || '';
+}
+
 async function getEffectiveShift(employeeId, dateStr) {
   const assignment = await ShiftAssignment.findOne({ employeeId, date: dateStr }).populate('shiftId');
   if (assignment && assignment.shiftId) {
@@ -110,6 +179,13 @@ async function upsertEmployeeRecord(req, res) {
       record.checkOut = checkOut || record.checkOut;
       record.checkOutLat = checkOutLat || record.checkOutLat;
       record.checkOutLng = checkOutLng || record.checkOutLng;
+      if (checkOutLat != null && checkOutLng != null) {
+        const checkoutName = await resolveSiteDisplayNameAt(Number(checkOutLat), Number(checkOutLng));
+        const baseName = record.locationName || '';
+        if (checkoutName && checkoutName !== baseName) {
+          record.checkoutLocationName = checkoutName;
+        }
+      }
       if (approvalStatus) record.approvalStatus = approvalStatus;
       if (notes) record.notes = record.notes ? `${record.notes} | ${notes}` : notes;
       if (attachment) record.attachment = attachment;
@@ -154,9 +230,7 @@ async function upsertEmployeeRecord(req, res) {
         let closest = null;
         let closestDist = Infinity;
         for (const p of activeProjects) {
-          const dlat = (Number(p.lat) - Number(checkInLat)) * 111320;
-          const dlng = (Number(p.lng) - Number(checkInLng)) * 111320 * Math.cos((Number(checkInLat) * Math.PI) / 180);
-          const dist = Math.sqrt(dlat * dlat + dlng * dlng);
+          const dist = flatDistMeters(Number(checkInLat), Number(checkInLng), p.lat, p.lng);
           const radius = p.radius || 500;
           if (dist <= radius && dist < closestDist) {
             closest = p;
@@ -166,6 +240,27 @@ async function upsertEmployeeRecord(req, res) {
         if (closest) resolvedProjectId = closest._id;
       } catch (_) {
         // best-effort project detection
+      }
+    }
+
+    let locationName;
+    if (checkInLat != null && checkInLng != null) {
+      const site = await resolveClosestSiteKind(Number(checkInLat), Number(checkInLng));
+      if (site) {
+        if (!isEmployeeAllowedAtSite(site.doc, emp.groupId, site.kind)) {
+          return res.status(403).json({ msg: 'You are not authorized to check in at this location.' });
+        }
+        locationName = site.doc.name || '';
+      }
+    }
+    if (!locationName && resolvedProjectId) {
+      const Project = require('../models/Project');
+      const proj = await Project.findById(resolvedProjectId);
+      if (proj) {
+        if (!isEmployeeAllowedAtSite(proj, emp.groupId, 'project')) {
+          return res.status(403).json({ msg: 'You are not authorized to check in at this location.' });
+        }
+        locationName = proj.name || '';
       }
     }
 
@@ -180,6 +275,7 @@ async function upsertEmployeeRecord(req, res) {
       notes,
       attachment,
       projectId: resolvedProjectId,
+      locationName,
     });
     await newRecord.save();
     await upsertActivityNotification(newRecord, 'checkin');

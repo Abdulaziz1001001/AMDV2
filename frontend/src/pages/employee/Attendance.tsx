@@ -8,13 +8,22 @@ import { Modal } from '@/components/ui/Modal'
 import { Select } from '@/components/ui/Select'
 import { useToast } from '@/components/ui/Toast'
 import { useAuth } from '@/stores/AuthContext'
-import { request } from '@/api/client'
+import { request, ApiError } from '@/api/client'
 import { fmtTime, todayStr } from '@/lib/formatters'
 import { EARLY_LEAVE_REASONS } from '@/lib/constants'
 import { cn } from '@/lib/cn'
 import { LocationMap, type MapPoint } from '@/components/map/LocationMap'
 
-interface TodayRecord { id?: string; date: string; checkIn?: string; checkOut?: string; status?: string; breaks?: { start?: string; end?: string }[] }
+interface TodayRecord {
+  id?: string
+  date: string
+  checkIn?: string
+  checkOut?: string
+  status?: string
+  locationName?: string
+  checkoutLocationName?: string
+  breaks?: { start?: string; end?: string }[]
+}
 
 interface MeDataResponse {
   locations?: Array<{
@@ -122,7 +131,13 @@ export default function Attendance() {
       })
       await loadToday()
       toast('Checked in!', 'success')
-    } catch (e: unknown) { toast((e as Error).message, 'error') }
+    } catch (e: unknown) {
+      if (e instanceof ApiError && e.status === 403) {
+        toast('Check-in Failed: You are not assigned to this location.', 'error')
+      } else {
+        toast((e as Error).message, 'error')
+      }
+    }
     setLoading(false)
   }
 
@@ -202,7 +217,17 @@ export default function Attendance() {
           ) : !hasCheckedOut ? (
             <div className="space-y-3">
               <div className="flex items-center justify-between px-1">
-                <div className="flex items-center gap-2"><Clock className="h-4 w-4 text-success" /><span className="text-sm text-text-primary">Checked in at {fmtTime(record?.checkIn)}</span></div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 shrink-0 text-success" />
+                    <span className="text-sm text-text-primary">Checked in at {fmtTime(record?.checkIn)}</span>
+                  </div>
+                  {record?.locationName && (
+                    <p className="mt-1 pl-7 text-xs text-text-tertiary truncate" title={record.locationName}>
+                      {record.locationName}
+                    </p>
+                  )}
+                </div>
                 {record?.status && <Badge status={record.status} />}
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -231,6 +256,17 @@ export default function Attendance() {
                 <span className="text-text-tertiary">→</span>
                 <span className="text-danger">{fmtTime(record?.checkOut)}</span>
               </div>
+              {(record?.locationName || record?.checkoutLocationName) && (
+                <p className="mt-2 text-xs text-text-tertiary leading-relaxed px-2">
+                  {record?.locationName && <span>{record.locationName}</span>}
+                  {record?.locationName && record?.checkoutLocationName && (
+                    <span className="text-text-tertiary"> · </span>
+                  )}
+                  {record?.checkoutLocationName && (
+                    <span>Checkout: {record.checkoutLocationName}</span>
+                  )}
+                </p>
+              )}
               {record?.status && <div className="mt-2"><Badge status={record.status} /></div>}
             </div>
           )}

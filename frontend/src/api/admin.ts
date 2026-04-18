@@ -50,6 +50,8 @@ export interface Location {
   id: string
   name: string
   groupId?: string
+  /** Empty or omitted = open to all (subject to legacy groupId rules on backend) */
+  allowedGroups?: string[]
   lat: number
   lng: number
   radius: number
@@ -71,6 +73,8 @@ export interface AttendanceRecord {
   isForgiven?: boolean
   attachment?: string
   projectId?: string
+  locationName?: string
+  checkoutLocationName?: string
   breaks?: { start?: string; end?: string }[]
   overtimeMinutes?: number
 }
