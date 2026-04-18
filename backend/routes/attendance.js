@@ -2,6 +2,7 @@ const express = require('express');
 const auth = require('../middleware/authMiddleware');
 const Record = require('../models/Record');
 const Employee = require('../models/Employee');
+const EarlyCheckout = require('../models/EarlyCheckout');
 const { closeDaySchema, validateBody } = require('../middleware/validation');
 const { closeDay } = require('../controllers/attendanceController');
 
@@ -45,11 +46,44 @@ router.post('/break-end', auth.requireRole(['employee', 'manager']), async (req,
   } catch (err) { res.status(500).json({ msg: err.message }); }
 });
 
+function parseEmployeeIdsQuery(query) {
+  const raw = query.employeeIds;
+  if (raw == null || raw === '') return null;
+  const parts = Array.isArray(raw) ? raw : [raw];
+  const ids = [];
+  for (const p of parts) {
+    String(p)
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .forEach((id) => ids.push(id));
+  }
+  return [...new Set(ids)];
+}
+
+function attendanceStatusLabel(status) {
+  switch (status) {
+    case 'late':
+      return 'Late';
+    case 'early_leave':
+      return 'Early';
+    case 'absent':
+      return 'Absent';
+    case 'unpaid_leave':
+      return 'On Leave';
+    case 'present':
+      return 'Present';
+    default:
+      return status ? String(status).replace(/_/g, ' ') : '';
+  }
+}
+
 router.get('/report', auth.requireRole(['admin', 'manager']), async (req, res) => {
   try {
     const { employeeId, from, to } = req.query;
     const month = req.query.month;
     const year = req.query.year;
+    const employeeIdsList = parseEmployeeIdsQuery(req.query);
 
     let startDate, endDate;
     if (month && year) {
@@ -64,12 +98,36 @@ router.get('/report', auth.requireRole(['admin', 'manager']), async (req, res) =
     }
 
     const q = {};
-    if (employeeId) q.employeeId = employeeId;
-    if (startDate || endDate) { q.date = {}; if (startDate) q.date.$gte = startDate; if (endDate) q.date.$lte = endDate; }
+    if (employeeIdsList && employeeIdsList.length) {
+      q.employeeId = { $in: employeeIdsList };
+    } else if (employeeId) {
+      q.employeeId = employeeId;
+    }
+    if (startDate || endDate) {
+      q.date = {};
+      if (startDate) q.date.$gte = startDate;
+      if (endDate) q.date.$lte = endDate;
+    }
 
     const records = await Record.find(q).sort({ date: 1 });
 
-    const empIds = employeeId ? [employeeId] : [...new Set(records.map((r) => r.employeeId))];
+    const attendanceIds = records.map((r) => r._id);
+    const earlyForRows = attendanceIds.length
+      ? await EarlyCheckout.find({ attendanceId: { $in: attendanceIds } }).lean()
+      : [];
+    const earlyByAttendance = {};
+    earlyForRows.forEach((ec) => {
+      earlyByAttendance[String(ec.attendanceId)] = ec;
+    });
+
+    let empIds;
+    if (employeeIdsList && employeeIdsList.length) {
+      empIds = employeeIdsList;
+    } else if (employeeId) {
+      empIds = [employeeId];
+    } else {
+      empIds = [...new Set(records.map((r) => r.employeeId))];
+    }
     const employees = await Employee.find({ _id: { $in: empIds } });
     const empMap = {};
     employees.forEach((e) => { empMap[String(e._id)] = e; });
@@ -120,7 +178,30 @@ router.get('/report', auth.requireRole(['admin', 'manager']), async (req, res) =
       deptRollup[d].totalBreakHours += s.totalBreakHours;
     });
 
-    res.json({ employees: summary, departments: Object.values(deptRollup) });
+    const recordDetails = records.map((r) => {
+      const emp = empMap[String(r.employeeId)] || {};
+      const ec = earlyByAttendance[String(r._id)];
+      let notes = r.notes || '';
+      if (ec && ec.reason) {
+        const part = `Early leave: ${ec.reason}`;
+        notes = notes ? `${notes} | ${part}` : part;
+      }
+      return {
+        recordId: String(r._id),
+        employeeId: String(r.employeeId),
+        employeeName: emp.name || 'Unknown',
+        employeeEid: emp.eid || '',
+        date: r.date,
+        checkIn: r.checkIn || '',
+        checkOut: r.checkOut || '',
+        locationName: r.locationName || '',
+        checkoutLocationName: r.checkoutLocationName || '',
+        status: attendanceStatusLabel(r.status),
+        notes,
+      };
+    });
+
+    res.json({ employees: summary, departments: Object.values(deptRollup), records: recordDetails });
   } catch (err) { res.status(500).json({ msg: err.message }); }
 });
 

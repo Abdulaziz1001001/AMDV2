@@ -1,6 +1,7 @@
 const Employee = require('../models/Employee');
 const Group = require('../models/Group');
 const Record = require('../models/Record');
+const EarlyCheckout = require('../models/EarlyCheckout');
 const Project = require('../models/Project');
 const { ShiftAssignment, Shift } = require('../models/Shift');
 const Overtime = require('../models/Overtime');
@@ -16,9 +17,11 @@ const {
 
 const MSG_NO_SITES = 'Check-in Failed: No locations assigned. Please contact your Manager.';
 const MSG_OUTSIDE = 'Check-in Failed: You are outside the authorized site perimeter.';
+const MSG_CHECKOUT_BLOCKED =
+  'Checkout blocked. You cannot leave early without an approved request.';
 
 function todayStr() {
-  return new Date().toISOString().slice(0, 10);
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Riyadh' });
 }
 
 function parseTimeToMinutes(timeStr) {
@@ -76,6 +79,8 @@ async function upsertEmployeeRecord(req, res) {
 
     /** Set when processing checkout geofence (reuse for checkout location name). */
     let sitesCheckout = null;
+    /** True when checkout happens before shift end with an approved early-leave request. */
+    let checkoutIsEarlyApproved = false;
 
     if (record) {
       if (checkOut && status === 'early_leave') {
@@ -86,16 +91,42 @@ async function upsertEmployeeRecord(req, res) {
         const empCo = await Employee.findById(employeeId);
         if (!empCo) return res.status(404).json({ msg: 'Employee not found' });
         sitesCheckout = await getAuthorizedWorkSites(empCo);
-        if (sitesCheckout.locations.length + sitesCheckout.projects.length === 0) {
-          return res.status(403).json({ msg: MSG_NO_SITES });
+
+        const shiftEarly = await getEffectiveShift(employeeId, date);
+        const endMinEarly = shiftEarly ? parseTimeToMinutes(shiftEarly.endTime) : null;
+        const currMinEarly = riyadhMinutesNow();
+        const isEarlyCheckout = endMinEarly !== null && currMinEarly < endMinEarly;
+
+        let earlyCheckoutDoc = null;
+        if (isEarlyCheckout) {
+          earlyCheckoutDoc = await EarlyCheckout.findOne({ attendanceId: record._id });
+          if (!earlyCheckoutDoc || earlyCheckoutDoc.status !== 'approved') {
+            return res.status(403).json({ msg: MSG_CHECKOUT_BLOCKED });
+          }
+          checkoutIsEarlyApproved = true;
         }
+
+        const bypassCheckoutGeofence =
+          !isEarlyCheckout || (earlyCheckoutDoc && earlyCheckoutDoc.status === 'approved');
+
         const outLat = lat ?? checkOutLat;
         const outLng = lng ?? checkOutLng;
-        if (outLat == null || outLng == null || !Number.isFinite(Number(outLat)) || !Number.isFinite(Number(outLng))) {
-          return res.status(400).json({ msg: 'GPS coordinates are required for check-out.' });
-        }
-        if (!isInsideAnyAuthorizedGeofence(outLat, outLng, sitesCheckout.locations, sitesCheckout.projects)) {
-          return res.status(403).json({ msg: MSG_OUTSIDE });
+        const hasOutCoords =
+          outLat != null &&
+          outLng != null &&
+          Number.isFinite(Number(outLat)) &&
+          Number.isFinite(Number(outLng));
+
+        if (!bypassCheckoutGeofence) {
+          if (sitesCheckout.locations.length + sitesCheckout.projects.length === 0) {
+            return res.status(403).json({ msg: MSG_NO_SITES });
+          }
+          if (!hasOutCoords) {
+            return res.status(400).json({ msg: 'GPS coordinates are required for check-out.' });
+          }
+          if (!isInsideAnyAuthorizedGeofence(outLat, outLng, sitesCheckout.locations, sitesCheckout.projects)) {
+            return res.status(403).json({ msg: MSG_OUTSIDE });
+          }
         }
       }
 
@@ -103,9 +134,6 @@ async function upsertEmployeeRecord(req, res) {
         const shift = await getEffectiveShift(employeeId, date);
         const endMin = shift ? parseTimeToMinutes(shift.endTime) : null;
         const currMin = riyadhMinutesNow();
-        if (endMin !== null && currMin < endMin) {
-          return res.status(400).json({ msg: 'Cannot checkout before scheduled time without early checkout request' });
-        }
         if (endMin !== null && currMin > endMin) {
           const extraMinutes = currMin - endMin;
           if (extraMinutes >= 5) {
@@ -139,9 +167,14 @@ async function upsertEmployeeRecord(req, res) {
         }
       }
 
+      const completingFirstCheckout = !!(checkOut && !record.checkOut);
       record.checkOut = checkOut || record.checkOut;
       record.checkOutLat = checkOutLat || record.checkOutLat;
       record.checkOutLng = checkOutLng || record.checkOutLng;
+
+      if (completingFirstCheckout && checkoutIsEarlyApproved) {
+        record.status = 'early_leave';
+      }
 
       const outLat = lat ?? checkOutLat;
       const outLng = lng ?? checkOutLng;

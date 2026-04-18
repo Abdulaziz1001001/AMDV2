@@ -26,12 +26,12 @@ router.post('/early', auth.requireRole(['employee', 'manager']), async (req, res
     if (!record) return res.status(400).json({ msg: 'No check-in record found for today' });
     if (record.checkOut) return res.status(400).json({ msg: 'Already checked out today' });
 
-    const now = new Date();
-    record.checkOut = now.toISOString();
-    record.status = 'early_leave';
-    record.approvalStatus = 'pending';
-    await record.save();
+    const pendingEc = await EarlyCheckout.findOne({ attendanceId: record._id, status: 'pending' });
+    if (pendingEc) {
+      return res.status(400).json({ msg: 'You already have a pending early checkout request for today' });
+    }
 
+    const now = new Date();
     const earlyCheckout = new EarlyCheckout({
       employeeId: req.user.id,
       attendanceId: record._id,
@@ -53,7 +53,7 @@ router.post('/early', auth.requireRole(['employee', 'manager']), async (req, res
       ref: { kind: 'early_checkout', id: earlyCheckout._id.toString() },
     });
 
-    res.json({ msg: 'Early checkout submitted', earlyCheckout, record });
+    res.json({ msg: 'Early checkout submitted', earlyCheckout });
   } catch (err) {
     console.error('Early checkout POST error:', err);
     res.status(500).json({ msg: err.message });
@@ -117,18 +117,6 @@ router.put('/early/:id/approve', auth.requireRole(['admin', 'manager']), async (
     ec.approvedAt = new Date();
     await ec.save();
 
-    const record = await Record.findById(ec.attendanceId);
-    if (record) {
-      if (status === 'approved') {
-        record.isForgiven = true;
-        record.status = 'present';
-        record.approvalStatus = 'approved';
-      } else {
-        record.approvalStatus = 'rejected';
-      }
-      await record.save();
-    }
-
     const approver = await Employee.findById(req.user.id);
     const approverName = approver ? approver.name : 'Admin';
 
@@ -142,7 +130,7 @@ router.put('/early/:id/approve', auth.requireRole(['admin', 'manager']), async (
       recipientId: String(ec.employeeId),
     });
 
-    res.json({ msg: 'Success', earlyCheckout: ec, record });
+    res.json({ msg: 'Success', earlyCheckout: ec });
   } catch (err) {
     console.error('Early checkout approve error:', err);
     res.status(500).json({ msg: err.message });

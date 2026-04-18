@@ -26,6 +26,125 @@ export interface AttendanceReportDeptRow {
   overtimeHours: number
 }
 
+/** One row for monthly attendance detail export (PDF / Excel). */
+export interface MonthlyAttendanceDetailRow {
+  employeeName: string
+  date: string
+  checkInTime: string
+  checkInLocation: string
+  checkOutTime: string
+  checkOutLocation: string
+  status: string
+  notes: string
+}
+
+function fmtRiyadhTime(iso?: string): string {
+  if (!iso) return '—'
+  try {
+    const d = new Date(iso)
+    if (Number.isNaN(d.getTime())) return iso
+    return new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Riyadh',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    }).format(d)
+  } catch {
+    return iso
+  }
+}
+
+/** Map API `/attendance/report` `records` rows into printable detail rows. */
+export function mapAttendanceReportRecordsToDetailRows(
+  rows: Array<{
+    employeeName: string
+    date: string
+    checkIn: string
+    checkOut: string
+    locationName: string
+    checkoutLocationName: string
+    status: string
+    notes: string
+  }>,
+): MonthlyAttendanceDetailRow[] {
+  return rows.map((r) => ({
+    employeeName: r.employeeName,
+    date: r.date,
+    checkInTime: fmtRiyadhTime(r.checkIn),
+    checkInLocation: r.locationName || '—',
+    checkOutTime: fmtRiyadhTime(r.checkOut),
+    checkOutLocation: r.checkoutLocationName || '—',
+    status: r.status,
+    notes: r.notes || '',
+  }))
+}
+
+export async function downloadMonthlyAttendanceDetailPdf(
+  rows: MonthlyAttendanceDetailRow[],
+  month: string,
+  year: string,
+): Promise<void> {
+  const doc = new jsPDF()
+  const logo = await fetchLogoDataUrl()
+  const subtitle = `Monthly detail · ${month} / ${year}`
+  const startY = drawHeader(doc, 'Attendance Detail', subtitle, logo)
+
+  const head = [
+    [
+      'Employee',
+      'Date',
+      'Check-in',
+      'Check-in location',
+      'Check-out',
+      'Check-out location',
+      'Status',
+      'Notes',
+    ],
+  ]
+  const body = rows.map((r) => [
+    r.employeeName,
+    r.date,
+    r.checkInTime,
+    r.checkInLocation,
+    r.checkOutTime,
+    r.checkOutLocation,
+    r.status,
+    r.notes || '',
+  ])
+
+  autoTable(doc, {
+    startY,
+    head,
+    body: body.length ? body : [['—', '—', '—', '—', '—', '—', '—', 'No rows']],
+    styles: { fontSize: 7 },
+    headStyles: { fillColor: [66, 66, 66] },
+    columnStyles: { 7: { cellWidth: 36 } },
+  })
+
+  doc.save(`attendance-detail-${year}-${month}.pdf`)
+}
+
+export function downloadMonthlyAttendanceDetailExcel(
+  rows: MonthlyAttendanceDetailRow[],
+  month: string,
+  year: string,
+): void {
+  const wb = XLSX.utils.book_new()
+  const data = rows.map((r) => ({
+    'Employee Name': r.employeeName,
+    Date: r.date,
+    'Check-in Time': r.checkInTime,
+    'Check-in Location': r.checkInLocation,
+    'Check-out Time': r.checkOutTime,
+    'Check-out Location': r.checkOutLocation,
+    Status: r.status,
+    Notes: r.notes || '',
+  }))
+  const ws = XLSX.utils.json_to_sheet(data.length ? data : [{ Note: 'No rows' }])
+  XLSX.utils.book_append_sheet(wb, ws, 'Attendance')
+  XLSX.writeFile(wb, `attendance-detail-${year}-${month}.xlsx`)
+}
+
 /** Pre-formatted strings for PDF/Excel (no raw record id) */
 export interface AttendanceRecordExportRow {
   empEid: string

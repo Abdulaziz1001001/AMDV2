@@ -1,4 +1,5 @@
 import { request } from './client'
+import type { AttendanceReportDeptRow, AttendanceReportEmployeeRow } from '@/lib/exportTable'
 
 export interface AllDataResponse {
   employees: Employee[]
@@ -322,10 +323,36 @@ export function fetchAuditLog(params: { action?: string; from?: string; to?: str
   return request(`/audit?${q.toString()}`)
 }
 
-export function fetchAttendanceReport(params: { employeeId?: string; month?: string; year?: string }) {
+export interface AttendanceReportRecordRow {
+  recordId: string
+  employeeId: string
+  employeeName: string
+  employeeEid: string
+  date: string
+  checkIn: string
+  checkOut: string
+  locationName: string
+  checkoutLocationName: string
+  status: string
+  notes: string
+}
+
+export interface AttendanceReportResponse {
+  employees: AttendanceReportEmployeeRow[]
+  departments: AttendanceReportDeptRow[]
+  records?: AttendanceReportRecordRow[]
+}
+
+export function fetchAttendanceReport(params: {
+  employeeId?: string
+  employeeIds?: string[]
+  month?: string
+  year?: string
+}) {
   const q = new URLSearchParams()
   if (params.employeeId) q.set('employeeId', params.employeeId)
   if (params.month) q.set('month', params.month)
   if (params.year) q.set('year', params.year)
-  return request(`/attendance/report?${q.toString()}`)
+  if (params.employeeIds?.length) q.set('employeeIds', params.employeeIds.join(','))
+  return request<AttendanceReportResponse>(`/attendance/report?${q.toString()}`)
 }
