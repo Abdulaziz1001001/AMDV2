@@ -1,10 +1,5 @@
-import { request } from './client'
-import type { Notification } from './admin'
-
-export interface EmployeeNotificationsResponse {
-  items: Notification[]
-  unreadCount: number
-}
+import { request } from '@/api/client'
+import type { EmployeeNotificationsResponse } from '../types/communication'
 
 export function fetchEmployeeNotifications() {
   return request<EmployeeNotificationsResponse>('/hr/me/notifications')

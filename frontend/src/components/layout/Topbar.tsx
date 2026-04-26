@@ -14,8 +14,8 @@ import {
   markNotificationRead,
   markAllNotificationsRead,
   deleteAllAdminNotifications,
-  type Notification,
-} from '@/api/admin'
+} from '@/features/communication/api/adminNotifications'
+import type { Notification } from '@/features/communication/types/communication'
 
 interface TopbarProps {
   title: string

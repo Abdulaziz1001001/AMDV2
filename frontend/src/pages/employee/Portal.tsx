@@ -7,9 +7,9 @@ import { Button } from '@/components/ui/Button'
 import { Clock, Briefcase, Bell, Globe, Moon, Sun, LogOut, Users } from 'lucide-react'
 import Attendance from '@/features/attendance/components/AttendancePage'
 import HrTab from '@/features/hr/components/HrSelfServicePage'
-import Notifications from './Notifications'
+import EmployeeNotificationsPage from '@/features/communication/components/EmployeeNotificationsPage'
 import TeamPanel from '@/features/attendance/components/AttendanceTeamPanel'
-import { EmployeeNotificationPopover } from './EmployeeNotificationPopover'
+import { EmployeeNotificationPopover } from '@/features/communication/components/EmployeeNotificationPopover'
 
 const baseTabs = [
   { key: 'attendance', icon: Clock, label: 'Attendance' },
@@ -75,7 +75,7 @@ export default function Portal() {
           >
             {tab === 'attendance' && <Attendance />}
             {tab === 'hr' && <HrTab />}
-            {tab === 'notifications' && <Notifications />}
+            {tab === 'notifications' && <EmployeeNotificationsPage />}
             {tab === 'team' && <TeamPanel />}
           </motion.div>
         </AnimatePresence>

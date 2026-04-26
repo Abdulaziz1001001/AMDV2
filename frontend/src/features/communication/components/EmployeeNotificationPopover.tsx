@@ -10,8 +10,8 @@ import {
   markEmployeeNotificationRead,
   markAllEmployeeNotificationsRead,
   deleteAllEmployeeNotifications,
-} from '@/api/employeeNotifications'
-import type { Notification } from '@/api/admin'
+} from '../api/employeeNotifications'
+import type { Notification } from '../types/communication'
 
 export function EmployeeNotificationPopover() {
   const { lang } = useLang()

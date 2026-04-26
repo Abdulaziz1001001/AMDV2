@@ -2,8 +2,10 @@ import { request } from './client'
 import type { AttendanceReportDeptRow, AttendanceReportEmployeeRow } from '@/lib/exportTable'
 import type { Location, Project } from '@/features/projects/types/projects'
 import type { Employee, Group, Department } from '@/features/organization/types/organization'
+import type { Announcement } from '@/features/communication/types/communication'
 
 export type { Employee, Group, Department } from '@/features/organization/types/organization'
+export type { Announcement }
 
 export interface AllDataResponse {
   employees: Employee[]
@@ -90,22 +92,6 @@ export interface Shift {
   isDefault?: boolean
 }
 
-export interface Announcement {
-  id: string
-  title: string
-  titleAr?: string
-  body: string
-  bodyAr?: string
-  priority?: string
-  targetType?: string
-  targetId?: string
-  createdBy?: string
-  createdByName?: string
-  expiresAt?: string
-  pinned?: boolean
-  createdAt?: string
-}
-
 export interface EarlyCheckout {
   id: string
   employeeId: string | { id?: string; name?: string; eid?: string }
@@ -131,19 +117,6 @@ export interface OvertimeEntry {
   rateMultiplier?: number
 }
 
-export interface Notification {
-  id: string
-  type: string
-  title: string
-  titleAr?: string
-  body: string
-  bodyAr?: string
-  ref?: { kind: string; id: string }
-  recipientId?: string
-  readAt?: string
-  createdAt?: string
-}
-
 export interface SafetyIncident {
   id: string
   reporterId: string | { id?: string; name?: string; eid?: string }
@@ -163,27 +136,6 @@ export interface SafetyIncident {
 
 export function fetchAllData() {
   return request<AllDataResponse>('/admin/all-data')
-}
-
-export interface AdminNotificationsResponse {
-  items: Notification[]
-  unreadCount: number
-}
-
-export function fetchNotifications() {
-  return request<AdminNotificationsResponse>('/admin/notifications')
-}
-
-export function markNotificationRead(id: string) {
-  return request<{ msg?: string; unreadCount?: number }>(`/admin/notifications/${id}/read`, 'PATCH')
-}
-
-export function markAllNotificationsRead() {
-  return request<{ msg?: string; unreadCount?: number }>('/admin/notifications/read-all', 'PUT')
-}
-
-export function deleteAllAdminNotifications() {
-  return request<{ msg?: string; deletedCount?: number }>('/admin/notifications/all', 'DELETE')
 }
 
 export function fetchEarlyCheckouts() {

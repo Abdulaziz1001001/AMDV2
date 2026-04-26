@@ -8,7 +8,7 @@ import { useData } from '@/stores/DataContext'
 import { useToast } from '@/components/ui/Toast'
 import { request } from '@/api/client'
 
-export default function Announcements() {
+export default function AnnouncementsPage() {
   const { announcements, sync } = useData()
   const { toast } = useToast()
   const [open, setOpen] = useState(false)

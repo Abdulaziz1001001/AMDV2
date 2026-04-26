@@ -18,7 +18,7 @@ const Records = lazy(() => import('@/features/attendance/components/AttendanceRe
 const HrManagement = lazy(() => import('@/features/hr/components/HrManagementPage'))
 const WorkCalendar = lazy(() => import('@/pages/admin/Calendar'))
 const Onboarding = lazy(() => import('@/pages/admin/Onboarding'))
-const Announcements = lazy(() => import('@/pages/admin/Announcements'))
+const Announcements = lazy(() => import('@/features/communication/components/AnnouncementsPage'))
 const Safety = lazy(() => import('@/features/safety/components/SafetyAdminPage'))
 const Directory = lazy(() => import('@/features/organization/components/DirectoryPage'))
 const LeaveAccrual = lazy(() => import('@/features/hr/components/LeaveAccrualPage'))

@@ -2,16 +2,16 @@ import { useCallback, useEffect, useState } from 'react'
 import { Card, CardContent } from '@/components/ui/Card'
 import { useLang } from '@/stores/LangContext'
 import { Bell, Megaphone } from 'lucide-react'
-import type { Announcement, Notification } from '@/api/admin'
-import { request } from '@/api/client'
+import type { Announcement, Notification } from '../types/communication'
+import { fetchPublicAnnouncements } from '../api/publicAnnouncements'
 import {
   fetchEmployeeNotifications,
   markEmployeeNotificationRead,
   markAllEmployeeNotificationsRead,
   deleteAllEmployeeNotifications,
-} from '@/api/employeeNotifications'
+} from '../api/employeeNotifications'
 
-export default function Notifications() {
+export default function EmployeeNotificationsPage() {
   const { lang } = useLang()
   const [notifs, setNotifs] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
@@ -33,7 +33,7 @@ export default function Notifications() {
   }, [load])
 
   useEffect(() => {
-    request<Announcement[]>('/announcements').then(setAnnouncements).catch(() => {})
+    fetchPublicAnnouncements().then(setAnnouncements).catch(() => {})
   }, [])
 
   const markRead = async (id: string) => {
