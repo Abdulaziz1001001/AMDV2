@@ -1,6 +1,9 @@
 import { request } from './client'
 import type { AttendanceReportDeptRow, AttendanceReportEmployeeRow } from '@/lib/exportTable'
 import type { Location, Project } from '@/features/projects/types/projects'
+import type { Employee, Group, Department } from '@/features/organization/types/organization'
+
+export type { Employee, Group, Department } from '@/features/organization/types/organization'
 
 export interface AllDataResponse {
   employees: Employee[]
@@ -14,38 +17,6 @@ export interface AllDataResponse {
   projects: Project[]
   shifts: Shift[]
   announcements: Announcement[]
-}
-
-export interface Employee {
-  id: string
-  eid?: string
-  name: string
-  username: string
-  email?: string
-  phone?: string
-  groupId?: string
-  workStart?: string
-  workEnd?: string
-  salary?: number
-  departmentId?: string
-  jobTitle?: string
-  hireDate?: string
-  active: boolean
-  emergencyContact?: { name?: string; phone?: string; relation?: string }
-  address?: string
-  photoUrl?: string
-  leaveBalance?: number
-  lastAccrualDate?: string
-}
-
-export interface Group {
-  id: string
-  name: string
-  desc?: string
-  color?: string
-  weekendDays?: number[]
-  ignoreCompanyHolidays?: boolean
-  extraNonWorkDates?: string[]
 }
 
 export interface AttendanceRecord {
@@ -68,12 +39,6 @@ export interface AttendanceRecord {
   checkoutLocationName?: string
   breaks?: { start?: string; end?: string }[]
   overtimeMinutes?: number
-}
-
-export interface Department {
-  id: string
-  name: string
-  managerId?: { id?: string; name?: string; eid?: string } | string
 }
 
 export interface LeaveRequest {
@@ -261,30 +226,6 @@ export function updateAdminCredentials(body: {
   newPassword?: string
 }) {
   return request<AdminCredentialsUpdateResponse>('/admin/credentials', 'PUT', body)
-}
-
-export function createEmployee(data: Partial<Employee> & { password?: string }) {
-  return request('/admin/employee', 'POST', data)
-}
-
-export function deleteEmployee(id: string) {
-  return request(`/admin/employee/${id}`, 'DELETE')
-}
-
-export function createGroup(data: Partial<Group>) {
-  return request('/admin/group', 'POST', data)
-}
-
-export function deleteGroup(id: string) {
-  return request(`/admin/group/${id}`, 'DELETE')
-}
-
-export function upsertDepartment(data: { id?: string; name: string; managerId?: string }) {
-  return request('/admin/department', 'POST', data)
-}
-
-export function deleteDepartment(id: string) {
-  return request(`/admin/department/${id}`, 'DELETE')
 }
 
 export function approveRecord(id: string, status: string) {

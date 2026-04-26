@@ -8,7 +8,8 @@ import { Select } from '@/components/ui/Select'
 import { SlideOver } from '@/components/ui/SlideOver'
 import { useData } from '@/stores/DataContext'
 import { useToast } from '@/components/ui/Toast'
-import { upsertDepartment, deleteDepartment, type Department, type Employee } from '@/api/admin'
+import { upsertDepartment, deleteDepartment } from '@/features/organization/api/organizationApi'
+import type { Department, Employee } from '@/features/organization/types/organization'
 
 function managerCell(dept: Department, employees: Employee[]) {
   const m = dept.managerId
@@ -20,7 +21,7 @@ function managerCell(dept: Department, employees: Employee[]) {
   return [m.name, m.eid].filter(Boolean).join(' · ') || '—'
 }
 
-export default function Departments() {
+export default function DepartmentsPage() {
   const { departments, employees, sync } = useData()
   const { toast } = useToast()
   const [slideOpen, setSlideOpen] = useState(false)

@@ -11,8 +11,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import type { ReactNode } from 'react'
 
 const Dashboard = lazy(() => import('@/pages/admin/Dashboard'))
-const Employees = lazy(() => import('@/pages/admin/Employees'))
-const Groups = lazy(() => import('@/pages/admin/Groups'))
+const Employees = lazy(() => import('@/features/organization/components/EmployeesPage'))
+const Groups = lazy(() => import('@/features/organization/components/GroupsPage'))
 const Locations = lazy(() => import('@/features/projects/components/SitesPage'))
 const Records = lazy(() => import('@/features/attendance/components/AttendanceRecordsPage'))
 const HrManagement = lazy(() => import('@/features/hr/components/HrManagementPage'))
@@ -20,13 +20,13 @@ const WorkCalendar = lazy(() => import('@/pages/admin/Calendar'))
 const Onboarding = lazy(() => import('@/pages/admin/Onboarding'))
 const Announcements = lazy(() => import('@/pages/admin/Announcements'))
 const Safety = lazy(() => import('@/features/safety/components/SafetyAdminPage'))
-const Directory = lazy(() => import('@/pages/admin/Directory'))
+const Directory = lazy(() => import('@/features/organization/components/DirectoryPage'))
 const LeaveAccrual = lazy(() => import('@/features/hr/components/LeaveAccrualPage'))
 const Audit = lazy(() => import('@/pages/admin/Audit'))
 const Reports = lazy(() => import('@/pages/admin/Reports'))
 const SettingsPage = lazy(() => import('@/pages/admin/Settings'))
 const Analytics = lazy(() => import('@/pages/admin/Analytics'))
-const Departments = lazy(() => import('@/pages/admin/Departments'))
+const Departments = lazy(() => import('@/features/organization/components/DepartmentsPage'))
 
 const panels: Record<string, () => ReactNode> = {
   dashboard: () => <Dashboard />,

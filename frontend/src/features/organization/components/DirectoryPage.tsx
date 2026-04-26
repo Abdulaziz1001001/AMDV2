@@ -6,7 +6,7 @@ import { useData } from '@/stores/DataContext'
 import { useLang } from '@/stores/LangContext'
 import { List, GitBranch } from 'lucide-react'
 import { cn } from '@/lib/cn'
-import { buildOrgTree, type OrgTreeNode } from '@/lib/buildOrgTree'
+import { buildOrgTree, type OrgTreeNode } from '@/features/organization/utils/buildOrgTree'
 
 interface DirEntry {
   id: string
@@ -74,7 +74,7 @@ function OrgSubtree({ node, t }: { node: OrgTreeNode; t: (key: string) => string
   )
 }
 
-export default function Directory() {
+export default function DirectoryPage() {
   const { employees, departments } = useData()
   const { t } = useLang()
   const [view, setView] = useState<'list' | 'org'>('list')

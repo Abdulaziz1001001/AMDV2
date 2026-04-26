@@ -1,4 +1,4 @@
-import type { Department, Employee } from '@/api/admin'
+import type { Department, Employee } from '@/features/organization/types/organization'
 
 export interface OrgTreeNode {
   id: string

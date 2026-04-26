@@ -9,10 +9,11 @@ import { Select } from '@/components/ui/Select'
 import { useData } from '@/stores/DataContext'
 import { useToast } from '@/components/ui/Toast'
 import { useLang } from '@/stores/LangContext'
-import { createEmployee, deleteEmployee, type Employee } from '@/api/admin'
+import { createEmployee, deleteEmployee } from '@/features/organization/api/organizationApi'
+import type { Employee } from '@/features/organization/types/organization'
 import { cn } from '@/lib/cn'
 
-export default function Employees() {
+export default function EmployeesPage() {
   const { employees, groups, departments, sync } = useData()
   const { toast } = useToast()
   const { t } = useLang()

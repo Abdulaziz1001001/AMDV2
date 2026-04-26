@@ -7,9 +7,10 @@ import { Modal } from '@/components/ui/Modal'
 import { Input } from '@/components/ui/Input'
 import { useData } from '@/stores/DataContext'
 import { useToast } from '@/components/ui/Toast'
-import { createGroup, deleteGroup, type Group } from '@/api/admin'
+import { createGroup, deleteGroup } from '@/features/organization/api/organizationApi'
+import type { Group } from '@/features/organization/types/organization'
 
-export default function Groups() {
+export default function GroupsPage() {
   const { groups, sync } = useData()
   const { toast } = useToast()
   const [open, setOpen] = useState(false)
