@@ -6,11 +6,11 @@ import { Select } from '@/components/ui/Select'
 import { Badge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
-import { request } from '@/api/client'
 import { fmtDate } from '@/lib/formatters'
 import { LEAVE_TYPES } from '@/features/hr/utils/constants'
 import { createMyLeaveRequest, fetchMyLeaveRequests } from '@/features/hr/api/hrSelfServiceApi'
 import type { LeaveRequest, MyLeaveRequestPayload } from '@/features/hr/types/hr'
+import { EmployeeSafetyReportModal } from '@/features/safety/components/EmployeeSafetyReportModal'
 import { AlertTriangle, Calendar } from 'lucide-react'
 
 export default function HrTab() {
@@ -19,7 +19,6 @@ export default function HrTab() {
   const [leaveOpen, setLeaveOpen] = useState(false)
   const [form, setForm] = useState<MyLeaveRequestPayload>({ startDate: '', endDate: '', type: 'Annual Leave', reason: '' })
   const [safetyOpen, setSafetyOpen] = useState(false)
-  const [safetyForm, setSafetyForm] = useState({ description: '', severity: 'medium', date: new Date().toISOString().split('T')[0] })
 
   const loadLeaves = async () => {
     try {
@@ -34,13 +33,6 @@ export default function HrTab() {
     try {
       await createMyLeaveRequest(form)
       toast('Leave requested', 'success'); setLeaveOpen(false); loadLeaves()
-    } catch (e: unknown) { toast((e as Error).message, 'error') }
-  }
-
-  const submitSafety = async () => {
-    try {
-      await request('/safety', 'POST', safetyForm)
-      toast('Incident reported', 'success'); setSafetyOpen(false)
     } catch (e: unknown) { toast((e as Error).message, 'error') }
   }
 
@@ -79,14 +71,7 @@ export default function HrTab() {
         <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-border-subtle"><Button variant="secondary" onClick={() => setLeaveOpen(false)}>Cancel</Button><Button onClick={submitLeave}>Submit</Button></div>
       </Modal>
 
-      <Modal open={safetyOpen} onOpenChange={setSafetyOpen} title="Report Safety Incident">
-        <div className="space-y-4">
-          <div><label className="text-xs font-medium text-text-secondary block mb-1">Date</label><Input type="date" value={safetyForm.date} onChange={(e) => setSafetyForm({ ...safetyForm, date: e.target.value })} /></div>
-          <div><label className="text-xs font-medium text-text-secondary block mb-1">Severity</label><Select value={safetyForm.severity} onChange={(e) => setSafetyForm({ ...safetyForm, severity: e.target.value })}><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="critical">Critical</option></Select></div>
-          <div><label className="text-xs font-medium text-text-secondary block mb-1">Description *</label><textarea value={safetyForm.description} onChange={(e) => setSafetyForm({ ...safetyForm, description: e.target.value })} className="flex w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm min-h-20 focus:outline-none focus:ring-2 focus:ring-accent/30" /></div>
-        </div>
-        <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-border-subtle"><Button variant="secondary" onClick={() => setSafetyOpen(false)}>Cancel</Button><Button onClick={submitSafety}>Report</Button></div>
-      </Modal>
+      <EmployeeSafetyReportModal open={safetyOpen} onOpenChange={setSafetyOpen} />
     </div>
   )
 }

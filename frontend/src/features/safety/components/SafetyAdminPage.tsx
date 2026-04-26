@@ -7,8 +7,8 @@ import { Select } from '@/components/ui/Select'
 import { SlideOver } from '@/components/ui/SlideOver'
 import { useToast } from '@/components/ui/Toast'
 import { useAdminNav } from '@/stores/AdminNavContext'
-import { fetchSafetyIncidents, type SafetyIncident } from '@/api/admin'
-import { request } from '@/api/client'
+import { fetchSafetyIncidents, updateSafetyIncidentStatus } from '@/features/safety/api/safetyApi'
+import type { SafetyIncident, SafetyIncidentStatus } from '@/features/safety/types/safety'
 import { fmtDate } from '@/lib/formatters'
 
 export default function Safety() {
@@ -48,8 +48,8 @@ export default function Safety() {
 
   const filtered = statusFilter ? incidents.filter(i => i.status === statusFilter) : incidents
 
-  const updateStatus = async (id: string, status: string) => {
-    try { await request(`/safety/${id}`, 'PUT', { status }); load(); toast('Updated', 'success'); setSelected(null) } catch (e: unknown) { toast((e as Error).message, 'error') }
+  const updateStatus = async (id: string, status: SafetyIncidentStatus) => {
+    try { await updateSafetyIncidentStatus(id, status); load(); toast('Updated', 'success'); setSelected(null) } catch (e: unknown) { toast((e as Error).message, 'error') }
   }
 
   const columns: ColumnDef<SafetyIncident, unknown>[] = [
