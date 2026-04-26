@@ -8,22 +8,22 @@ import { Modal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { request } from '@/api/client'
 import { fmtDate } from '@/lib/formatters'
-import { LEAVE_TYPES } from '@/lib/constants'
+import { LEAVE_TYPES } from '@/features/hr/utils/constants'
+import { createMyLeaveRequest, fetchMyLeaveRequests } from '@/features/hr/api/hrSelfServiceApi'
+import type { LeaveRequest, MyLeaveRequestPayload } from '@/features/hr/types/hr'
 import { AlertTriangle, Calendar } from 'lucide-react'
-
-interface Leave { id: string; startDate: string; endDate: string; type: string; status: string; requestedDays: number; reason?: string }
 
 export default function HrTab() {
   const { toast } = useToast()
-  const [leaves, setLeaves] = useState<Leave[]>([])
+  const [leaves, setLeaves] = useState<LeaveRequest[]>([])
   const [leaveOpen, setLeaveOpen] = useState(false)
-  const [form, setForm] = useState({ startDate: '', endDate: '', type: 'Annual Leave', reason: '' })
+  const [form, setForm] = useState<MyLeaveRequestPayload>({ startDate: '', endDate: '', type: 'Annual Leave', reason: '' })
   const [safetyOpen, setSafetyOpen] = useState(false)
   const [safetyForm, setSafetyForm] = useState({ description: '', severity: 'medium', date: new Date().toISOString().split('T')[0] })
 
   const loadLeaves = async () => {
     try {
-      setLeaves(await request('/hr/me/leave-requests'))
+      setLeaves(await fetchMyLeaveRequests())
     } catch {
       /* ignore load errors */
     }
@@ -32,7 +32,7 @@ export default function HrTab() {
 
   const submitLeave = async () => {
     try {
-      await request('/hr/me/leave-request', 'POST', form)
+      await createMyLeaveRequest(form)
       toast('Leave requested', 'success'); setLeaveOpen(false); loadLeaves()
     } catch (e: unknown) { toast((e as Error).message, 'error') }
   }

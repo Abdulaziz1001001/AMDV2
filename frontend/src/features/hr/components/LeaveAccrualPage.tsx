@@ -3,18 +3,17 @@ import { type ColumnDef } from '@tanstack/react-table'
 import { DataTable } from '@/components/ui/DataTable'
 import { Button } from '@/components/ui/Button'
 import { useToast } from '@/components/ui/Toast'
-import { request } from '@/api/client'
-
-interface Balance { employeeId: string; name: string; eid?: string; department?: string; allowed: number; used: number; balance: number; accrued: number }
+import { fetchLeaveAccrualBalances, runLeaveAccrual } from '@/features/hr/api/hrAccrualApi'
+import type { LeaveAccrualBalance } from '@/features/hr/types/hr'
 
 export default function LeaveAccrual() {
   const { toast } = useToast()
-  const [balances, setBalances] = useState<Balance[]>([])
+  const [balances, setBalances] = useState<LeaveAccrualBalance[]>([])
   const [running, setRunning] = useState(false)
 
   const load = async () => {
     try {
-      setBalances(await request('/leave-accrual/balances'))
+      setBalances(await fetchLeaveAccrualBalances())
     } catch {
       /* ignore load errors */
     }
@@ -23,11 +22,11 @@ export default function LeaveAccrual() {
 
   const runAccrual = async () => {
     setRunning(true)
-    try { const res = await request<{ msg: string }>('/leave-accrual/run-accrual', 'POST'); toast(res.msg, 'success'); load() } catch (e: unknown) { toast((e as Error).message, 'error') }
+    try { const res = await runLeaveAccrual(); toast(res.msg, 'success'); load() } catch (e: unknown) { toast((e as Error).message, 'error') }
     setRunning(false)
   }
 
-  const columns: ColumnDef<Balance, unknown>[] = [
+  const columns: ColumnDef<LeaveAccrualBalance, unknown>[] = [
     { accessorKey: 'eid', header: 'ID', size: 60 },
     { accessorKey: 'name', header: 'Name' },
     { accessorKey: 'department', header: 'Department', cell: ({ getValue }) => <span className="text-text-secondary">{(getValue() as string) || '—'}</span> },

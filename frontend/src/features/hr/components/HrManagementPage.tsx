@@ -8,13 +8,13 @@ import { useData } from '@/stores/DataContext'
 import { useAdminNav } from '@/stores/AdminNavContext'
 import { useToast } from '@/components/ui/Toast'
 import {
-  updateLeaveRequest,
   actionEarlyCheckout,
   actionOvertime,
-  type LeaveRequest,
 } from '@/api/admin'
 import { fetchEarlyCheckouts, fetchOvertimes } from '@/features/attendance/api/attendanceAdminApi'
 import type { EarlyCheckout, OvertimeEntry } from '@/features/attendance/types/attendance'
+import { updateLeaveRequest } from '@/features/hr/api/hrAdminApi'
+import type { LeaveRequest } from '@/features/hr/types/hr'
 import { fmtDate, fmtTime } from '@/lib/formatters'
 
 type HrSlide =

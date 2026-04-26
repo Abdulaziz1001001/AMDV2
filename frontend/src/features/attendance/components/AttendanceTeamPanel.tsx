@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { ApiError } from '@/api/client'
-import type { LeaveRequest } from '@/api/admin'
+import type { LeaveRequest } from '@/features/hr/types/hr'
 import type { EarlyCheckout, OvertimeEntry } from '@/features/attendance/types/attendance'
 import {
   fetchDepartmentLeaves,
   patchDepartmentLeave,
-} from '@/api/managerTeam'
+} from '@/features/hr/api/hrManagerApi'
 import {
   fetchTeamEarlyCheckouts,
   fetchTeamOvertimes,
