@@ -12,7 +12,7 @@ import { request, ApiError } from '@/api/client'
 import { fmtTime, todayStr } from '@/lib/formatters'
 import { EARLY_LEAVE_REASONS } from '@/features/attendance/utils/constants'
 import { cn } from '@/lib/cn'
-import { LocationMap, type MapPoint } from '@/components/map/LocationMap'
+import { LocationMap, type MapPoint } from '@/features/projects/components/LocationMap'
 
 interface TodayRecord {
   id?: string

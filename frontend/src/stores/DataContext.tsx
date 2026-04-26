@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useState, type ReactNode } from 'react'
-import { fetchAllData, type AllDataResponse, type Employee, type Group, type Location as Loc, type AttendanceRecord, type Department, type LeaveRequest, type WorkPolicyData, type Project, type Shift, type Announcement } from '@/api/admin'
+import { fetchAllData, type AllDataResponse, type Employee, type Group, type AttendanceRecord, type Department, type LeaveRequest, type WorkPolicyData, type Shift, type Announcement } from '@/api/admin'
+import type { Location as Loc, Project } from '@/features/projects/types/projects'
 
 interface DataCtx {
   employees: Employee[]

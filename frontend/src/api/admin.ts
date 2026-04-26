@@ -1,5 +1,6 @@
 import { request } from './client'
 import type { AttendanceReportDeptRow, AttendanceReportEmployeeRow } from '@/lib/exportTable'
+import type { Location, Project } from '@/features/projects/types/projects'
 
 export interface AllDataResponse {
   employees: Employee[]
@@ -45,17 +46,6 @@ export interface Group {
   weekendDays?: number[]
   ignoreCompanyHolidays?: boolean
   extraNonWorkDates?: string[]
-}
-
-export interface Location {
-  id: string
-  name: string
-  groupId?: string
-  /** Empty or omitted = open to all (subject to legacy groupId rules on backend) */
-  allowedGroups?: string[]
-  lat: number
-  lng: number
-  radius: number
 }
 
 export interface AttendanceRecord {
@@ -124,21 +114,6 @@ export interface WorkPolicyData {
   approvalChains?: { type: string; steps: { role: string; label: string }[] }[]
   onboardingItems?: string[]
   offboardingItems?: string[]
-}
-
-export interface Project {
-  id: string
-  name: string
-  code?: string
-  address?: string
-  groupId?: string
-  lat?: number
-  lng?: number
-  radius?: number
-  status: string
-  managerId?: { id?: string; name?: string } | string
-  startDate?: string
-  expectedEnd?: string
 }
 
 export interface Shift {
@@ -302,14 +277,6 @@ export function createGroup(data: Partial<Group>) {
 
 export function deleteGroup(id: string) {
   return request(`/admin/group/${id}`, 'DELETE')
-}
-
-export function createLocation(data: Partial<Location>) {
-  return request('/admin/location', 'POST', data)
-}
-
-export function deleteLocation(id: string) {
-  return request(`/admin/location/${id}`, 'DELETE')
 }
 
 export function upsertDepartment(data: { id?: string; name: string; managerId?: string }) {

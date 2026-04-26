@@ -8,17 +8,29 @@ import { Modal } from '@/components/ui/Modal'
 import { Input } from '@/components/ui/Input'
 import { useData } from '@/stores/DataContext'
 import { useToast } from '@/components/ui/Toast'
-import { request } from '@/api/client'
-import type { Project } from '@/api/admin'
+import { createProject, deleteProject } from '@/features/projects/api/projectsApi'
+import type { Project } from '@/features/projects/types/projects'
 
-export default function Projects() {
+export default function ProjectsPage() {
   const { projects, sync } = useData()
   const { toast } = useToast()
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState({ name: '', code: '', address: '', lat: '', lng: '', radius: '500' })
 
   const handleSave = async () => {
-    try { await request('/projects', 'POST', { ...form, lat: form.lat ? Number(form.lat) : undefined, lng: form.lng ? Number(form.lng) : undefined, radius: Number(form.radius) }); await sync(); setOpen(false); toast('Project saved', 'success') } catch (e: unknown) { toast((e as Error).message, 'error') }
+    try {
+      await createProject({
+        ...form,
+        lat: form.lat ? Number(form.lat) : undefined,
+        lng: form.lng ? Number(form.lng) : undefined,
+        radius: Number(form.radius),
+      })
+      await sync()
+      setOpen(false)
+      toast('Project saved', 'success')
+    } catch (e: unknown) {
+      toast((e as Error).message, 'error')
+    }
   }
 
   const columns: ColumnDef<Project, unknown>[] = [
@@ -26,7 +38,7 @@ export default function Projects() {
     { accessorKey: 'code', header: 'Code', cell: ({ getValue }) => <code className="text-xs">{(getValue() as string) || '—'}</code> },
     { accessorKey: 'address', header: 'Address', cell: ({ getValue }) => <span className="text-text-secondary text-sm truncate max-w-40 block">{(getValue() as string) || '—'}</span> },
     { accessorKey: 'status', header: 'Status', cell: ({ getValue }) => <Badge status={getValue() as string} /> },
-    { id: 'actions', header: '', size: 50, cell: ({ row }) => <Button variant="ghost" size="icon" onClick={async () => { if (confirm('Delete?')) { await request(`/projects/${row.original.id}`, 'DELETE'); await sync() } }}><Trash2 className="h-3.5 w-3.5 text-danger" /></Button> },
+    { id: 'actions', header: '', size: 50, cell: ({ row }) => <Button variant="ghost" size="icon" onClick={async () => { if (confirm('Delete?')) { await deleteProject(row.original.id); await sync() } }}><Trash2 className="h-3.5 w-3.5 text-danger" /></Button> },
   ]
 
   return (

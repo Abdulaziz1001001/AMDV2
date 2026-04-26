@@ -8,8 +8,9 @@ import { Modal } from '@/components/ui/Modal'
 import { Input } from '@/components/ui/Input'
 import { useData } from '@/stores/DataContext'
 import { useToast } from '@/components/ui/Toast'
-import { createLocation, deleteLocation, type Location as Loc } from '@/api/admin'
-import { LocationMap, MapPicker, DEFAULT_PIN, type MapPoint } from '@/components/map/LocationMap'
+import { createLocation, deleteLocation } from '@/features/projects/api/projectsApi'
+import { LocationMap, MapPicker, DEFAULT_PIN, type MapPoint } from '@/features/projects/components/LocationMap'
+import type { Location as Loc } from '@/features/projects/types/projects'
 
 const RADIUS_MIN = 50
 const RADIUS_MAX = 3000
@@ -41,7 +42,7 @@ function allowedGroupsSummary(loc: Loc, allGroups: { id: string; name: string }[
   return `${names.slice(0, 2).join(', ')} +${names.length - 2}`
 }
 
-export default function Locations() {
+export default function SitesPage() {
   const { locations, groups, sync } = useData()
   const { toast } = useToast()
   const [open, setOpen] = useState(false)

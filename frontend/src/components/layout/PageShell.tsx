@@ -13,7 +13,7 @@ import type { ReactNode } from 'react'
 const Dashboard = lazy(() => import('@/pages/admin/Dashboard'))
 const Employees = lazy(() => import('@/pages/admin/Employees'))
 const Groups = lazy(() => import('@/pages/admin/Groups'))
-const Locations = lazy(() => import('@/pages/admin/Locations'))
+const Locations = lazy(() => import('@/features/projects/components/SitesPage'))
 const Records = lazy(() => import('@/features/attendance/components/AttendanceRecordsPage'))
 const HrManagement = lazy(() => import('@/features/hr/components/HrManagementPage'))
 const WorkCalendar = lazy(() => import('@/pages/admin/Calendar'))
