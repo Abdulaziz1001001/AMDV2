@@ -11,12 +11,10 @@ import {
   updateLeaveRequest,
   actionEarlyCheckout,
   actionOvertime,
-  fetchEarlyCheckouts,
-  fetchOvertimes,
-  type EarlyCheckout,
-  type OvertimeEntry,
   type LeaveRequest,
 } from '@/api/admin'
+import { fetchEarlyCheckouts, fetchOvertimes } from '@/features/attendance/api/attendanceAdminApi'
+import type { EarlyCheckout, OvertimeEntry } from '@/features/attendance/types/attendance'
 import { fmtDate, fmtTime } from '@/lib/formatters'
 
 type HrSlide =

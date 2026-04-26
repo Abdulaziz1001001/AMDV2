@@ -1,15 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { ApiError } from '@/api/client'
-import type { EarlyCheckout, LeaveRequest, OvertimeEntry } from '@/api/admin'
+import type { LeaveRequest } from '@/api/admin'
+import type { EarlyCheckout, OvertimeEntry } from '@/features/attendance/types/attendance'
 import {
   fetchDepartmentLeaves,
+  patchDepartmentLeave,
+} from '@/api/managerTeam'
+import {
   fetchTeamEarlyCheckouts,
   fetchTeamOvertimes,
-  patchDepartmentLeave,
   approveEarlyCheckout,
   actionTeamOvertime,
-} from '@/api/managerTeam'
+} from '@/features/attendance/api/attendanceManagerApi'
 import { fmtDate, fmtTime } from '@/lib/formatters'
 import { useToast } from '@/components/ui/Toast'
 

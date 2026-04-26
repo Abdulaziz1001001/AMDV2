@@ -12,7 +12,7 @@ import {
   downloadAttendanceRecordsPdf,
   downloadAttendanceRecordsExcel,
   type AttendanceRecordExportRow,
-} from '@/lib/exportTable'
+} from '@/features/attendance/utils/attendanceExport'
 
 export default function Records() {
   const { records, employees } = useData()

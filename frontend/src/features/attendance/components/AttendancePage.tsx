@@ -10,7 +10,7 @@ import { useToast } from '@/components/ui/Toast'
 import { useAuth } from '@/stores/AuthContext'
 import { request, ApiError } from '@/api/client'
 import { fmtTime, todayStr } from '@/lib/formatters'
-import { EARLY_LEAVE_REASONS } from '@/lib/constants'
+import { EARLY_LEAVE_REASONS } from '@/features/attendance/utils/constants'
 import { cn } from '@/lib/cn'
 import { LocationMap, type MapPoint } from '@/components/map/LocationMap'
 

@@ -1,0 +1,10 @@
+# Cursor AI Rules for AMD United HR App Refactoring
+
+1. **Read the Docs First:** Before executing any prompt, silently review `PRD.md` and `APP_ARCHITECTURE.md` to understand the project scope and constraints.
+2. **Stop Vibe Coding:** Do not invent new features, libraries, or architectural patterns. Stick strictly to the tech stack defined in `APP_ARCHITECTURE.md`.
+3. **Strict Typing (Frontend):** All frontend code must be strictly typed TypeScript. Do not use `any`. Create interfaces for all props and data models.
+4. **JavaScript (Backend):** Backend code is Node/Express in JavaScript. Do not write TypeScript for the backend.
+5. **Feature-Based Enforcement:** When creating or refactoring frontend components, place them inside the appropriate `/src/features/[feature-name]/` directory. Do not clutter the global `/components` directory.
+6. **Styling Rules:** Always use Tailwind CSS. When building reusable UI components, utilize Radix UI primitives and construct classes using `clsx`, `tailwind-merge`, and `cva`.
+7. **State Rules:** Do not introduce external state managers. Use the existing React Contexts (`AuthContext`, `DataContext`, etc.).
+8. **Cleanup Directive:** If asked to refactor, prioritize identifying and removing unused imports, dead files, and unreferenced variables before writing new code. Ask for user confirmation before deleting files.

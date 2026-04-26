@@ -1,7 +1,7 @@
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { useLang } from '@/stores/LangContext'
-import type { AttendanceRecord } from '@/api/admin'
+import type { AttendanceRecord } from '@/features/attendance/types/attendance'
 
 interface Props {
   records: AttendanceRecord[]

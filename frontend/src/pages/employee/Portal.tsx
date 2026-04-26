@@ -5,10 +5,10 @@ import { useLang } from '@/stores/LangContext'
 import { useTheme } from '@/stores/ThemeContext'
 import { Button } from '@/components/ui/Button'
 import { Clock, Briefcase, Bell, Globe, Moon, Sun, LogOut, Users } from 'lucide-react'
-import Attendance from './Attendance'
+import Attendance from '@/features/attendance/components/AttendancePage'
 import HrTab from './HrTab'
 import Notifications from './Notifications'
-import TeamPanel from './TeamPanel'
+import TeamPanel from '@/features/attendance/components/AttendanceTeamPanel'
 import { EmployeeNotificationPopover } from './EmployeeNotificationPopover'
 
 const baseTabs = [

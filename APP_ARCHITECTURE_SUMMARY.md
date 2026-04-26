@@ -1,233 +1,188 @@
-# AMD United — Application Architecture Summary
+# AMD United — Application Architecture Summary (Updated)
 
-Static analysis of the **AMDV2** workspace: single-page **Vite + React** frontend, **Express + MongoDB (Mongoose)** backend, JWT auth, and role-gated APIs. This document omits boilerplate and focuses on structure, data, routing, and control flow.
-
----
-
-## 1. Tech Stack & Configuration
-
-### 1.1 Backend (`backend/package.json`)
-
-| Area | Packages / notes |
-|------|------------------|
-| **Runtime** | Node.js, **Express 4** |
-| **Database** | **Mongoose 7** → MongoDB |
-| **Auth** | **jsonwebtoken**, **bcryptjs** |
-| **Validation** | **Zod 3** (see `middleware/validation.js`) |
-| **HTTP** | **cors**, **express-rate-limit** (auth routes), **pino** + **pino-http** (request logging) |
-| **Uploads** | **multer** |
-| **Email** | **nodemailer** (used in HR notification helpers) |
-| **Other** | **dotenv**; **node-cron** is a declared dependency (not referenced in first-party `*.js` at time of analysis) |
-| **Entry** | `server.js` (connects DB, optional bootstrap admin, `app.listen`); `app.js` exports `createApp()` |
-| **Build** | `build` script builds the **frontend** into `frontend/dist` and installs backend deps |
-
-**Critical env (from code):** `MONGO_URI`, `JWT_SECRET` (≥32 chars enforced in `app.js`), optional `FRONTEND_ORIGIN`, `ADMIN_BOOTSTRAP_USERNAME` / `ADMIN_BOOTSTRAP_PASSWORD` / `ADMIN_BOOTSTRAP_NAME`, `PORT` (default 5000).
-
-### 1.2 Frontend (`frontend/package.json`)
-
-| Area | Packages / notes |
-|------|------------------|
-| **Build** | **Vite 8**, **TypeScript 6**, **@vitejs/plugin-react** |
-| **UI styling** | **Tailwind CSS 4** via **`@tailwindcss/vite`** |
-| **Components** | **Radix UI** (dialog, dropdown, popover, select, tabs, toast, tooltip, checkbox, switch) — **not** the full shadcn/ui CLI scaffold; patterns align with “shadcn-style” stacks (**class-variance-authority**, **tailwind-merge**, **clsx**) |
-| **Icons** | **lucide-react** |
-| **Tables / charts** | **@tanstack/react-table**, **recharts** |
-| **Motion** | **framer-motion** |
-| **Maps** | **leaflet**, **react-leaflet** |
-| **Exports** | **jspdf**, **jspdf-autotable**, **xlsx** |
-| **Lint** | ESLint 9 + **typescript-eslint**, **eslint-plugin-react-hooks**, **eslint-plugin-react-refresh** |
-
-**Global state:** React **Context** only (`AuthContext`, `DataContext`, `AdminNavContext`, `LangContext`, `ThemeContext`) — **no Redux**, **no TanStack Query**.
+Current static analysis of the **AMDV2** workspace (April 2026): single-page **Vite + React** frontend, **Express + MongoDB (Mongoose)** backend, JWT auth, role-gated APIs, and a shared admin data hydration flow via `/api/admin/all-data`.
 
 ---
 
-## 2. Folder Structure (High Level)
+## 1. Tech Stack & Runtime
 
-```
+### 1.1 Backend (`backend/`)
+
+- **Runtime / Framework:** Node.js + Express 4 (CommonJS)
+- **Database:** MongoDB via Mongoose 7
+- **Auth:** `jsonwebtoken` + `bcryptjs`
+- **Validation:** Zod (`middleware/validation.js`)
+- **Observability / HTTP controls:** `pino`, `pino-http`, `cors`, `express-rate-limit`
+- **Files / notifications:** `multer`, `nodemailer`
+- **Entry points:** `server.js` (DB connection + bootstrap admin + `listen`), `app.js` (`createApp()`)
+- **Build flow:** backend `build` script runs frontend build first, then backend install
+
+Backend-required/critical env observed in code:
+- `MONGO_URI` (required at boot)
+- `JWT_SECRET` (required, min length 32 enforced)
+- `FRONTEND_ORIGIN` (optional CORS allowlist, comma-separated)
+- `ADMIN_BOOTSTRAP_USERNAME`, `ADMIN_BOOTSTRAP_PASSWORD`, `ADMIN_BOOTSTRAP_NAME` (optional first-admin bootstrap)
+- `PORT` (default `5000`)
+- `ENABLE_KEEPALIVE`, `SELF_URL` (optional self-ping loop)
+
+### 1.2 Frontend (`frontend/`)
+
+- **Build:** Vite 8 + TypeScript 6 + `@vitejs/plugin-react`
+- **UI / styling:** Tailwind CSS 4 (`@tailwindcss/vite`) + Radix primitives + `class-variance-authority`, `clsx`, `tailwind-merge`
+- **Core libs:** `framer-motion`, `@tanstack/react-table`, `recharts`, `leaflet`/`react-leaflet`, `jspdf`/`xlsx`, `lucide-react`
+- **State approach:** React Context only (`AuthContext`, `DataContext`, `AdminNavContext`, `LangContext`, `ThemeContext`)
+- **Not used:** Redux / Zustand / TanStack Query / React Router
+
+---
+
+## 2. High-Level Structure
+
+```txt
 AMDV2/
 ├── backend/
-│   ├── app.js                 # Express factory: middleware, `/api/*` mounts, SPA static fallback
-│   ├── server.js              # Mongo connect, bootstrap admin, HTTP server
-│   ├── controllers/           # authController, attendanceController (fat route handlers elsewhere)
-│   ├── middleware/            # JWT auth + role guard; Zod validation helpers
-│   ├── models/                # Mongoose schemas (single source of DB truth)
-│   ├── routes/                # Express routers per domain (mounted under `/api/...`)
-│   ├── lib/                   # audit logging, notifications, calendar helpers, MIME, work-policy seed
-│   └── test/                  # Integration tests (auth, middleware)
+│   ├── app.js                 # Express app factory, route mounting, static SPA fallback
+│   ├── server.js              # Mongo connect, optional admin bootstrap, server listen
+│   ├── controllers/           # Auth + attendance controller logic
+│   ├── middleware/            # JWT auth, role guard, Zod validation
+│   ├── models/                # Mongoose schemas
+│   ├── routes/                # API routers under /api/*
+│   ├── lib/                   # Domain utilities (audit, notifications, policy helpers, etc.)
+│   └── test/                  # Node test runner integration tests
 ├── frontend/
-│   ├── public/                # Static assets (e.g. logos)
-│   ├── src/
-│   │   ├── api/               # fetch wrappers (`client.ts`, `auth.ts`, `admin.ts`, …)
-│   │   ├── components/        # layout (PageShell, Sidebar), ui primitives, maps
-│   │   ├── pages/             # route-less “screens”: auth, admin/*, employee/*
-│   │   ├── stores/            # React contexts (auth, data, theme, language, admin nav)
-│   │   ├── lib/               # cn, formatters, export helpers
-│   │   └── i18n/              # EN (and AR keys via LangContext)
-│   └── vite.config.ts         # `@` → `./src`, dev proxy `/api` → `localhost:5000`
-└── (private_uploads/ etc. may exist at runtime for uploads — referenced in HR routes)
+│   ├── src/api/               # API wrappers
+│   ├── src/pages/             # Admin + employee screen modules
+│   ├── src/components/        # Layout + UI primitives + map/chart components
+│   ├── src/stores/            # React context providers
+│   ├── src/lib/               # Shared helpers (format/export/calendar/org tree)
+│   └── src/i18n/              # EN / AR dictionary sets
+└── APP_ARCHITECTURE_SUMMARY.md
 ```
 
-**Separation:** Backend owns persistence, authorization, and business rules; frontend owns UI, client-side formatting, and JWT storage. Admin bulk data is loaded via **`GET /api/admin/all-data`** into **`DataContext.sync()`**.
+---
+
+## 3. Database Model Inventory (MongoDB / Mongoose)
+
+### 3.1 Identity and org
+
+- `Admin`: admin credentials/profile
+- `Employee`: employee account + HR profile fields + payroll/leave fields
+- `Department`: org unit with `managerId`
+- `Group`: scheduling/policy grouping
+- `Location`: check-in geofence (lat/lng/radius + allowed groups)
+- `User`: generic role model present in codebase (not primary auth path)
+
+### 3.2 Attendance and scheduling
+
+- `Record`: attendance record with unique `{ employeeId, date }`, geo fields, approval status, breaks, overtime minutes, project/location linkage
+- `EarlyCheckout`: early leave requests linked to attendance record
+- `Overtime`: overtime submissions and approvals
+- `Shift`: shift definitions
+- `ShiftAssignment`: per-employee per-day assignment with unique `{ employeeId, date }`
+- `Project`: project/site entities with optional geofence + manager linkage
+
+### 3.3 HR policy and workflows
+
+- `LeaveRequest`: leave workflow with status history/approval metadata
+- `WorkPolicy`: company-level policy document (holidays, grace, accrual, approvals, onboarding/offboarding lists)
+- `EmployeeDocument`: uploaded employee docs metadata
+- `ProfileUpdateRequest`: employee profile update approval flow
+- `OnboardingChecklist`: onboarding checklist tracking
+- `Announcement`: org announcements (EN/AR, targeting, pin/expiry)
+- `SafetyIncident`: incident workflow with optional photos/project context
+
+### 3.4 Operations and audit
+
+- `AuditLog`: actor/action/target audit entries
+- `AdminNotification`: admin notification feed with read tracking and refs
 
 ---
 
-## 3. Database Architecture (MongoDB / Mongoose)
+## 4. API Surface (Mounted Routers)
 
-### 3.1 Identity & org
+All APIs are mounted under `/api` in `backend/app.js`.
 
-| Collection (model) | Purpose | Key fields & relationships |
-|--------------------|---------|----------------------------|
-| **admins** (`Admin`) | Admin portal users | `username` (unique), bcrypt `password`, `name`, `email` |
-| **employees** (`Employee`) | Workforce + login | `username` (unique), `password`, `name`, `eid`, `groupId`, `departmentId` → **departments**, `workStart`/`workEnd`, `salary`, `active` (default **true**), `leaveBalance` (default **0**), `lastAccrualDate`, `emergencyContact`, … |
-| **departments** (`Department`) | Org units | `name`, `managerId` → **employees** |
-| **groups** (`Group`) | Scheduling / policy grouping | `name`, `weekendDays`, `ignoreCompanyHolidays`, `extraNonWorkDates`, `color` |
-| **users** (`User`) | Generic user schema (`admin`/`manager`/`employee`) | **Present in codebase but no `require('./models/User')` in routes — effectively unused vs `Employee`/`Admin`** |
+- `/api/auth`: login endpoints (`admin-login`, `emp-login`) with rate limiting
+- `/api/admin`: admin-only operations (`all-data`, employees/groups/locations/departments CRUD, work policy, payroll overview, records and leave actions, admin notifications, admin profile/credentials)
+- `/api/employee`: employee/manager attendance endpoints (`records`, `me-data`, `record`)
+- `/api/hr`: employee self-service + manager department leave approvals + employee notifications
+- `/api/checkouts`: early checkout submit/list/approve
+- `/api/overtime`: overtime submit/list/action
+- `/api/shifts`: shift CRUD + assignment + my-shift
+- `/api/projects`: project CRUD/report with role restrictions
+- `/api/attendance`: day-close, break start/end, attendance report
+- `/api/audit`: audit log read endpoint (admin)
+- `/api/announcements`: list/create/delete announcements
+- `/api/onboarding`: onboarding checklist operations
+- `/api/self-service`: profile updates + document upload/list/download/delete + expiring docs
+- `/api/safety`: incident create/list/update/photo/delete
+- `/api/leave-accrual`: balances, run accrual, carry-forward report, encash
+- `/api/directory`: employee directory + org chart
 
-### 3.2 Attendance & time
-
-| Collection | Purpose | Notes |
-|------------|---------|--------|
-| **records** (`Record` / `AttendanceRecord`) | Daily attendance rows | **`AttendanceRecord`** uses `collection: 'records'` and **unique** `{ employeeId, date }`. Fields: ISO date string `date`, optional check-in/out ISO strings, lat/lng, `status` (default **`present`**), `approvalStatus` enum default **`none`**, `breaks[]`, `overtimeMinutes` (default **0**), `projectId`, etc. **`Record`** model duplicates shape for legacy reads/writes. |
-| **earlycheckouts** (`EarlyCheckout`) | Early leave requests | `employeeId`, `attendanceId` → **Record**, `checkoutTime`, `reason`, `status` **`pending`/`approved`/`declined`** |
-| **overtimes** (`Overtime`) | OT claims | `employeeId`, optional `attendanceId`, `date`, `extraMinutes`, `reason`, `status`, `rateMultiplier` (default **1.5**) |
-| **shifts** / **shiftassignments** (`Shift`, `ShiftAssignment`) | Named shifts + per-day assignment | Assignment **unique** on `{ employeeId, date }` |
-
-### 3.3 HR & policy
-
-| Collection | Purpose | Notes |
-|------------|---------|--------|
-| **leaverequests** (`LeaveRequest`) | Leave workflow | `employeeId` → Employee, `startDate`/`endDate`, `type` (fixed **LEAVE_TYPES** enum), `status` includes `pending`, `approved`, `rejected`, `supervisor_approved`, `hr_approved`, `requestedDays`, `attachmentUrl`, `approvalHistory[]`, … |
-| **workpolicies** (`WorkPolicy`) | Singleton-style config (`key: 'company'`) | Timezone default **Asia/Riyadh**, weekend days, holidays, grace minutes, approval chains, **leaveAccrual** subdoc (defaults for accrual engine), onboarding/offboarding item lists |
-| **announcements** (`Announcement`) | Internal comms | `title`/`body` (+ AR), `targetType`, `expiresAt`, `pinned` |
-| **safetyincidents** (`SafetyIncident`) | Safety tickets | `reporterId`, `severity`, `status`, `photos[]`, optional `projectId` |
-| **onboardingchecklists** (`OnboardingChecklist`) | Checklist tracking | Used by onboarding routes |
-| **employeedocuments** (`EmployeeDocument`) | Vault metadata | Category enum, `filename`, `expiresAt`, `uploadedByRole` |
-| **profileupdaterequests** (`ProfileUpdateRequest`) | Self-service profile changes | Admin approval flow |
-
-### 3.4 Ops & audit
-
-| Collection | Purpose |
-|------------|---------|
-| **auditlogs** (`AuditLog`) | Actor, action, target, optional before/after payloads |
-| **adminnotifications** (`AdminNotification`) | In-app admin feed; `readAt`, `ref.kind` / `ref.id` |
-| **projects** (`Project`) | Sites / jobs; geofence-style `lat`/`lng`/`radius`, `managerId` |
-
-**Relationships (summary):** Employees are the hub → departments, records, leave, OT, early checkout, safety, documents. **Record** rows link to optional **Project**. **Admin** is separate from **Employee**.
-
----
-
-## 4. API Routing Map (Express)
-
-**Global prefix:** all JSON APIs under **`/api`** (see `backend/app.js`).
-
-**Cross-cutting middleware:**
-
-- **`authMiddleware`**: `Authorization: Bearer <JWT>` → sets `req.user` `{ id, role }`.
-- **`requireRole('admin' | ['employee','manager'] | …)`**: **403** if role not allowed.
-- **`validateBody` / `validateQuery` (Zod)**: **400** with first field error message.
-- **`authLimiter`**: rate limit on **`/api/auth`** only.
-
-**Mounted routers & protection (abbrev.):**
-
-| Mount path | Router file | Auth | Role highlights |
-|------------|-------------|------|-----------------|
-| `/api/auth` | `routes/auth.js` | No JWT (login only) | **POST** `/admin-login`, `/emp-login` + Zod login schema; rate-limited |
-| `/api/admin` | `routes/admin.js` | **Yes** | **All routes:** `admin`. Bulk **`GET /all-data`**, CRUD employees/groups/locations/departments, work policy, leave patch, payroll overview, notifications, record approval, etc. |
-| `/api/employee` | `routes/employee.js` | **Yes** | **`employee` + `manager`**: **`GET /records`**, **`GET /me-data`**, **`POST /record`** (Zod `attendanceUpsertSchema`) → upsert attendance |
-| `/api/hr` | `routes/hr.js` | **Yes** | Mixed: **`/me/*`** → employee+manager; **`/department/*`** → manager (+ admin on some); attachments via multer (PDF/images); **`/me/notifications`** for employee notifications |
-| `/api/checkouts` | `routes/earlyCheckout.js` | **Yes** | Submit early checkout: employee+manager; approve: admin+manager |
-| `/api/overtime` | `routes/overtime.js` | **Yes** | Create: employee+manager; list: authenticated; **`PUT /:id/action`**: admin+manager |
-| `/api/shifts` | `routes/shifts.js` | **Yes** | CRUD / assign mostly **admin**; **`/my-shift`**: employee+manager |
-| `/api/projects` | `routes/projects.js` | **Yes** | Read for authed users; mutate/report restricted by role |
-| `/api/attendance` | `routes/attendance.js` + controller | **Yes** | **`close-day`**: **admin**; breaks: employee+manager; **`GET /report`**: admin+manager |
-| `/api/audit` | `routes/audit.js` | **Yes** | **admin** only |
-| `/api/announcements` | `routes/announcements.js` | **Yes** | **GET /** all authed; **POST/DELETE** **admin** |
-| `/api/onboarding` | `routes/onboarding.js` | **Yes** | **admin** |
-| `/api/self-service` | `routes/selfService.js` | **Yes** | Profile updates & documents (multer); some endpoints **admin** |
-| `/api/safety` | `routes/safety.js` | **Yes** | Create/read photos; update **admin/manager**; delete **admin** |
-| `/api/leave-accrual` | `routes/leaveAccrual.js` | **Yes** | Balances: admin+manager; run accrual / encash / reports: **admin** |
-| `/api/directory` | `routes/directory.js` | **Yes** | Org listing / org chart |
-
-**Non-API:** **`GET /health`** → `ok`. If `frontend/dist` exists, **`express.static`** + SPA **`index.html`** fallback; otherwise non-API routes may return **503** “Frontend build missing”.
+Other HTTP behavior:
+- `GET /health` returns `ok`
+- If `frontend/dist` exists, Express serves SPA assets + index fallback
+- If missing, non-API routes return `503` “Frontend build missing”
 
 ---
 
 ## 5. Frontend Architecture
 
-### 5.1 Routing strategy
+### 5.1 App-level flow
 
-**No React Router.** `App.tsx` chooses the tree from **`AuthContext`**:
+`App.tsx` branches by auth state (no URL router):
+- `home` → landing page
+- unauthenticated `admin` → admin login
+- unauthenticated `employee` → employee login
+- authenticated `admin` → `DataProvider` + `AdminNavProvider` + `PageShell`
+- authenticated `employee`/`manager` → `Portal`
 
-| Condition | UI |
-|-----------|-----|
-| `page === 'home'` | `Home` (landing) |
-| `page === 'admin'` && no role | `AdminLogin` |
-| `page === 'employee'` && no role | `EmployeeLogin` |
-| `role === 'admin'` | `DataProvider` → `AdminNavProvider` → **`PageShell`** (single admin workspace) |
-| else | **`Portal`** (employee app shell) |
+### 5.2 Admin workspace
 
-Admin “routing” is **`AdminNavContext.activePanel`** + lazy-loaded panels inside **`PageShell`** (not URL-segment routing).
+`PageShell` lazy-loads panel modules by `AdminNavContext.activePanel`.
 
-### 5.2 Data fetching
+Panels currently wired:
+- `dashboard`, `analytics`, `employees`, `groups`, `departments`, `locations`
+- `calendar`, `records`, `hr`, `onboarding`, `announcements`, `safety`
+- `directory`, `accrual`, `audit`, `reports`, `settings`
 
-- **`fetch`** wrapper in **`src/api/client.ts`**: base URL **`/api`**, JSON body, attaches **`Bearer`** from **`localStorage.amd_token`**.
-- **401** → clears token/role, dispatches **`amd-unauthorized`**, **`AuthContext`** resets to home.
-- **No Axios; no React Query** — admin lists depend on **`fetchAllData()`** (`/admin/all-data`) and **`sync()`** in **`DataContext`**.
-- File uploads: **`upload()`** in same module (multipart, no `Content-Type` header).
+Admin boot flow hydrates `DataContext` from `/api/admin/all-data` and supports manual refresh/sync.
 
-### 5.3 Layout & theme
+### 5.3 Employee/manager workspace
 
-- **`ThemeProvider`**: `light`/`dark`, persists **`amd_theme`**, toggles **`document.documentElement.classList.dark`** (Tailwind dark variant).
-- **`LangProvider`**: i18n strings (e.g. EN/AR), used in admin chrome.
-- **`ToastProvider`**: global toasts.
-- Admin layout: **`Sidebar`** + **`Topbar`** + animated main content in **`PageShell`**.
+`Portal` tabbed interface:
+- Employee: `attendance`, `hr`, `notifications`
+- Manager: same tabs + `team`
 
----
+Also includes theme/language toggles and notification popover UX.
 
-## 6. Current Known Workflows
+### 5.4 Data fetching pattern
 
-### 6.1 Admin login
-
-1. User submits credentials on **`AdminLogin`** → **`POST /api/auth/admin-login`** (Zod-validated).
-2. Server validates **`Admin`** with **bcrypt**, issues JWT **`{ id, role: 'admin' }`**, **`exp` ~1d**.
-3. Frontend stores **`amd_token`**, **`amd_role`**, sets session in **`AuthContext`** → **`PageShell`**.
-4. **`PageShell`** **`useEffect`** calls **`sync()`** → **`GET /api/admin/all-data`** (JWT) → hydrates **`DataContext`**.
-
-### 6.2 Employee / manager login
-
-1. **`POST /api/auth/emp-login`** against **`Employee`** (`active: true`).
-2. Role: **`manager`** if `Department.exists({ managerId: emp._id })`, else **`employee`**; JWT **`exp` ~12h**.
-3. Token + role stored; **`Portal`** renders (tabs: attendance, HR, notifications).
-
-### 6.3 Check-in / attendance record
-
-1. Employee uses **`Attendance`** UI → **`POST /api/employee/record`** with **`validateBody(attendanceUpsertSchema)`**.
-2. **`upsertEmployeeRecord`** (controller) merges into **`Record`** collection: geo fields, status, optional project, may compute late/OT-related side effects per server logic and **WorkPolicy** / shifts.
-3. Related: **`POST /api/attendance/break-start`**, **`break-end`**; admin **`POST /api/attendance/close-day`** runs batch close logic.
-
-### 6.4 Leave request
-
-1. Self-service: **`POST /api/hr/me/leave-request`** (multipart optional) → **`LeaveRequest`** document; may notify (email stub) and admin notifications.
-2. Approval: managers via **`PATCH /api/hr/department/leaves/:id`** or admins via **`PATCH /api/admin/leave-requests/:id`** (per `admin.js` implementation).
-
-### 6.5 Early checkout & overtime
-
-1. **Early checkout:** **`POST /api/checkouts/early`** → **`EarlyCheckout`** linked to **`Record`**; approval **`PUT /api/checkouts/early/:id/approve`** (admin/manager).
-2. **Overtime:** **`POST /api/overtime`** → **`Overtime`**; action **`PUT /api/overtime/:id/action`** (admin/manager).
-
-### 6.6 Reports & exports (admin UI)
-
-1. **`GET /api/attendance/report`** (admin/manager) supplies aggregation for **Reports** page.
-2. Client generates **PDF/XLSX** via **jspdf** / **xlsx** — no separate export API.
+- Shared `request()` wrapper (`src/api/client.ts`) with `/api` base
+- JWT from `localStorage` (`amd_token`) added as `Bearer` header
+- Unauthorized responses clear session and return user to home flow
+- Multipart uploads supported via dedicated upload helper calls
 
 ---
 
-## 7. Supplementary Notes
+## 6. Core Implemented Business Flows
 
-- **JWT payload** is minimal (`id`, `role`); fine-grained rules (e.g. department manager) use **Department** lookups on the server.
-- **Duplicate record models:** `Record` and `AttendanceRecord` both target attendance rows; **`AttendanceRecord`** enforces unique index and explicit collection name.
-- **Static hosting:** Production can serve **`frontend/dist`** from the same Express process as the API (see `app.js`).
+1. **Admin auth and session restore** via `/api/auth/admin-login` and `/api/admin/me`.
+2. **Employee/manager auth** via `/api/auth/emp-login`, role derived by department-manager relationship.
+3. **Attendance upsert** via `/api/employee/record`, plus break start/end and admin close-day.
+4. **Leave lifecycle**: employee request + manager/admin approval paths.
+5. **Early checkout and overtime workflows** with manager/admin actions.
+6. **HR self-service**: profile update requests + document vault operations.
+7. **Admin operations**: notifications, payroll overview, audit review, accrual operations, reports.
+8. **Safety / onboarding / announcements / directory** feature modules exposed in both backend and admin UI.
 
 ---
 
-*Generated from repository static analysis; behavior should be verified against running services and environment configuration.*
+## 7. Current Observations
+
+- Backend remains JavaScript (`.js`), frontend is TypeScript (`.ts`/`.tsx`).
+- Architecture is monorepo-style but deployable as single Express host serving API + built SPA.
+- State management is intentionally lightweight and context-driven.
+
+---
+
+*Generated from current repository static analysis. Validate in runtime environment for env-dependent behavior and data assumptions.*
