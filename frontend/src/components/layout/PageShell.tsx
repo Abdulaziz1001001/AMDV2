@@ -10,7 +10,7 @@ import { Skeleton } from '@/components/ui/Skeleton'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { ReactNode } from 'react'
 
-const Dashboard = lazy(() => import('@/pages/admin/Dashboard'))
+const Dashboard = lazy(() => import('@/features/reporting/components/Dashboard'))
 const Employees = lazy(() => import('@/features/organization/components/EmployeesPage'))
 const Groups = lazy(() => import('@/features/organization/components/GroupsPage'))
 const Locations = lazy(() => import('@/features/projects/components/SitesPage'))
@@ -22,10 +22,10 @@ const Announcements = lazy(() => import('@/features/communication/components/Ann
 const Safety = lazy(() => import('@/features/safety/components/SafetyAdminPage'))
 const Directory = lazy(() => import('@/features/organization/components/DirectoryPage'))
 const LeaveAccrual = lazy(() => import('@/features/hr/components/LeaveAccrualPage'))
-const Audit = lazy(() => import('@/pages/admin/Audit'))
-const Reports = lazy(() => import('@/pages/admin/Reports'))
+const Audit = lazy(() => import('@/features/reporting/components/Audit'))
+const Reports = lazy(() => import('@/features/reporting/components/Reports'))
 const SettingsPage = lazy(() => import('@/pages/admin/Settings'))
-const Analytics = lazy(() => import('@/pages/admin/Analytics'))
+const Analytics = lazy(() => import('@/features/reporting/components/Analytics'))
 const Departments = lazy(() => import('@/features/organization/components/DepartmentsPage'))
 
 const panels: Record<string, () => ReactNode> = {

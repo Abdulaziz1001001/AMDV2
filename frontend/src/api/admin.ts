@@ -1,5 +1,4 @@
 import { request } from './client'
-import type { AttendanceReportDeptRow, AttendanceReportEmployeeRow } from '@/lib/exportTable'
 import type { Location, Project } from '@/features/projects/types/projects'
 import type { Employee, Group, Department } from '@/features/organization/types/organization'
 import type { Announcement } from '@/features/communication/types/communication'
@@ -196,53 +195,6 @@ export function actionOvertime(id: string, status: 'approved' | 'declined') {
   return request(`/overtime/${id}/action`, 'PUT', { status })
 }
 
-export function fetchPayrollOverview(month: number, year: number) {
-  return request(`/admin/payroll-overview?month=${month}&year=${year}`)
-}
-
 export function closeDay(date?: string) {
   return request('/attendance/close-day', 'POST', { date })
-}
-
-export function fetchAuditLog(params: { action?: string; from?: string; to?: string; limit?: number }) {
-  const q = new URLSearchParams()
-  if (params.action) q.set('action', params.action)
-  if (params.from) q.set('from', params.from)
-  if (params.to) q.set('to', params.to)
-  if (params.limit) q.set('limit', String(params.limit))
-  return request(`/audit?${q.toString()}`)
-}
-
-export interface AttendanceReportRecordRow {
-  recordId: string
-  employeeId: string
-  employeeName: string
-  employeeEid: string
-  date: string
-  checkIn: string
-  checkOut: string
-  locationName: string
-  checkoutLocationName: string
-  status: string
-  notes: string
-}
-
-export interface AttendanceReportResponse {
-  employees: AttendanceReportEmployeeRow[]
-  departments: AttendanceReportDeptRow[]
-  records?: AttendanceReportRecordRow[]
-}
-
-export function fetchAttendanceReport(params: {
-  employeeId?: string
-  employeeIds?: string[]
-  month?: string
-  year?: string
-}) {
-  const q = new URLSearchParams()
-  if (params.employeeId) q.set('employeeId', params.employeeId)
-  if (params.month) q.set('month', params.month)
-  if (params.year) q.set('year', params.year)
-  if (params.employeeIds?.length) q.set('employeeIds', params.employeeIds.join(','))
-  return request<AttendanceReportResponse>(`/attendance/report?${q.toString()}`)
 }

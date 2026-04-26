@@ -7,10 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useData } from '@/stores/DataContext'
 import { useToast } from '@/components/ui/Toast'
-import {
-  fetchAttendanceReport,
-  type AttendanceReportRecordRow,
-} from '@/api/admin'
+import { fetchAttendanceReport } from '@/features/reporting/api/reportingApi'
 import { Check, ChevronDown, Download } from 'lucide-react'
 import {
   downloadAttendanceReportPdf,
@@ -18,9 +15,12 @@ import {
   downloadMonthlyAttendanceDetailPdf,
   downloadMonthlyAttendanceDetailExcel,
   mapAttendanceReportRecordsToDetailRows,
-  type AttendanceReportEmployeeRow,
-  type AttendanceReportDeptRow,
-} from '@/lib/exportTable'
+} from '@/features/reporting/utils/reportingExport'
+import type {
+  AttendanceReportDeptRow,
+  AttendanceReportEmployeeRow,
+  AttendanceReportRecordRow,
+} from '@/features/reporting/types/reporting'
 import { cn } from '@/lib/cn'
 
 export default function Reports() {

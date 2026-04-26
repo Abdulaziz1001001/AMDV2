@@ -7,7 +7,7 @@ import { DataTable } from '@/components/ui/DataTable'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
-import { AttendanceChart } from '@/features/attendance/components/AttendanceChart'
+import { AttendanceChart } from '@/features/reporting/components/AttendanceChart'
 import { useData } from '@/stores/DataContext'
 import { useLang } from '@/stores/LangContext'
 import { fetchSafetyIncidents } from '@/features/safety/api/safetyApi'
@@ -141,7 +141,6 @@ export default function Dashboard() {
         </CardContent>
       </Card>
 
-      {/* Stat cards — deep-link into admin panels (no React Router) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           label={t('totalEmployees')}
@@ -173,7 +172,6 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Action widgets */}
       {(pendingEC > 0 || pendingOT > 0 || openInc > 0) && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {pendingEC > 0 && (
@@ -268,7 +266,6 @@ export default function Dashboard() {
         </section>
       )}
 
-      {/* Chart + Table */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <AttendanceChart records={records} />
 

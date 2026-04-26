@@ -2,9 +2,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { type ColumnDef } from '@tanstack/react-table'
 import { DataTable } from '@/components/ui/DataTable'
 import { Input } from '@/components/ui/Input'
-import { request } from '@/api/client'
-
-interface AuditEntry { _id: string; actor?: string; actorName?: string; actorRole?: string; action: string; target?: string; targetId?: string; createdAt: string; ip?: string }
+import { fetchAuditLog } from '@/features/reporting/api/reportingApi'
+import type { AuditEntry } from '@/features/reporting/types/reporting'
 
 export default function Audit() {
   const [logs, setLogs] = useState<AuditEntry[]>([])
@@ -13,13 +12,13 @@ export default function Audit() {
   const [to, setTo] = useState('')
 
   const load = useCallback(async () => {
-    const q = new URLSearchParams()
-    if (actionFilter) q.set('action', actionFilter)
-    if (from) q.set('from', from)
-    if (to) q.set('to', to)
-    q.set('limit', '200')
     try {
-      setLogs(await request(`/audit?${q.toString()}`))
+      setLogs(await fetchAuditLog({
+        action: actionFilter || undefined,
+        from: from || undefined,
+        to: to || undefined,
+        limit: 200,
+      }))
     } catch {
       /* ignore load errors */
     }
