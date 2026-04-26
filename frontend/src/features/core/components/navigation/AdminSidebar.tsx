@@ -22,7 +22,7 @@ import {
   Settings,
   LogOut,
 } from 'lucide-react'
-import { BrandLogo } from '@/components/BrandLogo'
+import { BrandLogo } from '@/features/core/components/BrandLogo'
 import type { LucideIcon } from 'lucide-react'
 
 interface NavItem {

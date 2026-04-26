@@ -2,8 +2,8 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { cn } from '@/lib/cn'
 import { useLang } from '@/stores/LangContext'
 import { useAuth } from '@/stores/AuthContext'
-import { navGroups } from './Sidebar'
-import { BrandLogo } from '@/components/BrandLogo'
+import { navGroups } from './AdminSidebar'
+import { BrandLogo } from '@/features/core/components/BrandLogo'
 import { LogOut, X } from 'lucide-react'
 
 interface MobileNavProps {

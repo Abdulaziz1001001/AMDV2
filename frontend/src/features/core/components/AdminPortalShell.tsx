@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
-import { Sidebar } from './Sidebar'
-import { Topbar } from './Topbar'
-import { MobileNav } from './MobileNav'
+import { Sidebar } from './navigation/AdminSidebar'
+import { Topbar } from './navigation/AdminTopbar'
+import { MobileNav } from './navigation/AdminMobileNav'
 import { useData } from '@/stores/DataContext'
 import { useAdminNav } from '@/stores/AdminNavContext'
 import { useLang } from '@/stores/LangContext'
@@ -16,15 +16,15 @@ const Groups = lazy(() => import('@/features/organization/components/GroupsPage'
 const Locations = lazy(() => import('@/features/projects/components/SitesPage'))
 const Records = lazy(() => import('@/features/attendance/components/AttendanceRecordsPage'))
 const HrManagement = lazy(() => import('@/features/hr/components/HrManagementPage'))
-const WorkCalendar = lazy(() => import('@/pages/admin/Calendar'))
-const Onboarding = lazy(() => import('@/pages/admin/Onboarding'))
+const WorkCalendar = lazy(() => import('@/features/attendance/components/WorkCalendarPage'))
+const Onboarding = lazy(() => import('@/features/hr/components/OnboardingPage'))
 const Announcements = lazy(() => import('@/features/communication/components/AnnouncementsPage'))
 const Safety = lazy(() => import('@/features/safety/components/SafetyAdminPage'))
 const Directory = lazy(() => import('@/features/organization/components/DirectoryPage'))
 const LeaveAccrual = lazy(() => import('@/features/hr/components/LeaveAccrualPage'))
 const Audit = lazy(() => import('@/features/reporting/components/Audit'))
 const Reports = lazy(() => import('@/features/reporting/components/Reports'))
-const SettingsPage = lazy(() => import('@/pages/admin/Settings'))
+const SettingsPage = lazy(() => import('@/features/system/components/SettingsPage'))
 const Analytics = lazy(() => import('@/features/reporting/components/Analytics'))
 const Departments = lazy(() => import('@/features/organization/components/DepartmentsPage'))
 

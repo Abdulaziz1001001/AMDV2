@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { type ColumnDef } from '@tanstack/react-table'
 import { DataTable } from '@/components/ui/DataTable'
-import { Badge } from '@/components/ui/Badge'
+import { Badge } from '@/features/core/components/StatusBadge'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'

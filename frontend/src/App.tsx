@@ -1,11 +1,11 @@
 import { useAuth } from '@/stores/AuthContext'
 import { DataProvider } from '@/stores/DataContext'
 import { AdminNavProvider } from '@/stores/AdminNavContext'
-import { PageShell } from '@/components/layout/PageShell'
-import Home from '@/pages/Home'
-import AdminLogin from '@/pages/auth/AdminLogin'
-import EmployeeLogin from '@/pages/auth/EmployeeLogin'
-import Portal from '@/pages/employee/Portal'
+import { PageShell } from '@/features/core/components/AdminPortalShell'
+import Home from '@/features/auth/components/HomeGate'
+import AdminLogin from '@/features/auth/components/AdminLoginPage'
+import EmployeeLogin from '@/features/auth/components/EmployeeLoginPage'
+import Portal from '@/features/core/components/EmployeePortalShell'
 
 export default function App() {
   const { page, role } = useAuth()
