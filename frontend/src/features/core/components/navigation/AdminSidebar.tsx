@@ -67,9 +67,8 @@ interface SidebarProps {
 }
 
 export function Sidebar({ activePanel, onNavigate }: SidebarProps) {
-  const { t, lang } = useLang()
+  const { t } = useLang()
   const { session, logout } = useAuth()
-  const isRtl = lang === 'ar'
 
   const displayName = session?.name?.trim() || session?.username || 'AMD'
   const initial = (displayName[0] || 'A').toUpperCase()
@@ -78,7 +77,7 @@ export function Sidebar({ activePanel, onNavigate }: SidebarProps) {
     <aside
       className={cn(
         'z-40 grid h-dvh w-[var(--sidebar-width)] grid-rows-[auto,minmax(0,1fr),auto] border-[#1f1f1f] bg-[#121212]',
-        isRtl ? 'border-l' : 'border-r',
+        'border-r',
       )}
     >
       <div className="shrink-0 border-b border-[#1f1f1f] px-4 py-5">

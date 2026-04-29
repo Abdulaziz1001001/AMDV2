@@ -1,6 +1,5 @@
 import { cn } from '@/lib/cn'
 import { STATUS_MAP, type StatusKey } from '@/lib/constants'
-import { useLang } from '@/stores/LangContext'
 
 const colorMap: Record<string, string> = {
   success: 'bg-success-soft text-success',
@@ -15,9 +14,8 @@ interface BadgeProps {
 }
 
 export function Badge({ status, className }: BadgeProps) {
-  const { lang } = useLang()
   const entry = STATUS_MAP[status as StatusKey]
-  const label = entry ? (lang === 'ar' ? entry.labelAr : entry.label) : status
+  const label = entry ? entry.label : status
   const color = entry ? (colorMap[entry.color] ?? colorMap.muted) : colorMap.muted
 
   return (

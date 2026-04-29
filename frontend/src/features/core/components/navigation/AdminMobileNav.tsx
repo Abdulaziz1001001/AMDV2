@@ -14,7 +14,7 @@ interface MobileNavProps {
 }
 
 export function MobileNav({ open, onClose, activePanel, onNavigate }: MobileNavProps) {
-  const { t, lang } = useLang()
+  const { t } = useLang()
   const { session, logout } = useAuth()
   const displayName = session?.name?.trim() || session?.username || 'AMD'
   const initial = (displayName[0] || 'A').toUpperCase()
@@ -31,13 +31,13 @@ export function MobileNav({ open, onClose, activePanel, onNavigate }: MobileNavP
             onClick={onClose}
           />
           <motion.nav
-            initial={{ x: lang === 'ar' ? '100%' : '-100%' }}
+            initial={{ x: '-100%' }}
             animate={{ x: 0 }}
-            exit={{ x: lang === 'ar' ? '100%' : '-100%' }}
+            exit={{ x: '-100%' }}
             transition={{ type: 'spring', stiffness: 400, damping: 35 }}
             className={cn(
               'fixed top-0 z-50 flex h-dvh w-[min(20rem,100vw)] flex-col border-[#1f1f1f] bg-[#121212] lg:hidden',
-              lang === 'ar' ? 'right-0 border-l' : 'left-0 border-r',
+              'left-0 border-r',
             )}
           >
             <div className="flex h-14 shrink-0 items-center justify-between border-b border-[#1f1f1f] px-4">

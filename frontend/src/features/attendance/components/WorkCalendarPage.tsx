@@ -13,7 +13,7 @@ const DAY_KEYS = ['calDaySun', 'calDayMon', 'calDayTue', 'calDayWed', 'calDayThu
 export default function WorkCalendar() {
   const { workPolicy, sync } = useData()
   const { toast } = useToast()
-  const { lang, t } = useLang()
+  const { t } = useLang()
   const [saving, setSaving] = useState(false)
   const [tz, setTz] = useState(workPolicy?.timeZone || 'Asia/Riyadh')
   const [grace, setGrace] = useState(String(workPolicy?.lateGraceMinutes ?? 15))
@@ -41,7 +41,7 @@ export default function WorkCalendar() {
   const today = now.getDate()
   const holidays = (workPolicy?.companyHolidays || []).map((h) => h.date)
 
-  const monthTitle = now.toLocaleDateString(lang === 'ar' ? 'ar-SA' : 'en-US', {
+  const monthTitle = now.toLocaleDateString('en-US', {
     month: 'long',
     year: 'numeric',
   })

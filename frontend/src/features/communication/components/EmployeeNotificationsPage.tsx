@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Card, CardContent } from '@/components/ui/Card'
-import { useLang } from '@/stores/LangContext'
 import { Bell, Megaphone } from 'lucide-react'
 import type { Announcement, Notification } from '../types/communication'
 import { fetchPublicAnnouncements } from '../api/publicAnnouncements'
@@ -12,7 +11,6 @@ import {
 } from '../api/employeeNotifications'
 
 export default function EmployeeNotificationsPage() {
-  const { lang } = useLang()
   const [notifs, setNotifs] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
@@ -76,8 +74,8 @@ export default function EmployeeNotificationsPage() {
           {announcements.slice(0, 5).map((a) => (
             <Card key={a.id}>
               <CardContent className="pt-3 pb-3">
-                <p className="text-sm font-medium text-text-primary">{lang === 'ar' && a.titleAr ? a.titleAr : a.title}</p>
-                <p className="text-sm text-text-secondary mt-1 line-clamp-2">{lang === 'ar' && a.bodyAr ? a.bodyAr : a.body}</p>
+                <p className="text-sm font-medium text-text-primary">{a.title}</p>
+                <p className="text-sm text-text-secondary mt-1 line-clamp-2">{a.body}</p>
                 <p className="text-xs text-text-tertiary mt-1.5">{a.createdAt ? new Date(a.createdAt).toLocaleDateString() : ''}</p>
               </CardContent>
             </Card>
@@ -111,8 +109,8 @@ export default function EmployeeNotificationsPage() {
             <Card key={n.id} className={n.readAt ? 'opacity-60' : ''}>
               <CardContent className="pt-3 pb-3">
                 <button onClick={() => !n.readAt && void markRead(n.id)} className="w-full text-left">
-                  <p className="text-sm font-medium text-text-primary">{lang === 'ar' && n.titleAr ? n.titleAr : n.title}</p>
-                  <p className="text-sm text-text-secondary mt-0.5">{lang === 'ar' && n.bodyAr ? n.bodyAr : n.body}</p>
+                  <p className="text-sm font-medium text-text-primary">{n.title}</p>
+                  <p className="text-sm text-text-secondary mt-0.5">{n.body}</p>
                   <p className="text-xs text-text-tertiary mt-1">{n.createdAt ? new Date(n.createdAt).toLocaleDateString() : ''}</p>
                 </button>
               </CardContent>

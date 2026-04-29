@@ -72,7 +72,7 @@ export function PageShell() {
   const { activePanel, setActivePanel } = useAdminNav()
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const { sync, loading, notificationUnreadCount } = useData()
-  const { t, lang } = useLang()
+  const { t } = useLang()
   const { toast } = useToast()
 
   /** Portaled Radix surfaces inherit tokens from documentElement, not .admin-shell — align palette on html. */
@@ -98,11 +98,7 @@ export function PageShell() {
   const renderPanel = panels[activePanel]
 
   return (
-    <div
-      className={`admin-shell flex h-screen overflow-hidden bg-surface-sunken ${
-        lang === 'ar' ? 'lg:flex-row-reverse' : 'lg:flex-row'
-      }`}
-    >
+    <div className="admin-shell flex h-screen overflow-hidden bg-surface-sunken lg:flex-row">
       <div className="hidden lg:block lg:h-dvh lg:shrink-0">
         <Sidebar activePanel={activePanel} onNavigate={setActivePanel} />
       </div>

@@ -3,7 +3,6 @@ import * as Popover from '@radix-ui/react-popover'
 import { Bell } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/Button'
-import { useLang } from '@/stores/LangContext'
 import { cn } from '@/lib/cn'
 import {
   fetchEmployeeNotifications,
@@ -14,7 +13,6 @@ import {
 import type { Notification } from '../types/communication'
 
 export function EmployeeNotificationPopover() {
-  const { lang } = useLang()
   const [open, setOpen] = useState(false)
   const [items, setItems] = useState<Notification[]>([])
   const [loading, setLoading] = useState(false)
@@ -113,8 +111,8 @@ export function EmployeeNotificationPopover() {
             ) : (
               <ul className="py-1">
                 {items.map((n) => {
-                  const t = lang === 'ar' && n.titleAr ? n.titleAr : n.title
-                  const b = lang === 'ar' && n.bodyAr ? n.bodyAr : n.body
+                  const t = n.title
+                  const b = n.body
                   const unread = !n.readAt
                   return (
                     <li key={n.id} className="border-b border-border-subtle/80 last:border-0">
