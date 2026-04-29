@@ -10,6 +10,17 @@ const WorkPolicy = require('../models/WorkPolicy');
 const router = express.Router();
 router.use(auth);
 
+async function resolveRequestRecipient(requesterId, requesterRole) {
+  if (requesterRole === 'manager') return null;
+  const emp = await Employee.findById(requesterId).select('departmentId').lean();
+  if (!emp || !emp.departmentId) return null;
+  const dept = await Department.findById(emp.departmentId).select('managerId').lean();
+  if (!dept || !dept.managerId) return null;
+  const managerId = String(dept.managerId);
+  if (managerId === String(requesterId)) return null;
+  return managerId;
+}
+
 function fmt(arr) {
   return arr.map((doc) => {
     const obj = doc.toObject ? doc.toObject() : doc;
@@ -44,6 +55,7 @@ router.post('/', auth.requireRole(['employee', 'manager']), async (req, res) => 
     }
 
     const emp = await Employee.findById(req.user.id);
+    const recipientId = await resolveRequestRecipient(req.user.id, req.user.role);
     await AdminNotification.create({
       type: 'overtime_pending',
       title: 'Overtime Request',
@@ -51,6 +63,7 @@ router.post('/', auth.requireRole(['employee', 'manager']), async (req, res) => 
       body: `${emp ? emp.name : 'Employee'} logged ${extraMinutes} min overtime on ${date}.`,
       bodyAr: `${emp ? emp.name : 'موظف'} سجل ${extraMinutes} دقيقة عمل إضافي في ${date}.`,
       ref: { kind: 'overtime', id: ot._id.toString() },
+      recipientId: recipientId || undefined,
     });
 
     res.json({ msg: 'Overtime submitted', overtime: ot });
@@ -93,6 +106,22 @@ router.put('/:id/action', auth.requireRole(['admin', 'manager']), async (req, re
     const ot = await Overtime.findById(req.params.id);
     if (!ot) return res.status(404).json({ msg: 'Not found' });
     if (ot.status !== 'pending') return res.status(400).json({ msg: 'Already processed' });
+    if (String(ot.employeeId) === String(req.user.id)) {
+      return res.status(403).json({ msg: 'You cannot approve or decline your own request' });
+    }
+
+    if (req.user.role === 'manager') {
+      const dept = await Department.findOne({ managerId: req.user.id }).select('_id').lean();
+      if (!dept) return res.status(403).json({ msg: 'Manager is not assigned to a department' });
+      const requester = await Employee.findById(ot.employeeId).select('departmentId').lean();
+      if (!requester || String(requester.departmentId) !== String(dept._id)) {
+        return res.status(403).json({ msg: 'Not authorized to approve this request' });
+      }
+      const requesterIsManager = await Department.exists({ managerId: ot.employeeId });
+      if (requesterIsManager) {
+        return res.status(403).json({ msg: 'Manager requests can only be approved by admin' });
+      }
+    }
 
     ot.status = status;
     ot.approvedBy = req.user.id;

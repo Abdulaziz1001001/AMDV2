@@ -1,7 +1,5 @@
 import { request } from '@/api/client'
 import type {
-  AttendanceReportResponse,
-  AttendanceReportQueryParams,
   AuditEntry,
   AuditLogQueryParams,
   ReportRecordRow,
@@ -20,16 +18,8 @@ export function fetchAuditLog(params: AuditLogQueryParams) {
   return request<AuditEntry[]>(`/audit?${q.toString()}`)
 }
 
-export function fetchAttendanceReport(params: AttendanceReportQueryParams) {
-  const q = new URLSearchParams()
-  if (params.employeeId) q.set('employeeId', params.employeeId)
-  if (params.month) q.set('month', params.month)
-  if (params.year) q.set('year', params.year)
-  if (params.employeeIds?.length) q.set('employeeIds', params.employeeIds.join(','))
-  return request<AttendanceReportResponse>(`/attendance/report?${q.toString()}`)
-}
-
-export function fetchReports(startDate: string, endDate: string) {
+export function fetchReports(startDate: string, endDate: string, employeeId?: string) {
   const q = new URLSearchParams({ startDate, endDate })
+  if (employeeId) q.set('employeeId', employeeId)
   return request<ReportRecordRow[]>(`/admin/reports?${q.toString()}`)
 }

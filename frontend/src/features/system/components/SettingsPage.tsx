@@ -13,7 +13,7 @@ export default function Settings() {
   const { toast } = useToast()
   const { session, patchSession, logout } = useAuth()
   const { theme, toggle: toggleTheme } = useTheme()
-  const { lang, toggle: toggleLang, t } = useLang()
+  const { t } = useLang()
   const [credentialUsername, setCredentialUsername] = useState('')
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
@@ -132,17 +132,6 @@ export default function Settings() {
             </div>
             <Button variant="secondary" size="sm" onClick={toggleTheme}>
               {theme === 'dark' ? t('lightMode') : t('darkMode')}
-            </Button>
-          </div>
-          <div className="flex flex-wrap items-start justify-between gap-4 pt-6">
-            <div>
-              <p className="text-sm font-medium text-text-primary">{t('languageLabel')}</p>
-              <p className="mt-0.5 text-xs text-text-tertiary">
-                {t('languageCurrent')}: {lang === 'ar' ? 'العربية' : 'English'}
-              </p>
-            </div>
-            <Button variant="secondary" size="sm" onClick={toggleLang}>
-              {lang === 'en' ? 'العربية' : 'English'}
             </Button>
           </div>
         </div>

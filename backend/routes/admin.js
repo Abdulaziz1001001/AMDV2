@@ -37,10 +37,15 @@ function normalizeToRiyadhDate(value) {
 
 function withPopulatedEmployee(record) {
   const base = formatAttendanceRecords([record])[0];
+  const checkoutLocation = base.checkoutLocationName || '';
   const employeeDoc = record.employeeId;
-  if (!employeeDoc || typeof employeeDoc !== 'object') return base;
-  return {
+  const payload = {
     ...base,
+    checkoutLocation,
+  };
+  if (!employeeDoc || typeof employeeDoc !== 'object') return payload;
+  return {
+    ...payload,
     employee: {
       id: employeeDoc._id ? employeeDoc._id.toString() : '',
       name: employeeDoc.name || '',
@@ -288,6 +293,7 @@ router.get('/reports', async (req, res) => {
   try {
     const startDate = normalizeToRiyadhDate(req.query.startDate);
     const endDate = normalizeToRiyadhDate(req.query.endDate);
+    const employeeId = req.query.employeeId ? String(req.query.employeeId) : null;
 
     if (!startDate || !endDate) {
       return res.status(400).json({ msg: 'startDate and endDate are required in YYYY-MM-DD format' });
@@ -296,7 +302,10 @@ router.get('/reports', async (req, res) => {
       return res.status(400).json({ msg: 'startDate must be less than or equal to endDate' });
     }
 
-    const records = await Record.find({ date: { $gte: startDate, $lte: endDate } })
+    const query = { date: { $gte: startDate, $lte: endDate } };
+    if (employeeId) query.employeeId = employeeId;
+
+    const records = await Record.find(query)
       .populate('employeeId', 'name eid departmentId')
       .sort({ date: -1, createdAt: -1 });
 

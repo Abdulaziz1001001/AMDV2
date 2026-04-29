@@ -9,6 +9,17 @@ const AdminNotification = require('../models/AdminNotification');
 const router = express.Router();
 router.use(auth);
 
+async function resolveRequestRecipient(requesterId, requesterRole) {
+  if (requesterRole === 'manager') return null;
+  const emp = await Employee.findById(requesterId).select('departmentId').lean();
+  if (!emp || !emp.departmentId) return null;
+  const dept = await Department.findById(emp.departmentId).select('managerId').lean();
+  if (!dept || !dept.managerId) return null;
+  const managerId = String(dept.managerId);
+  if (managerId === String(requesterId)) return null;
+  return managerId;
+}
+
 /** Calendar date in Asia/Riyadh — must match employee portal `todayStr()` and Record.date */
 function todayStr() {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Riyadh' });
@@ -44,6 +55,7 @@ router.post('/early', auth.requireRole(['employee', 'manager']), async (req, res
     const emp = await Employee.findById(req.user.id);
     const empName = emp ? emp.name : 'Employee';
 
+    const recipientId = await resolveRequestRecipient(req.user.id, req.user.role);
     await AdminNotification.create({
       type: 'early_checkout_pending',
       title: 'Early checkout request',
@@ -51,6 +63,7 @@ router.post('/early', auth.requireRole(['employee', 'manager']), async (req, res
       body: `${empName} requests early checkout — ${date}. Reason: ${reason.trim()}`,
       bodyAr: `${empName} يطلب انصراف مبكر — ${date}. السبب: ${reason.trim()}`,
       ref: { kind: 'early_checkout', id: earlyCheckout._id.toString() },
+      recipientId: recipientId || undefined,
     });
 
     res.json({ msg: 'Early checkout submitted', earlyCheckout });
@@ -112,6 +125,22 @@ router.put('/early/:id/approve', auth.requireRole(['admin', 'manager']), async (
     const ec = await EarlyCheckout.findById(req.params.id);
     if (!ec) return res.status(404).json({ msg: 'Early checkout not found' });
     if (ec.status !== 'pending') return res.status(400).json({ msg: 'Already processed' });
+    if (String(ec.employeeId) === String(req.user.id)) {
+      return res.status(403).json({ msg: 'You cannot approve or decline your own request' });
+    }
+
+    if (req.user.role === 'manager') {
+      const dept = await Department.findOne({ managerId: req.user.id }).select('_id').lean();
+      if (!dept) return res.status(403).json({ msg: 'Manager is not assigned to a department' });
+      const requester = await Employee.findById(ec.employeeId).select('departmentId').lean();
+      if (!requester || String(requester.departmentId) !== String(dept._id)) {
+        return res.status(403).json({ msg: 'Not authorized to approve this request' });
+      }
+      const requesterIsManager = await Department.exists({ managerId: ec.employeeId });
+      if (requesterIsManager) {
+        return res.status(403).json({ msg: 'Manager requests can only be approved by admin' });
+      }
+    }
 
     ec.status = status;
     ec.approvedBy = req.user.id;

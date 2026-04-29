@@ -39,6 +39,17 @@ async function sendEmailNotification(to, subject, body) {
   console.log(`[EMAIL BODY]\n${body}\n`);
 }
 
+async function resolveRequestRecipient(requesterId, requesterRole) {
+  if (requesterRole === 'manager') return null;
+  const emp = await Employee.findById(requesterId).select('departmentId').lean();
+  if (!emp || !emp.departmentId) return null;
+  const dept = await Department.findById(emp.departmentId).select('managerId').lean();
+  if (!dept || !dept.managerId) return null;
+  const managerId = String(dept.managerId);
+  if (managerId === String(requesterId)) return null;
+  return managerId;
+}
+
 // -----------------------------------------------------
 // 1. Employee Endpoints
 // -----------------------------------------------------
@@ -144,22 +155,25 @@ router.post('/me/leave-request', auth.requireRole(['employee', 'manager']), uplo
     await leave.save();
 
     const emp = await Employee.findById(req.user.id);
-    let managerEmail = 'admin@amd-contracting.com'; // fallback
-    if (emp.departmentId) {
+    const adminEmail = process.env.ADMIN_APPROVAL_EMAIL || 'admin@amd-contracting.com';
+    let managerEmail = adminEmail;
+    if (req.user.role !== 'manager' && emp.departmentId) {
       const dept = await Department.findById(emp.departmentId).populate('managerId');
       if (dept && dept.managerId && dept.managerId.email) {
         managerEmail = dept.managerId.email;
       }
     }
 
-    // In-app Notification for Admin/Manager
+    const recipientId = await resolveRequestRecipient(req.user.id, req.user.role);
+    // In-app Notification for Manager/Admin
     await AdminNotification.create({
       type: 'leave_request',
       title: 'New Leave Request',
       titleAr: 'طلب إجازة جديد',
       body: `${emp.name} requested ${requestedDays} day(s) of ${type} leave${leave.attachmentUrl ? ' with attachment' : ''}.`,
       bodyAr: `${emp.name} طلب ${requestedDays} يوم/أيام من إجازة ${type}${leave.attachmentUrl ? ' مع مرفق' : ''}.`,
-      ref: { kind: 'leave', id: leave._id.toString() }
+      ref: { kind: 'leave', id: leave._id.toString() },
+      recipientId: recipientId || undefined,
     });
 
     // Email Notification
@@ -241,11 +255,18 @@ router.patch('/department/leaves/:id', auth.requireRole(['manager', 'admin']), a
 
     const leave = await LeaveRequest.findById(req.params.id).populate('employeeId');
     if (!leave) return res.status(404).json({ msg: 'Leave request not found' });
+    if (String(leave.employeeId._id) === String(req.user.id)) {
+      return res.status(403).json({ msg: 'You cannot approve or reject your own request' });
+    }
 
     if (req.user.role !== 'admin') {
       const dept = await Department.findOne({ managerId: req.user.id });
       if (!dept || String(leave.employeeId.departmentId) !== String(dept._id)) {
         return res.status(403).json({ msg: 'Not authorized to approve for this department' });
+      }
+      const requesterIsManager = await Department.exists({ managerId: leave.employeeId._id });
+      if (requesterIsManager) {
+        return res.status(403).json({ msg: 'Manager requests can only be approved by admin' });
       }
     }
 

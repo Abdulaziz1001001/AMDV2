@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const https = require('https');
 const http = require('http');
 const Admin = require('./models/Admin');
+const { initAbsenteeScheduler } = require('./lib/absenteeScheduler');
 require('dotenv').config();
 
 const { createApp } = require('./app');
@@ -49,8 +50,9 @@ mongoose
     console.log('MongoDB connected');
     try {
       await ensureBootstrapAdmin();
+      await initAbsenteeScheduler();
     } catch (err) {
-      console.error('Bootstrap admin error:', err);
+      console.error('Startup initialization error:', err);
     }
   })
   .catch((err) => {

@@ -6,13 +6,20 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { DataTable } from '@/components/ui/DataTable'
 import { Badge } from '@/features/core/components/StatusBadge'
 import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { AttendanceChart } from '@/features/reporting/components/AttendanceChart'
 import { useData } from '@/stores/DataContext'
 import { useLang } from '@/stores/LangContext'
 import { fetchSafetyIncidents } from '@/features/safety/api/safetyApi'
 import type { SafetyIncident } from '@/features/safety/types/safety'
-import { closeDay, fetchEarlyCheckouts, fetchOvertimes } from '@/features/attendance/api/attendanceAdminApi'
+import {
+  closeDay,
+  fetchAbsenteeTriggerTime,
+  fetchEarlyCheckouts,
+  fetchOvertimes,
+  updateAbsenteeTriggerTime,
+} from '@/features/attendance/api/attendanceAdminApi'
 import type { EarlyCheckout, OvertimeEntry } from '@/features/attendance/types/attendance'
 import type { LeaveRequest } from '@/features/hr/types/hr'
 import { useAdminNav } from '@/stores/AdminNavContext'
@@ -50,12 +57,17 @@ export default function Dashboard() {
   const [overtimes, setOvertimes] = useState<OvertimeEntry[]>([])
   const [incidents, setIncidents] = useState<SafetyIncident[]>([])
   const [closeDayBusy, setCloseDayBusy] = useState(false)
+  const [triggerTime, setTriggerTime] = useState('18:00')
+  const [triggerTimeBusy, setTriggerTimeBusy] = useState(false)
   const [lastCloseRunDate, setLastCloseRunDate] = useState<string | null>(null)
 
   useEffect(() => {
     fetchEarlyCheckouts().then(setEarlyCheckouts).catch(() => {})
     fetchOvertimes().then(setOvertimes).catch(() => {})
     fetchSafetyIncidents().then(setIncidents).catch(() => {})
+    fetchAbsenteeTriggerTime()
+      .then((res) => setTriggerTime(res.triggerTime || '18:00'))
+      .catch(() => {})
   }, [])
 
   const today = todayStr()
@@ -94,6 +106,20 @@ export default function Dashboard() {
     }
   }
 
+  const saveTriggerTime = async () => {
+    if (triggerTimeBusy) return
+    setTriggerTimeBusy(true)
+    try {
+      const res = await updateAbsenteeTriggerTime(triggerTime)
+      setTriggerTime(res.triggerTime || triggerTime)
+      toast('Absentee trigger time updated', 'success')
+    } catch (e: unknown) {
+      toast((e as Error).message || 'Failed to update trigger time', 'error')
+    } finally {
+      setTriggerTimeBusy(false)
+    }
+  }
+
   const todayRows = useMemo<TodayRow[]>(() => {
     return todayRecs.map((r) => {
       const emp = employees.find((e) => e.id === r.employeeId)
@@ -123,21 +149,30 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       <Card className="border-border bg-surface-raised/70">
-        <CardContent className="pt-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <CardContent className="pt-5 flex flex-col gap-4">
           <div>
             <p className="text-sm font-semibold tracking-wide text-text-primary">Shift Closure Control</p>
             <p className="text-xs text-text-tertiary mt-1">
               Mark absentees for <span className="font-mono">{today}</span>. Action is guarded to avoid duplicate runs.
             </p>
           </div>
-          <Button
-            onClick={runCloseDay}
-            disabled={closeDayBusy || alreadyClosedToday}
-            className="min-w-52"
-          >
-            <CalendarCheck2 className="h-4 w-4" />
-            {closeDayBusy ? 'Closing Day...' : alreadyClosedToday ? 'Day Already Closed' : 'Close Day / Mark Absentees'}
-          </Button>
+          <div className="flex flex-wrap items-end gap-3">
+            <div>
+              <label className="mb-1 block text-xs font-medium text-text-secondary">Absentee Trigger Time</label>
+              <Input type="time" value={triggerTime} onChange={(e) => setTriggerTime(e.target.value)} className="w-36" />
+            </div>
+            <Button variant="secondary" onClick={() => void saveTriggerTime()} disabled={triggerTimeBusy}>
+              {triggerTimeBusy ? 'Saving...' : 'Save Time'}
+            </Button>
+            <Button
+              onClick={runCloseDay}
+              disabled={closeDayBusy || alreadyClosedToday}
+              className="min-w-52"
+            >
+              <CalendarCheck2 className="h-4 w-4" />
+              {closeDayBusy ? 'Closing Day...' : alreadyClosedToday ? 'Day Already Closed' : 'Close Day / Mark Absentees'}
+            </Button>
+          </div>
         </CardContent>
       </Card>
 

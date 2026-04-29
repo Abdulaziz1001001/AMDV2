@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import * as Popover from '@radix-ui/react-popover'
-import { Bell, Globe, Moon, Sun, RefreshCw, LogOut, Menu } from 'lucide-react'
+import { Bell, Moon, Sun, RefreshCw, LogOut, Menu } from 'lucide-react'
 import { useTheme } from '@/stores/ThemeContext'
 import { useLang } from '@/stores/LangContext'
 import { useAuth } from '@/stores/AuthContext'
@@ -27,7 +27,7 @@ interface TopbarProps {
 
 export function Topbar({ title, unreadCount = 0, onRefresh, refreshing, onMenuClick }: TopbarProps) {
   const { theme, toggle: toggleTheme } = useTheme()
-  const { toggle: toggleLang, lang, t } = useLang()
+  const { t } = useLang()
   const { logout, session } = useAuth()
   const { sync } = useData()
 
@@ -111,10 +111,6 @@ export function Topbar({ title, unreadCount = 0, onRefresh, refreshing, onMenuCl
           </motion.div>
         </Button>
 
-        <Button variant="ghost" size="icon" onClick={toggleLang} title={lang === 'en' ? 'العربية' : 'English'}>
-          <Globe className="h-4 w-4" />
-        </Button>
-
         <Button variant="ghost" size="icon" onClick={toggleTheme} title={t('toggleThemeTooltip')}>
           {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </Button>
@@ -154,8 +150,8 @@ export function Topbar({ title, unreadCount = 0, onRefresh, refreshing, onMenuCl
                 ) : (
                   <ul className="py-1">
                     {notifItems.map((n) => {
-                      const titleText = lang === 'ar' && n.titleAr ? n.titleAr : n.title
-                      const bodyText = lang === 'ar' && n.bodyAr ? n.bodyAr : n.body
+                      const titleText = n.title
+                      const bodyText = n.body
                       const unread = !n.readAt
                       return (
                         <li key={n.id} className="border-b border-border-subtle/80 last:border-0">

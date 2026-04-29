@@ -54,6 +54,20 @@ function riyadhMinutesNow() {
   return wallClockMinutesInTimeZone(new Date(), 'Asia/Riyadh');
 }
 
+async function findApprovedEarlyCheckoutForRecord(employeeId, recordId, attendanceDate) {
+  const approved = await EarlyCheckout.findOne({
+    employeeId,
+    attendanceId: recordId,
+    status: 'approved',
+  })
+    .populate('attendanceId', 'date')
+    .lean();
+  if (!approved) return null;
+  const attendance = approved.attendanceId;
+  if (!attendance || attendance.date !== attendanceDate) return null;
+  return approved;
+}
+
 async function getEffectiveShift(employeeId, dateStr) {
   const [assignment, emp] = await Promise.all([
     ShiftAssignment.findOne({ employeeId, date: dateStr }).populate('shiftId'),
@@ -129,6 +143,7 @@ async function upsertEmployeeRecord(req, res) {
         const empCo = await Employee.findById(empOid);
         if (!empCo) return res.status(404).json({ msg: 'Employee not found' });
         sitesCheckout = await getAuthorizedWorkSites(empCo);
+        const approvedEarlyCheckoutToday = await findApprovedEarlyCheckoutForRecord(empOid, record._id, date);
 
         const shiftEarly = await getEffectiveShift(empOid, date);
         const endMinEarly = shiftEarly ? parseTimeToMinutes(shiftEarly.endTime) : null;
@@ -144,9 +159,6 @@ async function upsertEmployeeRecord(req, res) {
           checkoutIsEarlyApproved = true;
         }
 
-        const bypassCheckoutGeofence =
-          !isEarlyCheckout || (earlyCheckoutDoc && earlyCheckoutDoc.status === 'approved');
-
         const outLat = lat ?? checkOutLat;
         const outLng = lng ?? checkOutLng;
         const hasOutCoords =
@@ -155,7 +167,7 @@ async function upsertEmployeeRecord(req, res) {
           Number.isFinite(Number(outLat)) &&
           Number.isFinite(Number(outLng));
 
-        if (!bypassCheckoutGeofence) {
+        if (!approvedEarlyCheckoutToday) {
           if (sitesCheckout.locations.length + sitesCheckout.projects.length === 0) {
             return res.status(403).json({ msg: MSG_NO_SITES });
           }
@@ -350,41 +362,45 @@ function isWorkingDay(dateStr, empGroupId, policy, groups) {
   return true;
 }
 
+async function markAbsenteesForDate(date) {
+  const [employees, groups, policy, existingRecords] = await Promise.all([
+    Employee.find({ active: true }),
+    Group.find(),
+    WorkPolicy.findOne({ key: 'company' }),
+    Record.find({ date }),
+  ]);
+
+  const checkedInIds = new Set(existingRecords.map((r) => String(r.employeeId)));
+  const absentees = [];
+
+  for (const emp of employees) {
+    if (checkedInIds.has(String(emp._id))) continue;
+    if (!isWorkingDay(date, emp.groupId, policy, groups)) continue;
+    absentees.push({
+      employeeId: emp._id,
+      date,
+      status: 'absent',
+      approvalStatus: 'none',
+    });
+  }
+
+  if (absentees.length) {
+    await Record.insertMany(absentees, { ordered: false });
+  }
+  return absentees.length;
+}
+
 async function closeDay(req, res) {
+  const date = req.body.date || todayStr();
   try {
-    const date = req.body.date || todayStr();
-    const [employees, groups, policy, existingRecords] = await Promise.all([
-      Employee.find({ active: true }),
-      Group.find(),
-      WorkPolicy.findOne({ key: 'company' }),
-      Record.find({ date }),
-    ]);
-
-    const checkedInIds = new Set(existingRecords.map((r) => String(r.employeeId)));
-    const absentees = [];
-
-    for (const emp of employees) {
-      if (checkedInIds.has(String(emp._id))) continue;
-      if (!isWorkingDay(date, emp.groupId, policy, groups)) continue;
-      absentees.push({
-        employeeId: emp._id,
-        date,
-        status: 'absent',
-        approvalStatus: 'none',
-      });
-    }
-
-    if (absentees.length) {
-      await Record.insertMany(absentees, { ordered: false });
-    }
-
+    const count = await markAbsenteesForDate(date);
     return res.json({
-      msg: `${absentees.length} absent record(s) created for ${date}`,
-      count: absentees.length,
+      msg: `${count} absent record(s) created for ${date}`,
+      count,
     });
   } catch (err) {
     if (err && err.code === 11000) {
-      return res.json({ msg: `0 absent record(s) created for ${req.body.date || todayStr()}`, count: 0 });
+      return res.json({ msg: `0 absent record(s) created for ${date}`, count: 0 });
     }
     return res.status(500).json({ msg: err.message });
   }
@@ -393,4 +409,5 @@ async function closeDay(req, res) {
 module.exports = {
   upsertEmployeeRecord,
   closeDay,
+  markAbsenteesForDate,
 };

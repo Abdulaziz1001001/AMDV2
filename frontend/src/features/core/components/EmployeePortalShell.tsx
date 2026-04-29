@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/stores/AuthContext'
-import { useLang } from '@/stores/LangContext'
 import { useTheme } from '@/stores/ThemeContext'
 import { Button } from '@/components/ui/Button'
-import { Clock, Briefcase, Bell, Globe, Moon, Sun, LogOut, Users } from 'lucide-react'
+import { Clock, Briefcase, Bell, Moon, Sun, LogOut, Users } from 'lucide-react'
 import Attendance from '@/features/attendance/components/AttendancePage'
 import HrTab from '@/features/hr/components/HrSelfServicePage'
 import EmployeeNotificationsPage from '@/features/communication/components/EmployeeNotificationsPage'
@@ -24,7 +23,6 @@ type TabKey = BaseTabKey | typeof teamTabDef.key
 
 export default function Portal() {
   const { session, logout, role } = useAuth()
-  const { toggle: toggleLang } = useLang()
   const { toggle: toggleTheme, theme } = useTheme()
   const [tab, setTab] = useState<TabKey>('attendance')
 
@@ -46,9 +44,6 @@ export default function Portal() {
         </div>
         <div className="flex items-center gap-1">
           <EmployeeNotificationPopover />
-          <Button variant="ghost" size="icon" onClick={toggleLang}>
-            <Globe className="h-4 w-4" />
-          </Button>
           <Button variant="ghost" size="icon" onClick={toggleTheme}>
             {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>

@@ -1,8 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import en from '@/i18n/en'
-import ar from '@/i18n/ar'
-
-type Lang = 'en' | 'ar'
+type Lang = 'en'
 
 interface LangCtx {
   lang: Lang
@@ -13,22 +11,20 @@ interface LangCtx {
 const LangContext = createContext<LangCtx>({ lang: 'en', toggle: () => {}, t: (k) => k })
 
 export function LangProvider({ children }: { children: ReactNode }) {
-  const [lang, setLang] = useState<Lang>(() => (localStorage.getItem('amd_lang') as Lang) || 'en')
+  const [lang] = useState<Lang>('en')
 
   useEffect(() => {
-    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr'
-    document.documentElement.lang = lang
-    localStorage.setItem('amd_lang', lang)
+    document.documentElement.dir = 'ltr'
+    document.documentElement.lang = 'en'
   }, [lang])
 
-  const toggle = () => setLang((l) => (l === 'en' ? 'ar' : 'en'))
+  const toggle = () => {}
 
   const t = useCallback(
     (key: string): string => {
-      if (lang === 'ar') return (ar as Record<string, string>)[key] ?? key
       return (en as Record<string, string>)[key] ?? key
     },
-    [lang],
+    [],
   )
 
   return <LangContext.Provider value={{ lang, toggle, t }}>{children}</LangContext.Provider>
