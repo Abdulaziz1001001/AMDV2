@@ -55,6 +55,7 @@ export default function Reports() {
   const [customStartDate, setCustomStartDate] = useState('')
   const [customEndDate, setCustomEndDate] = useState('')
   const [exporting, setExporting] = useState<'detailPdf' | 'detailXlsx' | null>(null)
+  const [displayedRows, setDisplayedRows] = useState<Array<ReportRecordRow & { employeeName: string; employeeEid: string }>>([])
 
   const reportRange = useMemo(() => {
     if (preset === 'custom') {
@@ -85,18 +86,18 @@ export default function Reports() {
 
   const exportRows = useMemo<MonthlyAttendanceDetailRow[]>(() => {
     return mapAttendanceReportRecordsToDetailRows(
-      reportRows.map((record) => ({
+      displayedRows.map((record) => ({
         employeeName: record.employeeName,
         date: record.date,
         checkIn: record.checkIn || '',
         checkOut: record.checkOut || '',
         locationName: record.locationName || '',
-        checkoutLocationName: record.checkoutLocationName || '',
+        checkoutLocationName: record.checkoutLocation || record.checkoutLocationName || '',
         status: record.status,
         notes: record.notes || '',
       })),
     )
-  }, [reportRows])
+  }, [displayedRows])
 
   const onExportDetailPdf = async () => {
     if (!exportRows.length) return
@@ -200,7 +201,14 @@ export default function Reports() {
           </div>
         </div>
 
-        <DataTable columns={reportCols} data={reportRows} searchColumn="employeeName" pageSize={15} frameless />
+        <DataTable
+          columns={reportCols}
+          data={reportRows}
+          searchColumn="employeeName"
+          pageSize={15}
+          frameless
+          onDisplayedRowsChange={setDisplayedRows}
+        />
       </section>
 
       <div className="flex flex-wrap gap-3 items-end border-b border-border-subtle pb-4">

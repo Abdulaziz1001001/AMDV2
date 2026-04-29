@@ -37,10 +37,11 @@ function normalizeToRiyadhDate(value) {
 
 function withPopulatedEmployee(record) {
   const base = formatAttendanceRecords([record])[0];
-  const checkoutLocation = base.checkoutLocationName || '';
+  const checkoutLocation = base.checkoutLocationName || base.locationName || '';
   const employeeDoc = record.employeeId;
   const payload = {
     ...base,
+    checkoutLocationName: checkoutLocation,
     checkoutLocation,
   };
   if (!employeeDoc || typeof employeeDoc !== 'object') return payload;

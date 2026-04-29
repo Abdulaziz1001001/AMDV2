@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   flexRender,
   getCoreRowModel,
@@ -25,6 +25,7 @@ interface DataTableProps<T> {
   getRowId?: (row: T) => string
   highlightRowId?: string | null
   frameless?: boolean
+  onDisplayedRowsChange?: (rows: T[]) => void
 }
 
 export function DataTable<T>({
@@ -37,6 +38,7 @@ export function DataTable<T>({
   getRowId,
   highlightRowId,
   frameless = false,
+  onDisplayedRowsChange,
 }: DataTableProps<T>) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [globalFilter, setGlobalFilter] = useState('')
@@ -54,6 +56,11 @@ export function DataTable<T>({
     initialState: { pagination: { pageSize } },
     getRowId: getRowId ? (originalRow: T) => getRowId(originalRow) : undefined,
   })
+  const displayedRows = table.getRowModel().rows.map((row) => row.original)
+
+  useEffect(() => {
+    onDisplayedRowsChange?.(displayedRows)
+  }, [onDisplayedRowsChange, displayedRows])
 
   return (
     <div className={cn('space-y-3', className)}>

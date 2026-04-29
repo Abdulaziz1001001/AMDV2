@@ -231,8 +231,7 @@ async function upsertEmployeeRecord(req, res) {
       if (sitesCheckout && outLat != null && outLng != null) {
         const hit = resolveClosestAuthorizedSite(Number(outLat), Number(outLng), sitesCheckout.locations, sitesCheckout.projects);
         const checkoutName = hit ? hit.doc.name || '' : '';
-        const baseName = record.locationName || '';
-        if (checkoutName && checkoutName !== baseName) {
+        if (checkoutName) {
           record.checkoutLocationName = checkoutName;
         }
       }
