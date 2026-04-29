@@ -67,6 +67,26 @@ export interface AttendanceReportQueryParams {
   year?: string
 }
 
+export interface ReportEmployee {
+  id: string
+  name: string
+  eid: string
+  departmentId: string
+}
+
+export interface ReportRecordRow {
+  id: string
+  employeeId: string
+  date: string
+  checkIn?: string
+  checkOut?: string
+  status: string
+  notes?: string
+  locationName?: string
+  checkoutLocationName?: string
+  employee?: ReportEmployee
+}
+
 export interface MonthlyAttendanceDetailRow {
   employeeName: string
   date: string

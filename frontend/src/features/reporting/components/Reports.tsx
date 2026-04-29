@@ -2,12 +2,15 @@ import { useMemo, useState } from 'react'
 import * as Checkbox from '@radix-ui/react-checkbox'
 import * as Popover from '@radix-ui/react-popover'
 import { type ColumnDef } from '@tanstack/react-table'
+import { endOfMonth, endOfWeek, endOfYear, format, startOfMonth, startOfWeek, startOfYear } from 'date-fns'
+import { toZonedTime } from 'date-fns-tz'
 import { DataTable } from '@/components/ui/DataTable'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useData } from '@/stores/DataContext'
 import { useToast } from '@/components/ui/Toast'
 import { fetchAttendanceReport } from '@/features/reporting/api/reportingApi'
+import { useReports } from '@/features/reports/hooks/useReports'
 import { Check, ChevronDown, Download } from 'lucide-react'
 import {
   downloadAttendanceReportPdf,
@@ -20,23 +23,80 @@ import type {
   AttendanceReportDeptRow,
   AttendanceReportEmployeeRow,
   AttendanceReportRecordRow,
+  ReportRecordRow,
 } from '@/features/reporting/types/reporting'
 import { cn } from '@/lib/cn'
+import { fmtTime } from '@/lib/formatters'
+
+type ReportPreset = 'week' | 'month' | 'year' | 'custom'
+const REPORT_TIMEZONE = 'Asia/Riyadh'
+
+function formatYmd(date: Date) {
+  return format(date, 'yyyy-MM-dd')
+}
+
+function getPresetRange(preset: ReportPreset) {
+  const nowInRiyadh = toZonedTime(new Date(), REPORT_TIMEZONE)
+  if (preset === 'week') {
+    return {
+      startDate: formatYmd(startOfWeek(nowInRiyadh, { weekStartsOn: 0 })),
+      endDate: formatYmd(endOfWeek(nowInRiyadh, { weekStartsOn: 0 })),
+    }
+  }
+  if (preset === 'year') {
+    return {
+      startDate: formatYmd(startOfYear(nowInRiyadh)),
+      endDate: formatYmd(endOfYear(nowInRiyadh)),
+    }
+  }
+  return {
+    startDate: formatYmd(startOfMonth(nowInRiyadh)),
+    endDate: formatYmd(endOfMonth(nowInRiyadh)),
+  }
+}
 
 export default function Reports() {
   const { employees } = useData()
   const { toast } = useToast()
   const activeEmployees = useMemo(() => employees.filter((e) => e.active), [employees])
+  const employeeById = useMemo(() => new Map(employees.map((employee) => [employee.id, employee])), [employees])
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set())
   const [filtersOpen, setFiltersOpen] = useState(false)
 
-  const [month, setMonth] = useState(String(new Date().getMonth() + 1))
-  const [year, setYear] = useState(String(new Date().getFullYear()))
+  const [preset, setPreset] = useState<ReportPreset>('month')
+  const [customStartDate, setCustomStartDate] = useState('')
+  const [customEndDate, setCustomEndDate] = useState('')
+  const initialMonthDate = toZonedTime(new Date(), REPORT_TIMEZONE)
+  const [month, setMonth] = useState(String(initialMonthDate.getMonth() + 1))
+  const [year, setYear] = useState(String(initialMonthDate.getFullYear()))
   const [data, setData] = useState<AttendanceReportEmployeeRow[]>([])
   const [depts, setDepts] = useState<AttendanceReportDeptRow[]>([])
   const [detailRows, setDetailRows] = useState<AttendanceReportRecordRow[]>([])
   const [exporting, setExporting] = useState<'pdf' | 'xlsx' | 'detailPdf' | 'detailXlsx' | null>(null)
+
+  const reportRange = useMemo(() => {
+    if (preset === 'custom') {
+      return {
+        startDate: customStartDate,
+        endDate: customEndDate,
+      }
+    }
+    return getPresetRange(preset)
+  }, [preset, customStartDate, customEndDate])
+
+  const reportsQuery = useReports(reportRange.startDate, reportRange.endDate)
+  const reportRows = useMemo(() => {
+    const records = reportsQuery.data || []
+    return records.map((record: ReportRecordRow) => {
+      const employee = record.employee || employeeById.get(record.employeeId)
+      return {
+        ...record,
+        employeeName: employee?.name || 'Unknown',
+        employeeEid: employee?.eid || '—',
+      }
+    })
+  }, [reportsQuery.data, employeeById])
 
   const allSelectedImplicit = selectedIds.size === 0
   const allSelectedExplicit =
@@ -212,11 +272,75 @@ export default function Reports() {
     },
     { accessorKey: 'overtimeHours', header: 'OT Hrs', size: 70 },
   ]
+  const reportCols: ColumnDef<(typeof reportRows)[0], unknown>[] = [
+    {
+      accessorKey: 'employeeName',
+      header: 'Employee',
+      cell: ({ row }) => (
+        <div>
+          <p className="font-medium text-sm">{row.original.employeeName}</p>
+          <p className="text-xs text-text-tertiary">{row.original.employeeEid}</p>
+        </div>
+      ),
+    },
+    { accessorKey: 'date', header: 'Date', size: 96 },
+    { accessorKey: 'checkIn', header: 'Check-in', size: 96, cell: ({ row }) => fmtTime(row.original.checkIn) },
+    { accessorKey: 'checkOut', header: 'Check-out', size: 96, cell: ({ row }) => fmtTime(row.original.checkOut) },
+    { accessorKey: 'status', header: 'Status', size: 88 },
+    { accessorKey: 'locationName', header: 'In location' },
+    { accessorKey: 'checkoutLocationName', header: 'Out location' },
+    { accessorKey: 'notes', header: 'Notes', cell: ({ getValue }) => (getValue() as string) || '—' },
+  ]
 
   const hasSummaryExport = data.length > 0 || depts.length > 0
 
   return (
     <div className="space-y-6">
+      <section className="space-y-3">
+        <div className="flex flex-wrap items-center gap-2 rounded-xl bg-surface-sunken/60 p-1">
+          {([
+            { id: 'week', label: 'This Week' },
+            { id: 'month', label: 'This Month' },
+            { id: 'year', label: 'This Year' },
+            { id: 'custom', label: 'Custom Range' },
+          ] as const).map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setPreset(item.id)}
+              className={cn(
+                'rounded-lg px-3 py-1.5 text-sm transition-colors',
+                preset === item.id ? 'bg-white/5 text-text-primary' : 'text-text-secondary hover:text-text-primary',
+              )}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+
+        {preset === 'custom' && (
+          <div className="flex flex-wrap items-end gap-3">
+            <div>
+              <label className="mb-1 block text-xs font-medium text-text-secondary">Start Date</label>
+              <Input type="date" value={customStartDate} onChange={(e) => setCustomStartDate(e.target.value)} className="w-44" />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-text-secondary">End Date</label>
+              <Input type="date" value={customEndDate} onChange={(e) => setCustomEndDate(e.target.value)} className="w-44" />
+            </div>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-text-tertiary">
+            Showing records from {reportRange.startDate || '—'} to {reportRange.endDate || '—'} (Asia/Riyadh)
+          </p>
+          {reportsQuery.isFetching && <p className="text-xs text-text-tertiary">Refreshing...</p>}
+        </div>
+
+        <DataTable columns={reportCols} data={reportRows} searchColumn="employeeName" pageSize={15} frameless />
+      </section>
+
       <p className="text-xs text-text-tertiary">
         Summary exports use PDF and Excel; monthly detail exports include locations and notes (early leave reasons).
       </p>

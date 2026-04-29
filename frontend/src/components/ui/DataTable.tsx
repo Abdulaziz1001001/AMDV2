@@ -24,6 +24,7 @@ interface DataTableProps<T> {
   /** Stable row id for DOM `id="dt-row-{id}"` and optional highlight */
   getRowId?: (row: T) => string
   highlightRowId?: string | null
+  frameless?: boolean
 }
 
 export function DataTable<T>({
@@ -35,6 +36,7 @@ export function DataTable<T>({
   className,
   getRowId,
   highlightRowId,
+  frameless = false,
 }: DataTableProps<T>) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [globalFilter, setGlobalFilter] = useState('')
@@ -66,7 +68,7 @@ export function DataTable<T>({
         </div>
       )}
 
-      <div className="overflow-hidden rounded-xl border border-border-subtle">
+      <div className={cn(!frameless && 'overflow-hidden rounded-xl border border-border-subtle')}>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>

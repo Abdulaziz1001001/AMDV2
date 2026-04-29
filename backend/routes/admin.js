@@ -18,6 +18,37 @@ const { formatAttendanceRecords } = require('../lib/formatAttendanceRecord');
 const ADMIN_NOTIFICATION_INBOX = {
   $or: [{ recipientId: null }, { recipientId: { $exists: false } }],
 };
+const RIYADH_DATE_FMT = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Asia/Riyadh',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+function normalizeToRiyadhDate(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return null;
+  if (ISO_DATE_RE.test(raw)) return raw;
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return RIYADH_DATE_FMT.format(parsed);
+}
+
+function withPopulatedEmployee(record) {
+  const base = formatAttendanceRecords([record])[0];
+  const employeeDoc = record.employeeId;
+  if (!employeeDoc || typeof employeeDoc !== 'object') return base;
+  return {
+    ...base,
+    employee: {
+      id: employeeDoc._id ? employeeDoc._id.toString() : '',
+      name: employeeDoc.name || '',
+      eid: employeeDoc.eid || '',
+      departmentId: employeeDoc.departmentId ? employeeDoc.departmentId.toString() : '',
+    },
+  };
+}
 
 async function countAdminInboxUnread() {
   return AdminNotification.countDocuments({ ...ADMIN_NOTIFICATION_INBOX, readAt: null });
@@ -123,6 +154,37 @@ router.get('/all-data', async (req, res) => {
   }
 });
 
+router.get('/employees', async (req, res) => {
+  try {
+    const page = Math.max(1, Number.parseInt(String(req.query.page ?? '1'), 10) || 1);
+    const pageSizeRaw = Number.parseInt(String(req.query.pageSize ?? '50'), 10) || 50;
+    const pageSize = Math.min(200, Math.max(1, pageSizeRaw));
+    const activeOnly = String(req.query.activeOnly ?? 'true') !== 'false';
+
+    const query = activeOnly ? { active: true } : {};
+    const total = await Employee.countDocuments(query);
+    const docs = await Employee.find(query)
+      .sort({ name: 1 })
+      .skip((page - 1) * pageSize)
+      .limit(pageSize);
+
+    const items = docs.map((doc) => ({ ...doc._doc, id: doc._id.toString() }));
+    const hasNextPage = page * pageSize < total;
+
+    res.json({
+      items,
+      pagination: {
+        page,
+        pageSize,
+        total,
+        hasNextPage,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ msg: err.message });
+  }
+});
+
 router.put('/work-policy', async (req, res) => {
   try {
     let policy = await WorkPolicy.findOne({ key: 'company' });
@@ -217,6 +279,28 @@ router.get('/records/filter', async (req, res) => {
       .populate('employeeId', 'name eid departmentId')
       .sort({ date: -1, createdAt: -1 });
     res.json(formatAttendanceRecords(records));
+  } catch (err) {
+    res.status(500).json({ msg: err.message });
+  }
+});
+
+router.get('/reports', async (req, res) => {
+  try {
+    const startDate = normalizeToRiyadhDate(req.query.startDate);
+    const endDate = normalizeToRiyadhDate(req.query.endDate);
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({ msg: 'startDate and endDate are required in YYYY-MM-DD format' });
+    }
+    if (startDate > endDate) {
+      return res.status(400).json({ msg: 'startDate must be less than or equal to endDate' });
+    }
+
+    const records = await Record.find({ date: { $gte: startDate, $lte: endDate } })
+      .populate('employeeId', 'name eid departmentId')
+      .sort({ date: -1, createdAt: -1 });
+
+    res.json(records.map(withPopulatedEmployee));
   } catch (err) {
     res.status(500).json({ msg: err.message });
   }

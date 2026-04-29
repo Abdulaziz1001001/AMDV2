@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { type ColumnDef } from '@tanstack/react-table'
 import { Plus, Trash2, Edit2 } from 'lucide-react'
 import { DataTable } from '@/components/ui/DataTable'
@@ -12,16 +13,33 @@ import { useLang } from '@/stores/LangContext'
 import { createEmployee, deleteEmployee } from '@/features/organization/api/organizationApi'
 import type { Employee } from '@/features/organization/types/organization'
 import { cn } from '@/lib/cn'
+import { useEmployees } from '@/features/employees/hooks/useEmployees'
+import { Skeleton } from '@/components/ui/Skeleton'
 
 export default function EmployeesPage() {
-  const { employees, groups, departments, sync } = useData()
+  const queryClient = useQueryClient()
+  const { groups, departments } = useData()
   const { toast } = useToast()
   const { t } = useLang()
+  const { data, isLoading, isError, error } = useEmployees()
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<Employee | null>(null)
   const [form, setForm] = useState({ name: '', username: '', password: '', email: '', phone: '', groupId: '', departmentId: '', jobTitle: '', workStart: '', workEnd: '', salary: '' })
+  const employees = useMemo(() => data?.items ?? [], [data])
 
   const activeCount = useMemo(() => employees.filter((e) => e.active).length, [employees])
+  const saveEmployeeMutation = useMutation({
+    mutationFn: createEmployee,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'employees'] })
+    },
+  })
+  const deleteEmployeeMutation = useMutation({
+    mutationFn: deleteEmployee,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'employees'] })
+    },
+  })
 
   const openNew = () => {
     setEditing(null)
@@ -37,8 +55,7 @@ export default function EmployeesPage() {
 
   const handleSave = async () => {
     try {
-      await createEmployee({ ...form, salary: form.salary ? Number(form.salary) : undefined, id: editing?.id } as never)
-      await sync()
+      await saveEmployeeMutation.mutateAsync({ ...form, salary: form.salary ? Number(form.salary) : undefined, id: editing?.id } as never)
       setModalOpen(false)
       toast(editing ? 'Employee updated' : 'Employee created', 'success')
     } catch (e: unknown) {
@@ -49,8 +66,7 @@ export default function EmployeesPage() {
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this employee?')) return
     try {
-      await deleteEmployee(id)
-      await sync()
+      await deleteEmployeeMutation.mutateAsync(id)
       toast('Employee deleted', 'warning')
     } catch (e: unknown) {
       toast((e as Error).message, 'error')
@@ -111,7 +127,20 @@ export default function EmployeesPage() {
         <Button onClick={openNew} size="sm"><Plus className="h-4 w-4" /> {t('create')}</Button>
       </div>
 
-      <DataTable columns={columns} data={employees} searchColumn="name" searchPlaceholder={`${t('search')} ${t('employees').toLowerCase()}...`} />
+      {isLoading ? (
+        <div className="space-y-3 rounded-2xl border border-border-subtle bg-surface p-4">
+          <Skeleton className="h-9 w-56" />
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+        </div>
+      ) : isError ? (
+        <div className="rounded-2xl border border-border-subtle bg-surface p-4 text-sm text-text-secondary">
+          Failed to load employees{error instanceof Error ? `: ${error.message}` : '.'}
+        </div>
+      ) : (
+        <DataTable columns={columns} data={employees} searchColumn="name" searchPlaceholder={`${t('search')} ${t('employees').toLowerCase()}...`} />
+      )}
 
       <Modal open={modalOpen} onOpenChange={setModalOpen} title={editing ? 'Edit Employee' : 'New Employee'} size="lg">
         <div className="grid grid-cols-2 gap-4">

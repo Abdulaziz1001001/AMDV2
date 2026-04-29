@@ -4,6 +4,7 @@ import type {
   AttendanceReportQueryParams,
   AuditEntry,
   AuditLogQueryParams,
+  ReportRecordRow,
 } from '@/features/reporting/types/reporting'
 
 export function fetchPayrollOverview(month: number, year: number) {
@@ -26,4 +27,9 @@ export function fetchAttendanceReport(params: AttendanceReportQueryParams) {
   if (params.year) q.set('year', params.year)
   if (params.employeeIds?.length) q.set('employeeIds', params.employeeIds.join(','))
   return request<AttendanceReportResponse>(`/attendance/report?${q.toString()}`)
+}
+
+export function fetchReports(startDate: string, endDate: string) {
+  const q = new URLSearchParams({ startDate, endDate })
+  return request<ReportRecordRow[]>(`/admin/reports?${q.toString()}`)
 }

@@ -18,23 +18,25 @@
 * Feature-specific state should be kept local to the feature components or managed via custom hooks within the feature directory.
 
 ## 4. Directory Structure (Feature-Based)
-The application strictly follows a feature-based architecture. Do not dump files into massive shared `/components` or `/pages` folders unless they are truly global primitives (like a generic Button).
+The application strictly follows a feature-based architecture. Do not dump files into massive shared `/components` or `/pages` folders. 
 
 ### Frontend Expected Structure (`/frontend/src/`):
 /src
   /assets
-  /components      # ONLY generic, globally shared UI components (Button, Input, Modal) utilizing Radix/Tailwind.
-  /contexts        # Global state (AuthContext, ThemeContext, etc.)
-  /features        # Domain-specific logic and UI
-    /attendance    # Contains its own components, hooks, and api calls
-    /leave
-    /safety
-    /projects
-    /hr-profile
-  /hooks           # Globally shared custom hooks (e.g., useDebounce)
-  /lib             # Utility configurations (axios instance, tailwind-merge helpers)
-  /utils           # Shared helper functions (date formatting, etc.)
-  /types           # Global TypeScript interfaces and types
+  /components      # ONLY generic, globally shared UI components (Button, Input, Modal, Table). No business logic.
+  /stores          # Global state contexts (AuthContext, DataContext, etc.)
+  /lib             # Shared formatters, generic export utilities, etc.
+  /features        # Domain-specific logic, UI, types, and API wrappers
+    /attendance    # Clock-ins, records, overtime, shift UI
+    /auth          # Login pages and auth gating
+    /communication # Announcements and notifications
+    /core          # Layout shells, navigation (Sidebar, Topbar), and brand logos
+    /hr            # Leave requests, profile updates, accruals, onboarding
+    /organization  # Employees, departments, groups, directory org chart
+    /projects      # Project sites, geofences, map UI
+    /reporting     # Admin dashboards, analytics, audit logs, specific report exports
+    /safety        # Incident reporting forms and admin panels
+    /system        # System settings
 
 ### Backend Expected Structure (`/backend/`):
 /backend
